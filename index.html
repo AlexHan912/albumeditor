@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MALEVICH | Configurator V44 (Visual Polish)</title>
+    <title>MALEVICH | Configurator V44</title>
     
     <script src="assets.js"></script>
 
@@ -72,7 +72,7 @@
         .pair-btn.active { border-color: #fff; transform: scale(1.15); box-shadow: 0 0 10px rgba(255,255,255,0.4); z-index: 2; }
         .pair-heart { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 14px; line-height: 1; }
 
-        /* LAYOUTS (REFINED) */
+        /* LAYOUTS (VISUAL FIXED) */
         .layout-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 10px; }
         .layout-card { 
             aspect-ratio: 1; background: var(--card-bg); border: 1px solid #444; cursor: pointer; border-radius: 4px; 
@@ -83,16 +83,12 @@
         .layout-card.active { border-color: var(--accent-gold); box-shadow: 0 0 8px rgba(212, 175, 55, 0.2); }
         .layout-name { font-size: 9px; color: #777; margin-top: 2px; text-align: center; }
 
-        /* Miniatures Visuals */
+        /* Miniatures */
         .mini-group { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 100%; }
-        
         .mini-line { width: 50%; height: 1px; background: #666; } 
         .mini-line.short { width: 30%; }
-        
-        /* Icon (Heart) */
         .mini-icon { font-size: 10px; color: #777; line-height: 1; }
         
-        /* Dashed Placeholders with Plus */
         .mini-dashed-circle { 
             width: 30px; height: 30px; border: 1px dashed #666; border-radius: 50%; 
             display: grid; place-items: center; margin: 2px 0;
@@ -105,7 +101,6 @@
         }
         .mini-dashed-rect::after { content: '+'; color: #666; font-size: 12px; }
 
-        /* Magazine */
         .mini-mag-container { width: 100%; height: 100%; background: #333; display: flex; flex-direction: column; align-items: center; padding-top: 8px; }
         .mini-mag-title { width: 70%; height: 2px; background: #fff; margin-bottom: 2px; }
 
@@ -121,6 +116,8 @@
         .input-row-icon { display: flex; gap: 10px; align-items: stretch; margin-bottom: 15px; height: 38px; }
         .icon-trigger-btn { width: 46px; border: 1px solid #444; background: var(--input-bg); display: grid; place-items: center; cursor: pointer; transition: 0.3s; color: #555; font-size: 18px; background-size: 60%; background-position: center; background-repeat: no-repeat; flex-shrink: 0; height: 100%; }
         .icon-trigger-btn:hover { border-color: #777; color: #999; } .icon-trigger-btn.active { border-color: var(--accent-gold); } 
+        @keyframes glow { 0% { box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.4); border-color: #777; } 50% { box-shadow: 0 0 10px 0 rgba(212, 175, 55, 0.8); border-color: var(--accent-gold); } 100% { box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.4); border-color: #777; } }
+        .pulse-attention { animation: glow 2s infinite; }
         select, input[type="text"] { font-family: 'Tenor Sans', sans-serif; width: 100%; padding: 0 12px; margin-bottom: 15px; background: var(--input-bg); border: 1px solid var(--border-color); color: #fff; border-radius: 2px; font-size: 14px; transition: border 0.3s; height: 38px; line-height: 38px;}
         select:focus, input:focus { border-color: var(--accent-gold); }
         button { background-color: #fff; color: #000; cursor: pointer; border: none; padding: 12px; font-weight: bold; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; transition: all 0.3s; }
@@ -383,8 +380,14 @@
             img.src = path;
         }
 
+        // --- INIT & LOGIC ---
         function initColors() {
-            changeCollection('Wedding Trends'); 
+            try {
+                if(typeof DESIGNER_PALETTES !== 'undefined') {
+                    changeCollection('Wedding Trends'); 
+                }
+            } catch(e) { console.error("Assets not loaded yet"); }
+            
             document.getElementById('customCoverPicker').oninput = (e) => { state.coverColor = e.target.value; renderLayout(); };
             document.getElementById('customTextPicker').oninput = (e) => { state.text.color = e.target.value; updateSymbolUI(); renderLayout(); };
         }
@@ -397,7 +400,7 @@
             if(name === 'Custom') { grid.classList.add('hidden'); customBlock.classList.remove('hidden'); return; }
             grid.classList.remove('hidden'); customBlock.classList.add('hidden');
 
-            if(DESIGNER_PALETTES && DESIGNER_PALETTES[name]) {
+            if(typeof DESIGNER_PALETTES !== 'undefined' && DESIGNER_PALETTES[name]) {
                 DESIGNER_PALETTES[name].forEach(pair => {
                     const btn = document.createElement('div');
                     btn.className = 'pair-btn'; btn.style.backgroundColor = pair.bg;
@@ -426,7 +429,9 @@
         function loadDefaultAssets() {
             initColors();
             setTimeout(() => { document.getElementById('app-loader').style.opacity = '0'; setTimeout(() => document.getElementById('app-loader').style.display='none', 800); }, 1500);
+            
             const relPath = 'icons/love/01heart.png';
+            // Safety check for path
             loadSimpleImage('assets/print/' + relPath, (url1) => {
                 const final = url1 || ('assets/preview/' + relPath);
                 loadSimpleImage(final, (validUrl) => { if(validUrl) state.images.icon = validUrl; finishInit(); });
@@ -435,6 +440,7 @@
 
         function finishInit() { updateSymbolUI(); setLayout('text_icon', document.querySelector('.layout-card.active')); updateCanvasDimensions(); }
 
+        // --- TEXT BUILDER ---
         window.toggleCase = (rowIdx) => { const i = rowIdx - 1; state.text.lines[i].upper = !state.text.lines[i].upper; document.getElementById(`btnTt${rowIdx}`).classList.toggle('active', state.text.lines[i].upper); renderLayout(); };
         window.showRow = (rowIdx) => { document.getElementById(`row${rowIdx}`).classList.remove('hidden'); };
         window.hideRow = (rowIdx) => { document.getElementById(`row${rowIdx}`).classList.add('hidden'); document.getElementById(`inputLine${rowIdx}`).value = ""; state.text.lines[rowIdx-1].text = ""; renderLayout(); };
@@ -457,6 +463,7 @@
         window.removeGlobalSymbol = () => { state.images.icon = null; updateSymbolUI(); renderLayout(); };
         window.toggleSpineSymbol = () => { if(!state.images.icon) return; state.spineSymbolEnabled = !state.spineSymbolEnabled; updateSymbolUI(); renderLayout(); };
 
+        // --- HANDLERS ---
         window.openQRModal = () => { document.getElementById('qrModal').classList.remove('hidden'); }
         window.applyQR = () => {
             const url = document.getElementById('qrLinkInput').value;
@@ -485,7 +492,7 @@
             state.images.main = null; 
             if(state.layout === 'magazine' && layoutType !== 'magazine') { state.text.font = document.getElementById('fontSelector').value; }
             if(layoutType === 'magazine') { state.text.font = 'Bodoni Moda'; }
-            if(layoutType === 'graphic') state.maskType = 'circle'; // Default to circle for graphics
+            if(layoutType === 'graphic') state.maskType = 'circle'; // Default circle for graphics
             else state.maskType = 'rect';
             renderLayout();
         }
@@ -506,7 +513,6 @@
             document.getElementById('globalSymbolBtn').classList.remove('pulse-attention'); 
             document.getElementById('galleryModal').classList.remove('hidden'); 
             
-            // Update Upload Button Text/Action based on type
             const upBtn = document.getElementById('galUploadBtn');
             if(type === 'icons') {
                 upBtn.innerText = "Загрузить свою иконку";
@@ -517,8 +523,13 @@
             }
 
             const tabs = document.getElementById('galleryTabs'); tabs.innerHTML = ''; 
-            const db = type === 'icons' ? ASSETS_DB.icons : ASSETS_DB.graphics; 
-            
+            // Separate access for types
+            let db = {};
+            if(type === 'icons') db = ASSETS_DB.icons;
+            else if(type === 'graphics') db = ASSETS_DB.graphics;
+            // Fallback if needed, though we strictly separate now
+            if(!db) db = ASSETS_DB.icons;
+
             Object.keys(db).forEach((cat, i) => { 
                 const t = document.createElement('div'); t.className = `gallery-tab ${i===0?'active':''}`; t.innerText = cat; 
                 t.onclick = () => { document.querySelectorAll('.gallery-tab').forEach(x=>x.classList.remove('active')); t.classList.add('active'); loadGal(type, cat); }; 
@@ -529,7 +540,10 @@
 
         function loadGal(type, cat) { 
             const grid = document.getElementById('galleryGrid'); 
-            const files = (type === 'icons' ? ASSETS_DB.icons : ASSETS_DB.graphics)[cat] || []; 
+            let files = [];
+            if(type === 'icons') files = ASSETS_DB.icons[cat] || [];
+            else if(type === 'graphics') files = ASSETS_DB.graphics[cat] || [];
+            
             grid.innerHTML = ''; 
             for(let f of files) { 
                 const item = document.createElement('div'); item.className = 'gallery-item'; 
@@ -548,12 +562,7 @@
                         } else { 
                             // Graphic Selected
                             if(type === 'graphics') {
-                                state.images.main = { src: finalUrl, cropInfo: { scale: 1, left: 0, top: 0, slotPixelSize: 100 } }; // Simplified logic for graphics (no crop)
-                                // Actually, for proper rendering we might need to mimic cropInfo or adjust renderer
-                                // For V44 let's just treat it as a pre-cropped image
-                                // But renderer expects cropInfo. Let's make a mock one.
-                                // Or better: Open cropper for graphics too? No, requirement says "No crop".
-                                // Let's just set it and let renderer handle 'graphic' layout logic (already assumes full fit)
+                                state.images.main = { src: finalUrl, cropInfo: { scale: 1, left: 0, top: 0, slotPixelSize: 100 } }; 
                                 renderLayout();
                             }
                         } 
@@ -565,7 +574,7 @@
         
         window.closeGallery = () => document.getElementById('galleryModal').classList.add('hidden');
         window.handleGalleryUpload = () => {
-            // This is handled dynamically in openGallery now
+            // Handled dynamically
         };
 
         // File Loaders
@@ -604,15 +613,12 @@
 
         function openCropper(url) { 
             document.getElementById('cropperModal').classList.remove('hidden'); initCrop();
-            // Intelligent mask default if not set manually by user recently?
-            // Let's keep state.maskType persistent or reset based on layout logic in setLayout
+            // Intelligent mask default?
             fabric.Image.fromURL(url, (img) => { 
                 tempImgObject = img; 
                 let slotPW, slotPH; 
-                // Calc slot dimensions again just for initial scale logic
                 const aspect = state.slotSize.w / state.slotSize.h;
                 if(aspect >= 1) { slotPW = CROP_CANVAS_SIZE*0.8; slotPH = slotPW/aspect; } else { slotPH = CROP_CANVAS_SIZE*0.8; slotPW = slotPH*aspect; }
-                
                 const scale = Math.max(slotPW/img.width, slotPH/img.height); 
                 img.set({ left: CROP_CANVAS_SIZE/2, top: CROP_CANVAS_SIZE/2, originX: 'center', originY: 'center', scaleX: scale, scaleY: scale, hasControls: false, hasBorders: false }); 
                 cropCanvas.add(img); 
@@ -723,6 +729,86 @@
             } else { trigger.classList.add('hidden'); }
 
             document.getElementById('debugInfo').innerText = `Print: ${state.bookSize}cm @ 300DPI`;
+        }
+
+        function createTextBlockObj(compact = false) {
+            const l1 = document.getElementById('inputLine1').value;
+            const l2 = document.getElementById('inputLine2').value;
+            const l3 = document.getElementById('inputLine3').value;
+            const dateIn = document.getElementById('dateLine').value;
+            const rawLines = [l1, l2, l3];
+            const processedLines = rawLines.map((txt, i) => { return state.text.lines[i].upper ? txt.toUpperCase() : txt; });
+            const hasText = l1 || l2 || l3;
+            let renderTxt = hasText ? processedLines.filter(Boolean).join("\n") : "THE VISUAL DIARY\n\n\n";
+            let finalOpacity = hasText ? GLOBAL_OPACITY : 0.3;
+            const baseSize = compact ? 0.8 : TYPO_CONFIG.baseTitle; 
+            const finalSize = baseSize * state.ppi * state.text.scale;
+            const tObj = new fabric.Text(renderTxt, { fontFamily: state.text.font, fontSize: finalSize, textAlign: 'center', lineHeight: 1.3, fill: state.text.color, opacity: finalOpacity, selectable: false, originX: 'center', originY: 'center' });
+            const group = new fabric.Group([tObj], { originX: 'center', originY: 'center' });
+            if(dateIn || !hasText) { 
+                const dateStr = dateIn ? dateIn : "2025";
+                const dateOp = dateIn ? GLOBAL_OPACITY : 0.3;
+                const dateSize = TYPO_CONFIG.baseDetails * state.ppi * state.text.scale;
+                const dObj = new fabric.Text(dateStr, { fontFamily: state.text.font, fontSize: dateSize, fill: state.text.color, opacity: dateOp, originX: 'center', originY: 'top', top: tObj.height/2 + (compact ? 1.0 : 2.0)*state.ppi });
+                group.addWithUpdate(dObj);
+            }
+            return group;
+        }
+        function renderTextBlock(x, y, compact, isMagazine = false) {
+            if(isMagazine) {
+                let txt = [document.getElementById('inputLine1').value, document.getElementById('inputLine2').value].filter(Boolean).join("\n");
+                if(!txt) txt = "MAGAZINE";
+                const tObj = new fabric.Text(txt, { fontFamily: 'Bodoni Moda', fontSize: 2.5 * state.ppi * state.text.scale, textAlign: 'center', lineHeight: 1.0, originX: 'center', originY: 'top', left: x, top: y, fill: state.text.color, selectable: false });
+                canvas.add(tObj);
+                return;
+            }
+            const group = createTextBlockObj(compact);
+            group.set({ left: x, top: y });
+            canvas.add(group);
+        }
+        function renderIcon(x, y, forcedSize = null) {
+            let iconUrl = state.images.icon;
+            let isGhost = false;
+            if(!iconUrl) { iconUrl = 'assets/preview/icons/love/01heart.png'; isGhost = true; }
+            let size = forcedSize ? forcedSize : (2.0 / 1.6) * state.ppi * state.text.scale;
+            fabric.Image.fromURL(iconUrl, (img) => {
+                if(!img) return;
+                img.scaleToWidth(size);
+                img.set({ left: x, top: y, originX: 'center', originY: 'center', selectable: false, opacity: isGhost ? 0.3 : GLOBAL_OPACITY });
+                const filter = new fabric.Image.filters.BlendColor({ color: state.text.color, mode: 'tint', alpha: 1 });
+                img.filters.push(filter); img.applyFilters();
+                canvas.add(img);
+            });
+        }
+        function renderImageSlot(x, y) {
+            const w = state.slotSize.w * state.ppi; const h = state.slotSize.h * state.ppi;
+            if(state.images.main && state.images.main.src) {
+                fabric.Image.fromURL(state.images.main.src, (img) => {
+                    const info = state.images.main.cropInfo; const scaleFactor = w / info.slotPixelSize;
+                    img.set({ scaleX: info.scale * scaleFactor, scaleY: info.scale * scaleFactor, left: x + (info.left * scaleFactor), top: y + (info.top * scaleFactor), originX: 'center', originY: 'center', selectable: false });
+                    
+                    // Apply clip path based on Mask Type
+                    let clip;
+                    if(state.maskType === 'circle') {
+                        // Circle clip relative to image
+                        clip = new fabric.Circle({ radius: (w * (1/(info.scale * scaleFactor))) / 2, left: -(info.left * scaleFactor) / (info.scale * scaleFactor), top: -(info.top * scaleFactor) / (info.scale * scaleFactor), originX: 'center', originY: 'center' });
+                    } else {
+                        clip = new fabric.Rect({ width: w * (1/(info.scale * scaleFactor)), height: h * (1/(info.scale * scaleFactor)), left: -(info.left * scaleFactor) / (info.scale * scaleFactor), top: -(info.top * scaleFactor) / (info.scale * scaleFactor), originX: 'center', originY: 'center' });
+                    }
+                    img.clipPath = clip;
+
+                    if (state.layout === 'graphic') { img.set({ opacity: GLOBAL_OPACITY }); const filter = new fabric.Image.filters.BlendColor({ color: state.text.color, mode: 'tint', alpha: 1 }); img.filters.push(filter); img.applyFilters(); }
+                    canvas.add(img);
+                });
+            } else {
+                let rect;
+                if(state.maskType === 'circle') {
+                    rect = new fabric.Circle({ radius: w/2, fill: 'transparent', stroke: '#ddd', strokeWidth:2, strokeDashArray: [20,20], left: x, top: y, originX: 'center', originY: 'center', selectable: false });
+                } else {
+                    rect = new fabric.Rect({ width: w, height: h, fill: 'transparent', stroke: '#ddd', strokeWidth:2, strokeDashArray: [20,20], left: x, top: y, originX: 'center', originY: 'center', selectable: false });
+                }
+                canvas.add(rect); 
+            }
         }
 
         document.getElementById('saveBtn').onclick = () => { try { const mult = (EXPORT_DPI / CM_TO_INCH) / state.ppi; canvas.getObjects('line').forEach(o => o.opacity = 0); const data = canvas.toDataURL({ format: 'png', multiplier: mult, quality: 1 }); canvas.getObjects('line').forEach(o => o.opacity = 0.3); const a = document.createElement('a'); a.download = `cover_${state.bookSize}cm.png`; a.href = data; document.body.appendChild(a); a.click(); document.body.removeChild(a); } catch(e) { alert("Ошибка сохранения: Браузер блокирует доступ (CORS)."); } };
