@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MALEVICH | Configurator V45 (Smart Spine)</title>
+    <title>MALEVICH | Configurator V46 (Polished)</title>
     
     <script src="assets.js"></script>
 
@@ -43,7 +43,7 @@
         #photoTrigger::after { content: '+'; }
         @keyframes pulse-white { 0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7); } 70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(255, 255, 255, 0); } 100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); } }
 
-        /* TYPOGRAPHY */
+        /* TYPOGRAPHY & LABELS */
         h1 { font-family: 'Bodoni Moda', serif; font-size: 24px; color: #fff; letter-spacing: 3px; margin-bottom: 10px; text-align: center; font-weight: 400; }
         h2 { font-family: 'Bodoni Moda', serif; font-size: 13px; color: var(--accent-gold); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 12px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-top: 5px; }
         label { display: block; margin-bottom: 8px; font-size: 10px; font-weight: bold; color: #888; text-transform: uppercase; letter-spacing: 1px; }
@@ -56,7 +56,7 @@
         .format-card span { font-size: 10px; color: #aaa; pointer-events: none; }
         .f-30 { width: 60px; height: 60px; } .f-25 { width: 50px; height: 50px; } .f-20 { width: 40px; height: 40px; }
 
-        /* CONTROLS */
+        /* TYPO CONTROLS */
         .typo-row { display: flex; gap: 15px; align-items: center; } .typo-col { flex: 1; display: flex; flex-direction: column; gap: 5px; }
         .scale-control { display: flex; justify-content: space-between; align-items: center; background: var(--input-bg); border: 1px solid var(--border-color); height: 38px; padding: 0 10px; border-radius: 2px; }
         .scale-label { font-size: 10px; color: #777; cursor: pointer; font-weight: bold; } .scale-label:hover { color: #ccc; }
@@ -64,27 +64,45 @@
         input[type=range].scale-slider { -webkit-appearance: none; width: 100%; height: 2px; background: transparent; outline: none; margin: 0; cursor: pointer; position: absolute; top: 0; }
         input[type=range].scale-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 12px; height: 12px; border-radius: 50%; background: var(--accent-gold); border: 2px solid #222; cursor: pointer; margin-top: -5px; }
 
-        /* COLORS */
+        /* COLORS (8 Cols, No Zoom) */
         .palette-selector { width: 100%; margin-bottom: 15px; }
-        .pairs-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin-bottom: 15px; }
-        .pair-btn { width: 100%; aspect-ratio: 1; border-radius: 50%; cursor: pointer; border: 1px solid transparent; position: relative; transition: transform 0.2s; }
-        .pair-btn:hover { transform: scale(1.1); z-index: 2; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
-        .pair-btn.active { border-color: #fff; transform: scale(1.15); box-shadow: 0 0 10px rgba(255,255,255,0.4); z-index: 2; }
-        .pair-heart { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 14px; line-height: 1; }
+        .pairs-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 8px; margin-bottom: 15px; }
+        .pair-btn { 
+            width: 100%; aspect-ratio: 1; border-radius: 50%; cursor: pointer; border: 2px solid transparent; 
+            position: relative; transition: border-color 0.2s; 
+        }
+        /* Removed scale transform, just border interaction */
+        .pair-btn:hover { border-color: #777; }
+        .pair-btn.active { border-color: #fff; box-shadow: 0 0 5px rgba(255,255,255,0.2); }
+        .pair-heart { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 10px; line-height: 1; }
 
-        /* LAYOUTS */
+        /* LAYOUTS (CLEAN ICONS) */
         .layout-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 10px; }
-        .layout-card { aspect-ratio: 1; background: var(--card-bg); border: 1px solid #444; cursor: pointer; border-radius: 4px; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; transition: all 0.2s; overflow: hidden; }
+        .layout-card { 
+            aspect-ratio: 1; background: var(--card-bg); border: 1px solid #444; cursor: pointer; border-radius: 4px; 
+            position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            gap: 0; transition: all 0.2s; overflow: hidden;
+        }
         .layout-card:hover { border-color: #777; background: var(--card-hover); }
         .layout-card.active { border-color: var(--accent-gold); box-shadow: 0 0 8px rgba(212, 175, 55, 0.2); }
-        .layout-name { font-size: 9px; color: #777; margin-top: 2px; text-align: center; }
+        
+        /* Miniatures */
         .mini-group { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 100%; }
         .mini-line { width: 50%; height: 1px; background: #666; } .mini-line.short { width: 30%; }
-        .mini-icon { font-size: 10px; color: #777; line-height: 1; }
-        .mini-dashed-circle { width: 30px; height: 30px; border: 1px dashed #666; border-radius: 50%; display: grid; place-items: center; margin: 2px 0; }
-        .mini-dashed-circle::after { content: '+'; color: #666; font-size: 12px; }
-        .mini-dashed-rect { width: 36px; height: 24px; border: 1px dashed #666; display: grid; place-items: center; margin: 2px 0; }
-        .mini-dashed-rect::after { content: '+'; color: #666; font-size: 12px; }
+        .mini-icon { font-size: 12px; color: #777; line-height: 1; margin: 4px 0; }
+        
+        .mini-dashed-circle { 
+            width: 30px; height: 30px; border: 1px dashed #666; border-radius: 50%; 
+            display: grid; place-items: center;
+        }
+        .mini-dashed-circle::after { content: '+'; color: #666; font-size: 10px; }
+
+        .mini-dashed-rect { 
+            width: 36px; height: 24px; border: 1px dashed #666; 
+            display: grid; place-items: center;
+        }
+        .mini-dashed-rect::after { content: '+'; color: #666; font-size: 10px; }
+
         .mini-mag-container { width: 100%; height: 100%; background: #333; display: flex; flex-direction: column; align-items: center; padding-top: 8px; }
         .mini-mag-title { width: 70%; height: 2px; background: #fff; margin-bottom: 2px; }
 
@@ -213,7 +231,7 @@
         </div>
 
         <div class="section">
-            <h2>3. Материалы</h2>
+            <h2>3. Цветовая палитра</h2>
             <select id="paletteSelector" class="palette-selector" onchange="changeCollection(this.value)">
                 <option value="Wedding Trends">Wedding Trends</option>
                 <option value="New Born">New Born Trends</option>
@@ -235,40 +253,34 @@
         <div class="section">
             <h2>4. Дизайн Обложки</h2>
             <div class="layout-grid">
-                <div class="layout-card" onclick="setLayout('icon', this)">
+                <div class="layout-card" onclick="setLayout('icon', this)" title="Символ">
                     <div class="mini-icon">❤</div>
-                    <div class="layout-name">Символ</div>
                 </div>
-                <div class="layout-card active" onclick="setLayout('text_icon', this)">
+                <div class="layout-card active" onclick="setLayout('text_icon', this)" title="Текст+Символ">
                     <div class="mini-group">
                         <div class="mini-line"></div>
                         <div class="mini-line short"></div>
                     </div>
                     <div class="mini-icon" style="margin-top:2px">❤</div>
-                    <div class="layout-name">Текст+Символ</div>
                 </div>
-                <div class="layout-card" onclick="setLayout('graphic', this)">
+                <div class="layout-card" onclick="setLayout('graphic', this)" title="Графика">
                     <div class="mini-dashed-circle"></div>
-                    <div class="layout-name">Графика</div>
                 </div>
-                <div class="layout-card" onclick="setLayout('text', this)">
+                <div class="layout-card" onclick="setLayout('text', this)" title="Текст">
                     <div class="mini-group" style="gap:6px">
                         <div class="mini-line"></div>
                         <div class="mini-line"></div>
                         <div class="mini-line short"></div>
                     </div>
-                    <div class="layout-name">Текст</div>
                 </div>
-                <div class="layout-card" onclick="setLayout('photo_text', this)">
+                <div class="layout-card" onclick="setLayout('photo_text', this)" title="Фото+Текст">
                     <div class="mini-dashed-rect"></div>
                     <div class="mini-line short" style="margin-top:4px"></div>
-                    <div class="layout-name">Фото+Текст</div>
                 </div>
-                <div class="layout-card" onclick="setLayout('magazine', this)">
+                <div class="layout-card" onclick="setLayout('magazine', this)" title="Журнал">
                     <div class="mini-mag-container">
                         <div class="mini-mag-title"></div>
                     </div>
-                    <div class="layout-name">Журнал</div>
                 </div>
             </div>
         </div>
@@ -356,10 +368,7 @@
             },
             coverColor: "#FFFFFF",
             images: { icon: null, main: null }, 
-            
-            // SPINE STATE
             spine: { symbol: true, title: false, date: false },
-            
             qr: { enabled: false, url: "" },
             visualW: 0, visualH: 0
         };
@@ -432,7 +441,6 @@
 
         function updateSymbolUI() {
             const globalBtn = document.getElementById('globalSymbolBtn');
-            // Spine toggles get color update in logic, but visuals are static CSS mostly
             if(state.images.icon) {
                 globalBtn.style.backgroundImage = `url(${state.images.icon})`;
                 globalBtn.classList.add('active'); globalBtn.style.borderColor = state.text.color;
@@ -442,16 +450,26 @@
         }
         window.removeGlobalSymbol = () => { state.images.icon = null; updateSymbolUI(); renderLayout(); };
         
-        // --- SPINE LOGIC (NEW) ---
         window.toggleSpinePart = (part) => {
             state.spine[part] = !state.spine[part];
-            // Update button visual
             const btn = document.getElementById(part === 'symbol' ? 'btnSpineSymbol' : part === 'title' ? 'btnSpineTitle' : 'btnSpineDate');
             btn.classList.toggle('active', state.spine[part]);
             renderLayout();
         };
 
-        // --- HANDLERS ---
+        // --- HANDLERS (FIXED INPUT LISTENER) ---
+        ['inputLine1','inputLine2','inputLine3','dateLine', 'copyrightInput'].forEach(id => {
+            const el = document.getElementById(id);
+            if(el) {
+                el.oninput = (e) => { renderLayout(); };
+            }
+        });
+
+        document.getElementById('fontSelector').addEventListener('change', (e) => { state.text.font = e.target.value; renderLayout(); });
+        document.getElementById('iconLoader').onchange = (e) => { const r = new FileReader(); r.onload = (ev) => { state.images.icon = ev.target.result; updateSymbolUI(); renderLayout(); document.getElementById('galleryModal').classList.add('hidden'); }; if(e.target.files[0]) r.readAsDataURL(e.target.files[0]); };
+        document.getElementById('imageLoader').onchange = (e) => { const r = new FileReader(); r.onload = (ev) => { document.getElementById('galleryModal').classList.add('hidden'); openCropper(ev.target.result); }; if(e.target.files[0]) r.readAsDataURL(e.target.files[0]); e.target.value = ''; };
+        
+        // Gallery & QR Handlers...
         window.openQRModal = () => { document.getElementById('qrModal').classList.remove('hidden'); }
         window.applyQR = () => {
             const url = document.getElementById('qrLinkInput').value;
@@ -528,12 +546,8 @@
                 grid.appendChild(item); 
             } 
         }
-        
         window.closeGallery = () => document.getElementById('galleryModal').classList.add('hidden');
         window.handleGalleryUpload = () => { };
-
-        document.getElementById('iconLoader').onchange = (e) => { const r = new FileReader(); r.onload = (ev) => { state.images.icon = ev.target.result; updateSymbolUI(); renderLayout(); document.getElementById('galleryModal').classList.add('hidden'); }; if(e.target.files[0]) r.readAsDataURL(e.target.files[0]); };
-        document.getElementById('imageLoader').onchange = (e) => { const r = new FileReader(); r.onload = (ev) => { document.getElementById('galleryModal').classList.add('hidden'); openCropper(ev.target.result); }; if(e.target.files[0]) r.readAsDataURL(e.target.files[0]); e.target.value = ''; };
 
         function initCrop() { if(!cropCanvas) { cropCanvas = new fabric.Canvas('cropCanvas', { width: CROP_CANVAS_SIZE, height: CROP_CANVAS_SIZE, backgroundColor: '#111', selection: false }); } cropCanvas.clear(); cropCanvas.setBackgroundColor('#111'); }
         window.setCropMask = (w, h) => { if(w === 'circle') { state.slotSize = { w: 6, h: 6 }; state.maskType = 'circle'; } else { state.slotSize = { w: w, h: h }; state.maskType = 'rect'; } if(tempImgObject) drawCropOverlay(); };
@@ -606,21 +620,15 @@
             const bottomBase = h - (1.5 * state.ppi);
 
             // --- SPINE RENDER ---
-            // 1. Symbol
-            let symbolHeight = 0;
             if(state.images.icon && state.spine.symbol) {
                 const size = 1.0 * state.ppi; 
-                symbolHeight = size;
                 fabric.Image.fromURL(state.images.icon, (img) => {
                     img.scaleToWidth(size); img.set({ originX: 'center', originY: 'bottom', left: spineX, top: bottomBase, selectable: false, opacity: GLOBAL_OPACITY });
                     const filter = new fabric.Image.filters.BlendColor({ color: state.text.color, mode: 'tint', alpha: 1 }); img.filters.push(filter); img.applyFilters(); canvas.add(img);
                 });
             }
 
-            // 2. Text (Name + Date)
             let spineTextParts = [];
-            
-            // Get inputs
             const l1 = document.getElementById('inputLine1').value;
             const l2 = document.getElementById('inputLine2').value;
             const l3 = document.getElementById('inputLine3').value;
@@ -636,7 +644,7 @@
             }
 
             if(spineTextParts.length > 0) {
-                const spineStr = spineTextParts.join("   "); // Space between title and date
+                const spineStr = spineTextParts.join("  •  ");
                 let textBottom = bottomBase; 
                 if(state.spine.symbol && state.images.icon) textBottom -= (1.8 * state.ppi); 
                 
@@ -693,7 +701,6 @@
             }
             else if(state.layout === 'text') { const tObj = createTextBlockObj(); tObj.set({ left: frontCenter, top: cy }); canvas.add(tObj); } 
             
-            // Trigger Pos
             const trigger = document.getElementById('photoTrigger');
             if( (state.layout === 'graphic' || state.layout === 'photo_text' || state.layout === 'magazine') && !state.images.main ) {
                 trigger.classList.remove('hidden');
