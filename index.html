@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MALEVICH | Configurator V44</title>
+    <title>MALEVICH | Configurator V45 (Smart Spine)</title>
     
     <script src="assets.js"></script>
 
@@ -43,7 +43,7 @@
         #photoTrigger::after { content: '+'; }
         @keyframes pulse-white { 0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7); } 70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(255, 255, 255, 0); } 100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); } }
 
-        /* TYPOGRAPHY & LABELS */
+        /* TYPOGRAPHY */
         h1 { font-family: 'Bodoni Moda', serif; font-size: 24px; color: #fff; letter-spacing: 3px; margin-bottom: 10px; text-align: center; font-weight: 400; }
         h2 { font-family: 'Bodoni Moda', serif; font-size: 13px; color: var(--accent-gold); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 12px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-top: 5px; }
         label { display: block; margin-bottom: 8px; font-size: 10px; font-weight: bold; color: #888; text-transform: uppercase; letter-spacing: 1px; }
@@ -56,7 +56,7 @@
         .format-card span { font-size: 10px; color: #aaa; pointer-events: none; }
         .f-30 { width: 60px; height: 60px; } .f-25 { width: 50px; height: 50px; } .f-20 { width: 40px; height: 40px; }
 
-        /* TYPO CONTROLS */
+        /* CONTROLS */
         .typo-row { display: flex; gap: 15px; align-items: center; } .typo-col { flex: 1; display: flex; flex-direction: column; gap: 5px; }
         .scale-control { display: flex; justify-content: space-between; align-items: center; background: var(--input-bg); border: 1px solid var(--border-color); height: 38px; padding: 0 10px; border-radius: 2px; }
         .scale-label { font-size: 10px; color: #777; cursor: pointer; font-weight: bold; } .scale-label:hover { color: #ccc; }
@@ -64,7 +64,7 @@
         input[type=range].scale-slider { -webkit-appearance: none; width: 100%; height: 2px; background: transparent; outline: none; margin: 0; cursor: pointer; position: absolute; top: 0; }
         input[type=range].scale-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 12px; height: 12px; border-radius: 50%; background: var(--accent-gold); border: 2px solid #222; cursor: pointer; margin-top: -5px; }
 
-        /* COLORS (6 Cols) */
+        /* COLORS */
         .palette-selector { width: 100%; margin-bottom: 15px; }
         .pairs-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin-bottom: 15px; }
         .pair-btn { width: 100%; aspect-ratio: 1; border-radius: 50%; cursor: pointer; border: 1px solid transparent; position: relative; transition: transform 0.2s; }
@@ -72,35 +72,19 @@
         .pair-btn.active { border-color: #fff; transform: scale(1.15); box-shadow: 0 0 10px rgba(255,255,255,0.4); z-index: 2; }
         .pair-heart { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 14px; line-height: 1; }
 
-        /* LAYOUTS (VISUAL FIXED) */
+        /* LAYOUTS */
         .layout-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 10px; }
-        .layout-card { 
-            aspect-ratio: 1; background: var(--card-bg); border: 1px solid #444; cursor: pointer; border-radius: 4px; 
-            position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; 
-            gap: 6px; transition: all 0.2s; overflow: hidden;
-        }
+        .layout-card { aspect-ratio: 1; background: var(--card-bg); border: 1px solid #444; cursor: pointer; border-radius: 4px; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; transition: all 0.2s; overflow: hidden; }
         .layout-card:hover { border-color: #777; background: var(--card-hover); }
         .layout-card.active { border-color: var(--accent-gold); box-shadow: 0 0 8px rgba(212, 175, 55, 0.2); }
         .layout-name { font-size: 9px; color: #777; margin-top: 2px; text-align: center; }
-
-        /* Miniatures */
         .mini-group { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 100%; }
-        .mini-line { width: 50%; height: 1px; background: #666; } 
-        .mini-line.short { width: 30%; }
+        .mini-line { width: 50%; height: 1px; background: #666; } .mini-line.short { width: 30%; }
         .mini-icon { font-size: 10px; color: #777; line-height: 1; }
-        
-        .mini-dashed-circle { 
-            width: 30px; height: 30px; border: 1px dashed #666; border-radius: 50%; 
-            display: grid; place-items: center; margin: 2px 0;
-        }
+        .mini-dashed-circle { width: 30px; height: 30px; border: 1px dashed #666; border-radius: 50%; display: grid; place-items: center; margin: 2px 0; }
         .mini-dashed-circle::after { content: '+'; color: #666; font-size: 12px; }
-
-        .mini-dashed-rect { 
-            width: 36px; height: 24px; border: 1px dashed #666; 
-            display: grid; place-items: center; margin: 2px 0;
-        }
+        .mini-dashed-rect { width: 36px; height: 24px; border: 1px dashed #666; display: grid; place-items: center; margin: 2px 0; }
         .mini-dashed-rect::after { content: '+'; color: #666; font-size: 12px; }
-
         .mini-mag-container { width: 100%; height: 100%; background: #333; display: flex; flex-direction: column; align-items: center; padding-top: 8px; }
         .mini-mag-title { width: 70%; height: 2px; background: #fff; margin-bottom: 2px; }
 
@@ -111,6 +95,12 @@
         .tool-btn:hover { border-color: #777; color: #fff; background: #333; }
         .tool-btn.active { border-color: var(--accent-gold); color: var(--accent-gold); background: #222; }
         .tool-btn.red:hover { border-color: #962f2f; color: #962f2f; }
+
+        /* SPINE TOGGLES */
+        .spine-controls { display: flex; gap: 5px; margin-bottom: 15px; }
+        .spine-btn { flex: 1; border: 1px solid #444; background: var(--input-bg); color: #777; padding: 10px 5px; cursor: pointer; font-size: 10px; text-transform: uppercase; text-align: center; transition: 0.2s; }
+        .spine-btn:hover { color: #ccc; border-color: #666; }
+        .spine-btn.active { border-color: var(--accent-gold); color: #fff; background: #222; }
 
         /* INPUTS */
         .input-row-icon { display: flex; gap: 10px; align-items: stretch; margin-bottom: 15px; height: 38px; }
@@ -285,15 +275,17 @@
         
         <div class="section">
             <h2>5. Детали</h2>
-            <label>Корешок (Вкл/Выкл Символ)</label>
-            <div class="input-row-icon">
-                <div id="spineIconBtn" class="icon-trigger-btn" onclick="toggleSpineSymbol()"></div>
-                <input type="text" id="spineInput" placeholder="Текст на корешке..." style="margin-bottom:0;">
+            <label>Корешок (Элементы)</label>
+            <div class="spine-controls">
+                <div id="btnSpineSymbol" class="spine-btn active" onclick="toggleSpinePart('symbol')">❤</div>
+                <div id="btnSpineTitle" class="spine-btn" onclick="toggleSpinePart('title')">Название</div>
+                <div id="btnSpineDate" class="spine-btn" onclick="toggleSpinePart('date')">Дата</div>
             </div>
+
             <label>Копирайт / QR</label>
             <div class="input-row-icon">
                 <div id="qrBtn" class="icon-trigger-btn" style="font-size:12px; font-family:'Tenor Sans';" onclick="openQRModal()">QR</div>
-                <input type="text" id="copyrightInput" value="DESIGN BY MALEVICH" placeholder="Копирайт..." style="margin-bottom:0;">
+                <input type="text" id="copyrightInput" value="" placeholder="Photo by..." style="margin-bottom:0;">
             </div>
         </div>
 
@@ -359,12 +351,15 @@
             maskType: 'rect',
             text: { 
                 lines: [ { text: "", upper: false }, { text: "", upper: false }, { text: "", upper: false } ],
-                date: "", spine: "", copyright: "DESIGN BY MALEVICH", 
+                date: "", spine: "", copyright: "", 
                 font: "Tenor Sans", color: "#1a1a1a", scale: 1.0 
             },
             coverColor: "#FFFFFF",
             images: { icon: null, main: null }, 
-            spineSymbolEnabled: true,
+            
+            // SPINE STATE
+            spine: { symbol: true, title: false, date: false },
+            
             qr: { enabled: false, url: "" },
             visualW: 0, visualH: 0
         };
@@ -382,12 +377,7 @@
 
         // --- INIT & LOGIC ---
         function initColors() {
-            try {
-                if(typeof DESIGNER_PALETTES !== 'undefined') {
-                    changeCollection('Wedding Trends'); 
-                }
-            } catch(e) { console.error("Assets not loaded yet"); }
-            
+            try { if(typeof DESIGNER_PALETTES !== 'undefined') changeCollection('Wedding Trends'); } catch(e) {}
             document.getElementById('customCoverPicker').oninput = (e) => { state.coverColor = e.target.value; renderLayout(); };
             document.getElementById('customTextPicker').oninput = (e) => { state.text.color = e.target.value; updateSymbolUI(); renderLayout(); };
         }
@@ -396,10 +386,8 @@
             const grid = document.getElementById('pairsGrid');
             const customBlock = document.getElementById('customPickers');
             grid.innerHTML = '';
-            
             if(name === 'Custom') { grid.classList.add('hidden'); customBlock.classList.remove('hidden'); return; }
             grid.classList.remove('hidden'); customBlock.classList.add('hidden');
-
             if(typeof DESIGNER_PALETTES !== 'undefined' && DESIGNER_PALETTES[name]) {
                 DESIGNER_PALETTES[name].forEach(pair => {
                     const btn = document.createElement('div');
@@ -429,9 +417,7 @@
         function loadDefaultAssets() {
             initColors();
             setTimeout(() => { document.getElementById('app-loader').style.opacity = '0'; setTimeout(() => document.getElementById('app-loader').style.display='none', 800); }, 1500);
-            
             const relPath = 'icons/love/01heart.png';
-            // Safety check for path
             loadSimpleImage('assets/print/' + relPath, (url1) => {
                 const final = url1 || ('assets/preview/' + relPath);
                 loadSimpleImage(final, (validUrl) => { if(validUrl) state.images.icon = validUrl; finishInit(); });
@@ -440,28 +426,30 @@
 
         function finishInit() { updateSymbolUI(); setLayout('text_icon', document.querySelector('.layout-card.active')); updateCanvasDimensions(); }
 
-        // --- TEXT BUILDER ---
         window.toggleCase = (rowIdx) => { const i = rowIdx - 1; state.text.lines[i].upper = !state.text.lines[i].upper; document.getElementById(`btnTt${rowIdx}`).classList.toggle('active', state.text.lines[i].upper); renderLayout(); };
         window.showRow = (rowIdx) => { document.getElementById(`row${rowIdx}`).classList.remove('hidden'); };
         window.hideRow = (rowIdx) => { document.getElementById(`row${rowIdx}`).classList.add('hidden'); document.getElementById(`inputLine${rowIdx}`).value = ""; state.text.lines[rowIdx-1].text = ""; renderLayout(); };
 
         function updateSymbolUI() {
             const globalBtn = document.getElementById('globalSymbolBtn');
-            const spineBtn = document.getElementById('spineIconBtn');
+            // Spine toggles get color update in logic, but visuals are static CSS mostly
             if(state.images.icon) {
                 globalBtn.style.backgroundImage = `url(${state.images.icon})`;
                 globalBtn.classList.add('active'); globalBtn.style.borderColor = state.text.color;
-                spineBtn.style.backgroundImage = `url(${state.images.icon})`;
-                spineBtn.classList.toggle('active', state.spineSymbolEnabled);
-                spineBtn.style.opacity = state.spineSymbolEnabled ? 1 : 0.5;
-                spineBtn.style.borderColor = state.spineSymbolEnabled ? state.text.color : '#444';
             } else {
                 globalBtn.style.backgroundImage = 'none'; globalBtn.classList.remove('active'); globalBtn.style.borderColor = '#444';
-                spineBtn.style.backgroundImage = 'none'; spineBtn.classList.remove('active'); spineBtn.style.borderColor = '#444';
             }
         }
         window.removeGlobalSymbol = () => { state.images.icon = null; updateSymbolUI(); renderLayout(); };
-        window.toggleSpineSymbol = () => { if(!state.images.icon) return; state.spineSymbolEnabled = !state.spineSymbolEnabled; updateSymbolUI(); renderLayout(); };
+        
+        // --- SPINE LOGIC (NEW) ---
+        window.toggleSpinePart = (part) => {
+            state.spine[part] = !state.spine[part];
+            // Update button visual
+            const btn = document.getElementById(part === 'symbol' ? 'btnSpineSymbol' : part === 'title' ? 'btnSpineTitle' : 'btnSpineDate');
+            btn.classList.toggle('active', state.spine[part]);
+            renderLayout();
+        };
 
         // --- HANDLERS ---
         window.openQRModal = () => { document.getElementById('qrModal').classList.remove('hidden'); }
@@ -492,19 +480,14 @@
             state.images.main = null; 
             if(state.layout === 'magazine' && layoutType !== 'magazine') { state.text.font = document.getElementById('fontSelector').value; }
             if(layoutType === 'magazine') { state.text.font = 'Bodoni Moda'; }
-            if(layoutType === 'graphic') state.maskType = 'circle'; // Default circle for graphics
+            if(layoutType === 'graphic') state.maskType = 'circle';
             else state.maskType = 'rect';
             renderLayout();
         }
 
-        // --- TRIGGER & GALLERY LOGIC ---
         window.triggerAssetLoader = () => {
-            if(state.layout === 'graphic') {
-                openGallery('graphics', 'main');
-            } else {
-                // For Photo layouts, go straight to upload/crop
-                document.getElementById('imageLoader').click();
-            }
+            if(state.layout === 'graphic') openGallery('graphics', 'main');
+            else document.getElementById('imageLoader').click();
         }
 
         let curGalTarget = 'main'; 
@@ -512,38 +495,19 @@
             curGalTarget = target; 
             document.getElementById('globalSymbolBtn').classList.remove('pulse-attention'); 
             document.getElementById('galleryModal').classList.remove('hidden'); 
-            
             const upBtn = document.getElementById('galUploadBtn');
-            if(type === 'icons') {
-                upBtn.innerText = "Загрузить свою иконку";
-                upBtn.onclick = () => document.getElementById('iconLoader').click();
-            } else {
-                upBtn.innerText = "Загрузить свое фото";
-                upBtn.onclick = () => document.getElementById('imageLoader').click();
-            }
-
+            if(type === 'icons') { upBtn.innerText = "Загрузить свою иконку"; upBtn.onclick = () => document.getElementById('iconLoader').click(); } 
+            else { upBtn.innerText = "Загрузить свое фото"; upBtn.onclick = () => document.getElementById('imageLoader').click(); }
             const tabs = document.getElementById('galleryTabs'); tabs.innerHTML = ''; 
-            // Separate access for types
-            let db = {};
-            if(type === 'icons') db = ASSETS_DB.icons;
-            else if(type === 'graphics') db = ASSETS_DB.graphics;
-            // Fallback if needed, though we strictly separate now
+            let db = (type === 'icons') ? ASSETS_DB.icons : ASSETS_DB.graphics;
             if(!db) db = ASSETS_DB.icons;
-
-            Object.keys(db).forEach((cat, i) => { 
-                const t = document.createElement('div'); t.className = `gallery-tab ${i===0?'active':''}`; t.innerText = cat; 
-                t.onclick = () => { document.querySelectorAll('.gallery-tab').forEach(x=>x.classList.remove('active')); t.classList.add('active'); loadGal(type, cat); }; 
-                tabs.appendChild(t); 
-            }); 
+            Object.keys(db).forEach((cat, i) => { const t = document.createElement('div'); t.className = `gallery-tab ${i===0?'active':''}`; t.innerText = cat; t.onclick = () => { document.querySelectorAll('.gallery-tab').forEach(x=>x.classList.remove('active')); t.classList.add('active'); loadGal(type, cat); }; tabs.appendChild(t); }); 
             if(Object.keys(db).length) loadGal(type, Object.keys(db)[0]); 
         }
 
         function loadGal(type, cat) { 
             const grid = document.getElementById('galleryGrid'); 
-            let files = [];
-            if(type === 'icons') files = ASSETS_DB.icons[cat] || [];
-            else if(type === 'graphics') files = ASSETS_DB.graphics[cat] || [];
-            
+            let files = (type === 'icons' ? ASSETS_DB.icons[cat] : ASSETS_DB.graphics[cat]) || [];
             grid.innerHTML = ''; 
             for(let f of files) { 
                 const item = document.createElement('div'); item.className = 'gallery-item'; 
@@ -557,15 +521,8 @@
                     loadSimpleImage(printUrl, (url1) => { 
                         let finalUrl = url1 || previewUrl; 
                         document.getElementById('galleryModal').classList.add('hidden'); 
-                        if(curGalTarget === 'global') { 
-                            state.images.icon = finalUrl; updateSymbolUI(); renderLayout(); 
-                        } else { 
-                            // Graphic Selected
-                            if(type === 'graphics') {
-                                state.images.main = { src: finalUrl, cropInfo: { scale: 1, left: 0, top: 0, slotPixelSize: 100 } }; 
-                                renderLayout();
-                            }
-                        } 
+                        if(curGalTarget === 'global') { state.images.icon = finalUrl; updateSymbolUI(); renderLayout(); } 
+                        else { if(type === 'graphics') { state.images.main = { src: finalUrl, cropInfo: { scale: 1, left: 0, top: 0, slotPixelSize: 100 } }; renderLayout(); } } 
                     }); 
                 }; 
                 grid.appendChild(item); 
@@ -573,56 +530,41 @@
         }
         
         window.closeGallery = () => document.getElementById('galleryModal').classList.add('hidden');
-        window.handleGalleryUpload = () => {
-            // Handled dynamically
-        };
+        window.handleGalleryUpload = () => { };
 
-        // File Loaders
         document.getElementById('iconLoader').onchange = (e) => { const r = new FileReader(); r.onload = (ev) => { state.images.icon = ev.target.result; updateSymbolUI(); renderLayout(); document.getElementById('galleryModal').classList.add('hidden'); }; if(e.target.files[0]) r.readAsDataURL(e.target.files[0]); };
         document.getElementById('imageLoader').onchange = (e) => { const r = new FileReader(); r.onload = (ev) => { document.getElementById('galleryModal').classList.add('hidden'); openCropper(ev.target.result); }; if(e.target.files[0]) r.readAsDataURL(e.target.files[0]); e.target.value = ''; };
 
-        // Cropper
         function initCrop() { if(!cropCanvas) { cropCanvas = new fabric.Canvas('cropCanvas', { width: CROP_CANVAS_SIZE, height: CROP_CANVAS_SIZE, backgroundColor: '#111', selection: false }); } cropCanvas.clear(); cropCanvas.setBackgroundColor('#111'); }
-        window.setCropMask = (w, h) => {
-            if(w === 'circle') { state.slotSize = { w: 6, h: 6 }; state.maskType = 'circle'; }
-            else { state.slotSize = { w: w, h: h }; state.maskType = 'rect'; }
-            if(tempImgObject) drawCropOverlay();
-        };
+        window.setCropMask = (w, h) => { if(w === 'circle') { state.slotSize = { w: 6, h: 6 }; state.maskType = 'circle'; } else { state.slotSize = { w: w, h: h }; state.maskType = 'rect'; } if(tempImgObject) drawCropOverlay(); };
         function drawCropOverlay() {
             cropCanvas.getObjects().forEach(o => { if(o !== tempImgObject) cropCanvas.remove(o); });
             const aspect = state.slotSize.w / state.slotSize.h;
             let slotPW, slotPH; 
-            if(aspect >= 1) { slotPW = CROP_CANVAS_SIZE*0.8; slotPH = slotPW/aspect; } 
-            else { slotPH = CROP_CANVAS_SIZE*0.8; slotPW = slotPH*aspect; }
+            if(aspect >= 1) { slotPW = CROP_CANVAS_SIZE*0.8; slotPH = slotPW/aspect; } else { slotPH = CROP_CANVAS_SIZE*0.8; slotPW = slotPH*aspect; }
             activeCropSlot = { w: slotPW, h: slotPH };
             const cx = CROP_CANVAS_SIZE/2, cy = CROP_CANVAS_SIZE/2;
             const overlayColor = 'rgba(0,0,0,0.7)';
-            
             if(state.maskType === 'circle') {
                 const r = slotPW/2;
                 const path = new fabric.Path(`M 0 0 H ${CROP_CANVAS_SIZE} V ${CROP_CANVAS_SIZE} H 0 Z M ${cx} ${cy-r} A ${r} ${r} 0 1 0 ${cx} ${cy+r} A ${r} ${r} 0 1 0 ${cx} ${cy-r} Z`, { fill: overlayColor, selectable: false, evented: false, fillRule: 'evenodd' });
-                cropCanvas.add(path);
-                cropCanvas.add(new fabric.Circle({ radius: r, left: cx, top: cy, originX:'center', originY:'center', fill: 'transparent', stroke: '#fff', strokeWidth: 1, selectable: false, evented: false }));
+                cropCanvas.add(path); cropCanvas.add(new fabric.Circle({ radius: r, left: cx, top: cy, originX:'center', originY:'center', fill: 'transparent', stroke: '#fff', strokeWidth: 1, selectable: false, evented: false }));
             } else {
                 const path = new fabric.Path(`M 0 0 H ${CROP_CANVAS_SIZE} V ${CROP_CANVAS_SIZE} H 0 Z M ${cx-slotPW/2} ${cy-slotPH/2} H ${cx+slotPW/2} V ${cy+slotPH/2} H ${cx-slotPW/2} Z`, { fill: overlayColor, selectable: false, evented: false });
-                cropCanvas.add(path);
-                cropCanvas.add(new fabric.Rect({ left: cx, top: cy, width: slotPW, height: slotPH, fill: 'transparent', stroke: '#fff', strokeWidth: 1, originX: 'center', originY: 'center', selectable: false, evented: false }));
+                cropCanvas.add(path); cropCanvas.add(new fabric.Rect({ left: cx, top: cy, width: slotPW, height: slotPH, fill: 'transparent', stroke: '#fff', strokeWidth: 1, originX: 'center', originY: 'center', selectable: false, evented: false }));
             }
             cropCanvas.requestRenderAll();
         }
 
         function openCropper(url) { 
             document.getElementById('cropperModal').classList.remove('hidden'); initCrop();
-            // Intelligent mask default?
             fabric.Image.fromURL(url, (img) => { 
                 tempImgObject = img; 
-                let slotPW, slotPH; 
-                const aspect = state.slotSize.w / state.slotSize.h;
+                let slotPW, slotPH; const aspect = state.slotSize.w / state.slotSize.h;
                 if(aspect >= 1) { slotPW = CROP_CANVAS_SIZE*0.8; slotPH = slotPW/aspect; } else { slotPH = CROP_CANVAS_SIZE*0.8; slotPW = slotPH*aspect; }
                 const scale = Math.max(slotPW/img.width, slotPH/img.height); 
                 img.set({ left: CROP_CANVAS_SIZE/2, top: CROP_CANVAS_SIZE/2, originX: 'center', originY: 'center', scaleX: scale, scaleY: scale, hasControls: false, hasBorders: false }); 
-                cropCanvas.add(img); 
-                drawCropOverlay();
+                cropCanvas.add(img); drawCropOverlay();
                 const slider = document.getElementById('zoomSlider'); slider.min = scale*0.5; slider.max = scale*4; slider.value = scale; 
                 slider.oninput = function() { img.scale(parseFloat(this.value)); cropCanvas.requestRenderAll(); }; 
             }); 
@@ -643,7 +585,6 @@
             const maxBookW = 30*2 + SPINE_WIDTH_CM; const maxBookH = 30;
             const basePPI = Math.max(5, Math.min((container.clientWidth - margin*2) / maxBookW, (container.clientHeight - margin*2) / maxBookH));
             state.ppi = basePPI * RENDER_SCALE;
-            
             const curW = state.bookSize*2 + SPINE_WIDTH_CM; const curH = state.bookSize;
             canvas.setWidth(curW * state.ppi); canvas.setHeight(curH * state.ppi);
             canvas.wrapperEl.style.width = `${curW * basePPI}px`; canvas.wrapperEl.style.height = `${curH * basePPI}px`;
@@ -664,29 +605,61 @@
 
             const bottomBase = h - (1.5 * state.ppi);
 
-            // Spine
-            if(state.images.icon && state.spineSymbolEnabled) {
+            // --- SPINE RENDER ---
+            // 1. Symbol
+            let symbolHeight = 0;
+            if(state.images.icon && state.spine.symbol) {
                 const size = 1.0 * state.ppi; 
+                symbolHeight = size;
                 fabric.Image.fromURL(state.images.icon, (img) => {
                     img.scaleToWidth(size); img.set({ originX: 'center', originY: 'bottom', left: spineX, top: bottomBase, selectable: false, opacity: GLOBAL_OPACITY });
                     const filter = new fabric.Image.filters.BlendColor({ color: state.text.color, mode: 'tint', alpha: 1 }); img.filters.push(filter); img.applyFilters(); canvas.add(img);
                 });
             }
-            const spineInput = document.getElementById('spineInput').value;
-            const spineStr = spineInput || "THE WEDDING DAY";
-            const spineOpacity = spineInput ? GLOBAL_OPACITY : 0.3;
-            let textBottom = bottomBase; if(state.images.icon && state.spineSymbolEnabled) textBottom -= (1.8 * state.ppi); 
-            canvas.add(new fabric.Text(spineStr, { fontFamily: state.text.font, fontSize: TYPO_CONFIG.baseDetails * state.ppi * state.text.scale, fill: state.text.color, opacity: spineOpacity, originX: 'left', originY: 'center', left: spineX, top: textBottom, angle: -90, selectable: false }));
 
-            // Back
-            const copyTxt = new fabric.Text(state.text.copyright, { left: backCenter, top: bottomBase, fontSize: TYPO_CONFIG.baseCopy * state.ppi * state.text.scale, fontFamily: state.text.font, fill: state.text.color, opacity: GLOBAL_OPACITY * 0.7, originX: 'center', originY: 'bottom', selectable: false, letterSpacing: 50 });
-            canvas.add(copyTxt);
+            // 2. Text (Name + Date)
+            let spineTextParts = [];
+            
+            // Get inputs
+            const l1 = document.getElementById('inputLine1').value;
+            const l2 = document.getElementById('inputLine2').value;
+            const l3 = document.getElementById('inputLine3').value;
+            const d1 = document.getElementById('dateLine').value;
+
+            if(state.spine.title) {
+                const raw = [l1, l2, l3];
+                const processed = raw.map((txt, i) => state.text.lines[i].upper ? txt.toUpperCase() : txt).filter(Boolean);
+                if(processed.length > 0) spineTextParts.push(processed.join(" "));
+            }
+            if(state.spine.date && d1) {
+                spineTextParts.push(d1);
+            }
+
+            if(spineTextParts.length > 0) {
+                const spineStr = spineTextParts.join("   "); // Space between title and date
+                let textBottom = bottomBase; 
+                if(state.spine.symbol && state.images.icon) textBottom -= (1.8 * state.ppi); 
+                
+                canvas.add(new fabric.Text(spineStr, { 
+                    fontFamily: state.text.font, 
+                    fontSize: TYPO_CONFIG.baseDetails * state.ppi * state.text.scale, 
+                    fill: state.text.color, opacity: GLOBAL_OPACITY, 
+                    originX: 'left', originY: 'center', left: spineX, top: textBottom, angle: -90, selectable: false 
+                }));
+            }
+
+            // 2. BACK COVER
+            const copyInput = document.getElementById('copyrightInput').value;
+            if(copyInput) {
+                const copyTxt = new fabric.Text(copyInput, { left: backCenter, top: bottomBase, fontSize: TYPO_CONFIG.baseCopy * state.ppi * state.text.scale, fontFamily: state.text.font, fill: state.text.color, opacity: GLOBAL_OPACITY * 0.7, originX: 'center', originY: 'bottom', selectable: false, letterSpacing: 50 });
+                canvas.add(copyTxt);
+            }
             if(state.qr.enabled && state.qr.url) {
                 const qrSize = 1.2 * state.ppi; const qrObj = new QRious({ value: state.qr.url, size: 500, level: 'H', foreground: state.text.color, backgroundAlpha: 0 });
                 fabric.Image.fromURL(qrObj.toDataURL(), (img) => { img.scaleToWidth(qrSize); img.set({ left: backCenter, top: bottomBase - (0.5 * state.ppi) - (0.35 * state.ppi) - (0.5*state.ppi), originX: 'center', originY: 'bottom', selectable: false, opacity: GLOBAL_OPACITY }); canvas.add(img); });
             }
 
-            // Front
+            // 3. FRONT COVER
             const cy = h/2; const gap = 2.0 * state.ppi;
             let triggerX = frontCenter; let triggerY = cy;
 
@@ -786,17 +759,13 @@
                 fabric.Image.fromURL(state.images.main.src, (img) => {
                     const info = state.images.main.cropInfo; const scaleFactor = w / info.slotPixelSize;
                     img.set({ scaleX: info.scale * scaleFactor, scaleY: info.scale * scaleFactor, left: x + (info.left * scaleFactor), top: y + (info.top * scaleFactor), originX: 'center', originY: 'center', selectable: false });
-                    
-                    // Apply clip path based on Mask Type
                     let clip;
                     if(state.maskType === 'circle') {
-                        // Circle clip relative to image
                         clip = new fabric.Circle({ radius: (w * (1/(info.scale * scaleFactor))) / 2, left: -(info.left * scaleFactor) / (info.scale * scaleFactor), top: -(info.top * scaleFactor) / (info.scale * scaleFactor), originX: 'center', originY: 'center' });
                     } else {
                         clip = new fabric.Rect({ width: w * (1/(info.scale * scaleFactor)), height: h * (1/(info.scale * scaleFactor)), left: -(info.left * scaleFactor) / (info.scale * scaleFactor), top: -(info.top * scaleFactor) / (info.scale * scaleFactor), originX: 'center', originY: 'center' });
                     }
                     img.clipPath = clip;
-
                     if (state.layout === 'graphic') { img.set({ opacity: GLOBAL_OPACITY }); const filter = new fabric.Image.filters.BlendColor({ color: state.text.color, mode: 'tint', alpha: 1 }); img.filters.push(filter); img.applyFilters(); }
                     canvas.add(img);
                 });
