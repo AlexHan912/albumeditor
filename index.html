@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MALEVICH | Configurator V43 (Direct Touch)</title>
+    <title>MALEVICH | Configurator V44 (Visual Polish)</title>
     
     <script src="assets.js"></script>
 
@@ -29,7 +29,7 @@
         canvas.lower-canvas, canvas.upper-canvas { width: 100% !important; height: 100% !important; }
         #controls { width: 400px; background: var(--bg-panel); color: var(--text-panel); padding: 30px; overflow-y: auto; display: flex; flex-direction: column; gap: 30px; box-shadow: -10px 0 30px rgba(0,0,0,0.2); z-index: 100; flex-shrink: 0; }
 
-        /* DIRECT TOUCH TRIGGER (NEW) */
+        /* TRIGGER BUTTON */
         #photoTrigger {
             position: absolute; width: 50px; height: 50px;
             background: rgba(255,255,255,0.9); border-radius: 50%;
@@ -37,26 +37,19 @@
             color: #333; font-size: 24px; cursor: pointer;
             box-shadow: 0 0 0 0 rgba(255,255,255, 0.7);
             animation: pulse-white 2s infinite;
-            z-index: 10; pointer-events: auto;
-            transition: transform 0.2s;
+            z-index: 10; pointer-events: auto; transition: transform 0.2s;
         }
         #photoTrigger:hover { transform: scale(1.1); background: #fff; }
         #photoTrigger::after { content: '+'; }
-        .hidden { display: none !important; }
+        @keyframes pulse-white { 0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7); } 70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(255, 255, 255, 0); } 100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); } }
 
-        @keyframes pulse-white {
-            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7); }
-            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(255, 255, 255, 0); }
-            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); }
-        }
-
-        /* TYPOGRAPHY */
+        /* TYPOGRAPHY & LABELS */
         h1 { font-family: 'Bodoni Moda', serif; font-size: 24px; color: #fff; letter-spacing: 3px; margin-bottom: 10px; text-align: center; font-weight: 400; }
         h2 { font-family: 'Bodoni Moda', serif; font-size: 13px; color: var(--accent-gold); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 12px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-top: 5px; }
         label { display: block; margin-bottom: 8px; font-size: 10px; font-weight: bold; color: #888; text-transform: uppercase; letter-spacing: 1px; }
 
         /* FORMATS */
-        .format-selector { display: flex; gap: 15px; justify-content: flex-start; align-items: flex-end; margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #333; overflow-x: auto; padding-top: 5px; }
+        .format-selector { display: flex; gap: 10px; justify-content: flex-start; align-items: flex-end; margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #333; overflow-x: auto; padding-top: 5px; }
         .format-card { border: 1px solid #444; background: var(--card-bg); cursor: pointer; display: flex; justify-content: center; align-items: center; transition: all 0.2s; position: relative; flex-shrink: 0; }
         .format-card:hover { border-color: #777; background: var(--card-hover); }
         .format-card.active { border-color: var(--accent-gold); box-shadow: 0 0 15px rgba(212, 175, 55, 0.4); background: #333; transform: translateY(-2px); }
@@ -71,7 +64,7 @@
         input[type=range].scale-slider { -webkit-appearance: none; width: 100%; height: 2px; background: transparent; outline: none; margin: 0; cursor: pointer; position: absolute; top: 0; }
         input[type=range].scale-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 12px; height: 12px; border-radius: 50%; background: var(--accent-gold); border: 2px solid #222; cursor: pointer; margin-top: -5px; }
 
-        /* HARMONIOUS PAIRS (6 COLS) */
+        /* COLORS (6 Cols) */
         .palette-selector { width: 100%; margin-bottom: 15px; }
         .pairs-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin-bottom: 15px; }
         .pair-btn { width: 100%; aspect-ratio: 1; border-radius: 50%; cursor: pointer; border: 1px solid transparent; position: relative; transition: transform 0.2s; }
@@ -79,19 +72,42 @@
         .pair-btn.active { border-color: #fff; transform: scale(1.15); box-shadow: 0 0 10px rgba(255,255,255,0.4); z-index: 2; }
         .pair-heart { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 14px; line-height: 1; }
 
-        /* LAYOUTS */
+        /* LAYOUTS (REFINED) */
         .layout-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 10px; }
-        .layout-card { aspect-ratio: 1; background: var(--card-bg); border: 1px solid #444; cursor: pointer; border-radius: 4px; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; transition: all 0.2s; }
+        .layout-card { 
+            aspect-ratio: 1; background: var(--card-bg); border: 1px solid #444; cursor: pointer; border-radius: 4px; 
+            position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            gap: 6px; transition: all 0.2s; overflow: hidden;
+        }
         .layout-card:hover { border-color: #777; background: var(--card-hover); }
         .layout-card.active { border-color: var(--accent-gold); box-shadow: 0 0 8px rgba(212, 175, 55, 0.2); }
-        .layout-name { font-size: 9px; color: #777; margin-top: 5px; text-align: center; }
-        .mini-line { width: 60%; height: 2px; background: #666; border-radius: 2px; } .mini-line.short { width: 40%; }
-        .mini-icon { width: 12px; height: 12px; border: 1px solid #777; border-radius: 50%; display: grid; place-items: center; }
-        .mini-icon::after { content: '❤'; font-size: 8px; color: #777; line-height: 1; }
-        .mini-photo { width: 70%; height: 50%; background: #333; border: 1px dashed #555; }
-        .mini-art { width: 60%; height: 60%; border: 1px solid #777; border-radius: 50%; }
-        .mini-mag { width: 100%; height: 100%; background: #444; display:flex; flex-direction:column; justify-content: flex-start; padding-top: 5px; align-items: center; }
-        .mini-mag-title { width: 80%; height: 3px; background: #fff; margin-bottom: 2px; box-shadow: 0 1px 2px rgba(0,0,0,0.5); }
+        .layout-name { font-size: 9px; color: #777; margin-top: 2px; text-align: center; }
+
+        /* Miniatures Visuals */
+        .mini-group { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 100%; }
+        
+        .mini-line { width: 50%; height: 1px; background: #666; } 
+        .mini-line.short { width: 30%; }
+        
+        /* Icon (Heart) */
+        .mini-icon { font-size: 10px; color: #777; line-height: 1; }
+        
+        /* Dashed Placeholders with Plus */
+        .mini-dashed-circle { 
+            width: 30px; height: 30px; border: 1px dashed #666; border-radius: 50%; 
+            display: grid; place-items: center; margin: 2px 0;
+        }
+        .mini-dashed-circle::after { content: '+'; color: #666; font-size: 12px; }
+
+        .mini-dashed-rect { 
+            width: 36px; height: 24px; border: 1px dashed #666; 
+            display: grid; place-items: center; margin: 2px 0;
+        }
+        .mini-dashed-rect::after { content: '+'; color: #666; font-size: 12px; }
+
+        /* Magazine */
+        .mini-mag-container { width: 100%; height: 100%; background: #333; display: flex; flex-direction: column; align-items: center; padding-top: 8px; }
+        .mini-mag-title { width: 70%; height: 2px; background: #fff; margin-bottom: 2px; }
 
         /* TEXT BUILDER */
         .text-row { display: flex; gap: 5px; margin-bottom: 8px; align-items: stretch; height: 38px; }
@@ -105,14 +121,13 @@
         .input-row-icon { display: flex; gap: 10px; align-items: stretch; margin-bottom: 15px; height: 38px; }
         .icon-trigger-btn { width: 46px; border: 1px solid #444; background: var(--input-bg); display: grid; place-items: center; cursor: pointer; transition: 0.3s; color: #555; font-size: 18px; background-size: 60%; background-position: center; background-repeat: no-repeat; flex-shrink: 0; height: 100%; }
         .icon-trigger-btn:hover { border-color: #777; color: #999; } .icon-trigger-btn.active { border-color: var(--accent-gold); } 
-        @keyframes glow { 0% { box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.4); border-color: #777; } 50% { box-shadow: 0 0 10px 0 rgba(212, 175, 55, 0.8); border-color: var(--accent-gold); } 100% { box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.4); border-color: #777; } }
-        .pulse-attention { animation: glow 2s infinite; }
         select, input[type="text"] { font-family: 'Tenor Sans', sans-serif; width: 100%; padding: 0 12px; margin-bottom: 15px; background: var(--input-bg); border: 1px solid var(--border-color); color: #fff; border-radius: 2px; font-size: 14px; transition: border 0.3s; height: 38px; line-height: 38px;}
         select:focus, input:focus { border-color: var(--accent-gold); }
         button { background-color: #fff; color: #000; cursor: pointer; border: none; padding: 12px; font-weight: bold; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; transition: all 0.3s; }
         button:hover { background-color: var(--accent-gold); color: #fff; }
         button.secondary { background: transparent; border: 1px solid #555; color: #ccc; }
         button.secondary:hover { border-color: #fff; color: #fff; background: transparent; }
+        .hidden { display: none !important; }
 
         /* MODALS */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 2000; display: flex; justify-content: center; align-items: center; }
@@ -149,7 +164,7 @@
 
     <div id="workspace">
         <canvas id="c"></canvas>
-        <div id="photoTrigger" class="hidden" onclick="openGallery('graphics', 'main')"></div>
+        <div id="photoTrigger" class="hidden" onclick="triggerAssetLoader()"></div>
     </div>
 
     <div id="controls">
@@ -233,12 +248,41 @@
         <div class="section">
             <h2>4. Дизайн Обложки</h2>
             <div class="layout-grid">
-                <div class="layout-card" onclick="setLayout('icon', this)"><div class="mini-icon"></div><div class="layout-name">Символ</div></div>
-                <div class="layout-card active" onclick="setLayout('text_icon', this)"><div class="mini-line"></div><div class="mini-line short"></div><div class="mini-icon" style="margin-top:4px"></div><div class="layout-name">Текст+Символ</div></div>
-                <div class="layout-card" onclick="setLayout('graphic', this)"><div class="mini-art"></div><div class="layout-name">Графика</div></div>
-                <div class="layout-card" onclick="setLayout('text', this)"><div class="mini-line"></div><div class="mini-line"></div><div class="mini-line short"></div><div class="layout-name">Текст</div></div>
-                <div class="layout-card" onclick="setLayout('photo_text', this)"><div class="mini-photo"></div><div class="mini-line short" style="margin-top:4px"></div><div class="layout-name">Фото+Текст</div></div>
-                <div class="layout-card" onclick="setLayout('magazine', this)"><div class="mini-mag"><div class="mini-mag-title"></div></div><div class="layout-name">Журнал</div></div>
+                <div class="layout-card" onclick="setLayout('icon', this)">
+                    <div class="mini-icon">❤</div>
+                    <div class="layout-name">Символ</div>
+                </div>
+                <div class="layout-card active" onclick="setLayout('text_icon', this)">
+                    <div class="mini-group">
+                        <div class="mini-line"></div>
+                        <div class="mini-line short"></div>
+                    </div>
+                    <div class="mini-icon" style="margin-top:2px">❤</div>
+                    <div class="layout-name">Текст+Символ</div>
+                </div>
+                <div class="layout-card" onclick="setLayout('graphic', this)">
+                    <div class="mini-dashed-circle"></div>
+                    <div class="layout-name">Графика</div>
+                </div>
+                <div class="layout-card" onclick="setLayout('text', this)">
+                    <div class="mini-group" style="gap:6px">
+                        <div class="mini-line"></div>
+                        <div class="mini-line"></div>
+                        <div class="mini-line short"></div>
+                    </div>
+                    <div class="layout-name">Текст</div>
+                </div>
+                <div class="layout-card" onclick="setLayout('photo_text', this)">
+                    <div class="mini-dashed-rect"></div>
+                    <div class="mini-line short" style="margin-top:4px"></div>
+                    <div class="layout-name">Фото+Текст</div>
+                </div>
+                <div class="layout-card" onclick="setLayout('magazine', this)">
+                    <div class="mini-mag-container">
+                        <div class="mini-mag-title"></div>
+                    </div>
+                    <div class="layout-name">Журнал</div>
+                </div>
             </div>
         </div>
         
@@ -284,7 +328,7 @@
             <div class="gallery-tabs" id="galleryTabs"></div>
             <div class="gallery-grid" id="galleryGrid"></div>
             <div style="border-top:1px solid #333; padding-top:15px; text-align:center;">
-                <button class="secondary" onclick="document.getElementById('imageLoader').click(); closeGallery()">Загрузить свое фото</button>
+                <button id="galUploadBtn" class="secondary" onclick="handleGalleryUpload()">Загрузить свое</button>
             </div>
         </div>
     </div>
@@ -314,8 +358,8 @@
 
         let state = {
             bookSize: 30, layout: 'text_icon', ppi: 10,
-            slotSize: { w: 6, h: 6 }, // Default mask ratio
-            maskType: 'rect', // rect or circle
+            slotSize: { w: 6, h: 6 },
+            maskType: 'rect',
             text: { 
                 lines: [ { text: "", upper: false }, { text: "", upper: false }, { text: "", upper: false } ],
                 date: "", spine: "", copyright: "DESIGN BY MALEVICH", 
@@ -339,7 +383,6 @@
             img.src = path;
         }
 
-        // --- INIT & LOGIC ---
         function initColors() {
             changeCollection('Wedding Trends'); 
             document.getElementById('customCoverPicker').oninput = (e) => { state.coverColor = e.target.value; renderLayout(); };
@@ -351,26 +394,17 @@
             const customBlock = document.getElementById('customPickers');
             grid.innerHTML = '';
             
-            if(name === 'Custom') {
-                grid.classList.add('hidden');
-                customBlock.classList.remove('hidden');
-                return;
-            }
-            grid.classList.remove('hidden');
-            customBlock.classList.add('hidden');
+            if(name === 'Custom') { grid.classList.add('hidden'); customBlock.classList.remove('hidden'); return; }
+            grid.classList.remove('hidden'); customBlock.classList.add('hidden');
 
             if(DESIGNER_PALETTES && DESIGNER_PALETTES[name]) {
                 DESIGNER_PALETTES[name].forEach(pair => {
                     const btn = document.createElement('div');
-                    btn.className = 'pair-btn';
-                    btn.style.backgroundColor = pair.bg;
+                    btn.className = 'pair-btn'; btn.style.backgroundColor = pair.bg;
                     if(pair.bg.toUpperCase() === '#FFFFFF') btn.style.border = '1px solid #ccc';
                     const heart = document.createElement('div');
-                    heart.className = 'pair-heart';
-                    heart.innerText = '❤';
-                    heart.style.color = pair.text;
-                    btn.appendChild(heart);
-                    btn.onclick = () => applyPair(pair, btn);
+                    heart.className = 'pair-heart'; heart.innerText = '❤'; heart.style.color = pair.text;
+                    btn.appendChild(heart); btn.onclick = () => applyPair(pair, btn);
                     grid.appendChild(btn);
                 });
                 if(DESIGNER_PALETTES[name].length > 0) applyPair(DESIGNER_PALETTES[name][0], grid.firstChild);
@@ -378,8 +412,7 @@
         }
 
         function applyPair(pair, btnElement) {
-            state.coverColor = pair.bg;
-            state.text.color = pair.text;
+            state.coverColor = pair.bg; state.text.color = pair.text;
             document.querySelectorAll('.pair-btn').forEach(b => b.classList.remove('active'));
             if(btnElement) btnElement.classList.add('active');
             updateSymbolUI();
@@ -393,7 +426,6 @@
         function loadDefaultAssets() {
             initColors();
             setTimeout(() => { document.getElementById('app-loader').style.opacity = '0'; setTimeout(() => document.getElementById('app-loader').style.display='none', 800); }, 1500);
-            
             const relPath = 'icons/love/01heart.png';
             loadSimpleImage('assets/print/' + relPath, (url1) => {
                 const final = url1 || ('assets/preview/' + relPath);
@@ -403,7 +435,6 @@
 
         function finishInit() { updateSymbolUI(); setLayout('text_icon', document.querySelector('.layout-card.active')); updateCanvasDimensions(); }
 
-        // --- TEXT BUILDER ---
         window.toggleCase = (rowIdx) => { const i = rowIdx - 1; state.text.lines[i].upper = !state.text.lines[i].upper; document.getElementById(`btnTt${rowIdx}`).classList.toggle('active', state.text.lines[i].upper); renderLayout(); };
         window.showRow = (rowIdx) => { document.getElementById(`row${rowIdx}`).classList.remove('hidden'); };
         window.hideRow = (rowIdx) => { document.getElementById(`row${rowIdx}`).classList.add('hidden'); document.getElementById(`inputLine${rowIdx}`).value = ""; state.text.lines[rowIdx-1].text = ""; renderLayout(); };
@@ -426,7 +457,6 @@
         window.removeGlobalSymbol = () => { state.images.icon = null; updateSymbolUI(); renderLayout(); };
         window.toggleSpineSymbol = () => { if(!state.images.icon) return; state.spineSymbolEnabled = !state.spineSymbolEnabled; updateSymbolUI(); renderLayout(); };
 
-        // --- HANDLERS ---
         window.openQRModal = () => { document.getElementById('qrModal').classList.remove('hidden'); }
         window.applyQR = () => {
             const url = document.getElementById('qrLinkInput').value;
@@ -447,17 +477,160 @@
             renderLayout(); document.getElementById('qrModal').classList.add('hidden');
         }
         window.setBookSize = (size, btn) => { state.bookSize = size; document.querySelectorAll('.format-card').forEach(b => b.classList.remove('active')); btn.classList.add('active'); updateCanvasDimensions(); }
+        
         window.setLayout = (layoutType, btn) => {
             state.layout = layoutType;
             document.querySelectorAll('.layout-card').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-            state.images.main = null; // Reset image when changing layout
+            state.images.main = null; 
             if(state.layout === 'magazine' && layoutType !== 'magazine') { state.text.font = document.getElementById('fontSelector').value; }
             if(layoutType === 'magazine') { state.text.font = 'Bodoni Moda'; }
+            if(layoutType === 'graphic') state.maskType = 'circle'; // Default to circle for graphics
+            else state.maskType = 'rect';
             renderLayout();
         }
 
-        // --- RENDER ---
+        // --- TRIGGER & GALLERY LOGIC ---
+        window.triggerAssetLoader = () => {
+            if(state.layout === 'graphic') {
+                openGallery('graphics', 'main');
+            } else {
+                // For Photo layouts, go straight to upload/crop
+                document.getElementById('imageLoader').click();
+            }
+        }
+
+        let curGalTarget = 'main'; 
+        window.openGallery = (type, target) => { 
+            curGalTarget = target; 
+            document.getElementById('globalSymbolBtn').classList.remove('pulse-attention'); 
+            document.getElementById('galleryModal').classList.remove('hidden'); 
+            
+            // Update Upload Button Text/Action based on type
+            const upBtn = document.getElementById('galUploadBtn');
+            if(type === 'icons') {
+                upBtn.innerText = "Загрузить свою иконку";
+                upBtn.onclick = () => document.getElementById('iconLoader').click();
+            } else {
+                upBtn.innerText = "Загрузить свое фото";
+                upBtn.onclick = () => document.getElementById('imageLoader').click();
+            }
+
+            const tabs = document.getElementById('galleryTabs'); tabs.innerHTML = ''; 
+            const db = type === 'icons' ? ASSETS_DB.icons : ASSETS_DB.graphics; 
+            
+            Object.keys(db).forEach((cat, i) => { 
+                const t = document.createElement('div'); t.className = `gallery-tab ${i===0?'active':''}`; t.innerText = cat; 
+                t.onclick = () => { document.querySelectorAll('.gallery-tab').forEach(x=>x.classList.remove('active')); t.classList.add('active'); loadGal(type, cat); }; 
+                tabs.appendChild(t); 
+            }); 
+            if(Object.keys(db).length) loadGal(type, Object.keys(db)[0]); 
+        }
+
+        function loadGal(type, cat) { 
+            const grid = document.getElementById('galleryGrid'); 
+            const files = (type === 'icons' ? ASSETS_DB.icons : ASSETS_DB.graphics)[cat] || []; 
+            grid.innerHTML = ''; 
+            for(let f of files) { 
+                const item = document.createElement('div'); item.className = 'gallery-item'; 
+                const img = document.createElement('img'); 
+                const relPath = `${type}/${cat.toLowerCase()}/${f}`; 
+                const previewUrl = 'assets/preview/' + relPath; 
+                const printUrl = 'assets/print/' + relPath; 
+                img.src = previewUrl; img.onerror = () => { img.src = printUrl; }; 
+                item.appendChild(img); 
+                item.onclick = () => { 
+                    loadSimpleImage(printUrl, (url1) => { 
+                        let finalUrl = url1 || previewUrl; 
+                        document.getElementById('galleryModal').classList.add('hidden'); 
+                        if(curGalTarget === 'global') { 
+                            state.images.icon = finalUrl; updateSymbolUI(); renderLayout(); 
+                        } else { 
+                            // Graphic Selected
+                            if(type === 'graphics') {
+                                state.images.main = { src: finalUrl, cropInfo: { scale: 1, left: 0, top: 0, slotPixelSize: 100 } }; // Simplified logic for graphics (no crop)
+                                // Actually, for proper rendering we might need to mimic cropInfo or adjust renderer
+                                // For V44 let's just treat it as a pre-cropped image
+                                // But renderer expects cropInfo. Let's make a mock one.
+                                // Or better: Open cropper for graphics too? No, requirement says "No crop".
+                                // Let's just set it and let renderer handle 'graphic' layout logic (already assumes full fit)
+                                renderLayout();
+                            }
+                        } 
+                    }); 
+                }; 
+                grid.appendChild(item); 
+            } 
+        }
+        
+        window.closeGallery = () => document.getElementById('galleryModal').classList.add('hidden');
+        window.handleGalleryUpload = () => {
+            // This is handled dynamically in openGallery now
+        };
+
+        // File Loaders
+        document.getElementById('iconLoader').onchange = (e) => { const r = new FileReader(); r.onload = (ev) => { state.images.icon = ev.target.result; updateSymbolUI(); renderLayout(); document.getElementById('galleryModal').classList.add('hidden'); }; if(e.target.files[0]) r.readAsDataURL(e.target.files[0]); };
+        document.getElementById('imageLoader').onchange = (e) => { const r = new FileReader(); r.onload = (ev) => { document.getElementById('galleryModal').classList.add('hidden'); openCropper(ev.target.result); }; if(e.target.files[0]) r.readAsDataURL(e.target.files[0]); e.target.value = ''; };
+
+        // Cropper
+        function initCrop() { if(!cropCanvas) { cropCanvas = new fabric.Canvas('cropCanvas', { width: CROP_CANVAS_SIZE, height: CROP_CANVAS_SIZE, backgroundColor: '#111', selection: false }); } cropCanvas.clear(); cropCanvas.setBackgroundColor('#111'); }
+        window.setCropMask = (w, h) => {
+            if(w === 'circle') { state.slotSize = { w: 6, h: 6 }; state.maskType = 'circle'; }
+            else { state.slotSize = { w: w, h: h }; state.maskType = 'rect'; }
+            if(tempImgObject) drawCropOverlay();
+        };
+        function drawCropOverlay() {
+            cropCanvas.getObjects().forEach(o => { if(o !== tempImgObject) cropCanvas.remove(o); });
+            const aspect = state.slotSize.w / state.slotSize.h;
+            let slotPW, slotPH; 
+            if(aspect >= 1) { slotPW = CROP_CANVAS_SIZE*0.8; slotPH = slotPW/aspect; } 
+            else { slotPH = CROP_CANVAS_SIZE*0.8; slotPW = slotPH*aspect; }
+            activeCropSlot = { w: slotPW, h: slotPH };
+            const cx = CROP_CANVAS_SIZE/2, cy = CROP_CANVAS_SIZE/2;
+            const overlayColor = 'rgba(0,0,0,0.7)';
+            
+            if(state.maskType === 'circle') {
+                const r = slotPW/2;
+                const path = new fabric.Path(`M 0 0 H ${CROP_CANVAS_SIZE} V ${CROP_CANVAS_SIZE} H 0 Z M ${cx} ${cy-r} A ${r} ${r} 0 1 0 ${cx} ${cy+r} A ${r} ${r} 0 1 0 ${cx} ${cy-r} Z`, { fill: overlayColor, selectable: false, evented: false, fillRule: 'evenodd' });
+                cropCanvas.add(path);
+                cropCanvas.add(new fabric.Circle({ radius: r, left: cx, top: cy, originX:'center', originY:'center', fill: 'transparent', stroke: '#fff', strokeWidth: 1, selectable: false, evented: false }));
+            } else {
+                const path = new fabric.Path(`M 0 0 H ${CROP_CANVAS_SIZE} V ${CROP_CANVAS_SIZE} H 0 Z M ${cx-slotPW/2} ${cy-slotPH/2} H ${cx+slotPW/2} V ${cy+slotPH/2} H ${cx-slotPW/2} Z`, { fill: overlayColor, selectable: false, evented: false });
+                cropCanvas.add(path);
+                cropCanvas.add(new fabric.Rect({ left: cx, top: cy, width: slotPW, height: slotPH, fill: 'transparent', stroke: '#fff', strokeWidth: 1, originX: 'center', originY: 'center', selectable: false, evented: false }));
+            }
+            cropCanvas.requestRenderAll();
+        }
+
+        function openCropper(url) { 
+            document.getElementById('cropperModal').classList.remove('hidden'); initCrop();
+            // Intelligent mask default if not set manually by user recently?
+            // Let's keep state.maskType persistent or reset based on layout logic in setLayout
+            fabric.Image.fromURL(url, (img) => { 
+                tempImgObject = img; 
+                let slotPW, slotPH; 
+                // Calc slot dimensions again just for initial scale logic
+                const aspect = state.slotSize.w / state.slotSize.h;
+                if(aspect >= 1) { slotPW = CROP_CANVAS_SIZE*0.8; slotPH = slotPW/aspect; } else { slotPH = CROP_CANVAS_SIZE*0.8; slotPW = slotPH*aspect; }
+                
+                const scale = Math.max(slotPW/img.width, slotPH/img.height); 
+                img.set({ left: CROP_CANVAS_SIZE/2, top: CROP_CANVAS_SIZE/2, originX: 'center', originY: 'center', scaleX: scale, scaleY: scale, hasControls: false, hasBorders: false }); 
+                cropCanvas.add(img); 
+                drawCropOverlay();
+                const slider = document.getElementById('zoomSlider'); slider.min = scale*0.5; slider.max = scale*4; slider.value = scale; 
+                slider.oninput = function() { img.scale(parseFloat(this.value)); cropCanvas.requestRenderAll(); }; 
+            }); 
+        }
+        
+        document.getElementById('applyCropBtn').onclick = () => { 
+            if(!tempImgObject) return; 
+            const offX = tempImgObject.left - CROP_CANVAS_SIZE/2; const offY = tempImgObject.top - CROP_CANVAS_SIZE/2; 
+            state.images.main = { src: tempImgObject.getSrc(), cropInfo: { left: offX, top: offY, scale: tempImgObject.scaleX, slotPixelSize: activeCropSlot.w } }; 
+            renderLayout(); document.getElementById('cropperModal').classList.add('hidden'); 
+        };
+        document.getElementById('cancelCropBtn').onclick = () => document.getElementById('cropperModal').classList.add('hidden');
+
+        // Render Canvas
         function updateCanvasDimensions() {
             const container = document.getElementById('workspace');
             const margin = 20; 
@@ -485,56 +658,42 @@
 
             const bottomBase = h - (1.5 * state.ppi);
 
-            // 1. SPINE
+            // Spine
             if(state.images.icon && state.spineSymbolEnabled) {
                 const size = 1.0 * state.ppi; 
                 fabric.Image.fromURL(state.images.icon, (img) => {
-                    img.scaleToWidth(size);
-                    img.set({ originX: 'center', originY: 'bottom', left: spineX, top: bottomBase, selectable: false, opacity: GLOBAL_OPACITY });
-                    const filter = new fabric.Image.filters.BlendColor({ color: state.text.color, mode: 'tint', alpha: 1 });
-                    img.filters.push(filter); img.applyFilters();
-                    canvas.add(img);
+                    img.scaleToWidth(size); img.set({ originX: 'center', originY: 'bottom', left: spineX, top: bottomBase, selectable: false, opacity: GLOBAL_OPACITY });
+                    const filter = new fabric.Image.filters.BlendColor({ color: state.text.color, mode: 'tint', alpha: 1 }); img.filters.push(filter); img.applyFilters(); canvas.add(img);
                 });
             }
             const spineInput = document.getElementById('spineInput').value;
-            const hasSpineText = !!spineInput;
-            const spineStr = hasSpineText ? spineInput : "THE WEDDING DAY";
-            const spineOpacity = hasSpineText ? GLOBAL_OPACITY : 0.3;
-            let textBottom = bottomBase;
-            if(state.images.icon && state.spineSymbolEnabled) textBottom -= (1.8 * state.ppi); 
+            const spineStr = spineInput || "THE WEDDING DAY";
+            const spineOpacity = spineInput ? GLOBAL_OPACITY : 0.3;
+            let textBottom = bottomBase; if(state.images.icon && state.spineSymbolEnabled) textBottom -= (1.8 * state.ppi); 
             canvas.add(new fabric.Text(spineStr, { fontFamily: state.text.font, fontSize: TYPO_CONFIG.baseDetails * state.ppi * state.text.scale, fill: state.text.color, opacity: spineOpacity, originX: 'left', originY: 'center', left: spineX, top: textBottom, angle: -90, selectable: false }));
 
-            // 2. BACK COVER
+            // Back
             const copyTxt = new fabric.Text(state.text.copyright, { left: backCenter, top: bottomBase, fontSize: TYPO_CONFIG.baseCopy * state.ppi * state.text.scale, fontFamily: state.text.font, fill: state.text.color, opacity: GLOBAL_OPACITY * 0.7, originX: 'center', originY: 'bottom', selectable: false, letterSpacing: 50 });
             canvas.add(copyTxt);
             if(state.qr.enabled && state.qr.url) {
-                const qrSize = 1.2 * state.ppi;
-                const qrObj = new QRious({ value: state.qr.url, size: 500, level: 'H', foreground: state.text.color, backgroundAlpha: 0 });
+                const qrSize = 1.2 * state.ppi; const qrObj = new QRious({ value: state.qr.url, size: 500, level: 'H', foreground: state.text.color, backgroundAlpha: 0 });
                 fabric.Image.fromURL(qrObj.toDataURL(), (img) => { img.scaleToWidth(qrSize); img.set({ left: backCenter, top: bottomBase - (0.5 * state.ppi) - (0.35 * state.ppi) - (0.5*state.ppi), originX: 'center', originY: 'bottom', selectable: false, opacity: GLOBAL_OPACITY }); canvas.add(img); });
             }
 
-            // 3. FRONT COVER
-            const cy = h/2;
-            const gap = 2.0 * state.ppi;
-
-            // Positioning trigger
-            let triggerX = frontCenter;
-            let triggerY = cy;
+            // Front
+            const cy = h/2; const gap = 2.0 * state.ppi;
+            let triggerX = frontCenter; let triggerY = cy;
 
             if(state.layout === 'magazine') {
                 if(state.images.main && state.images.main.src) {
                      fabric.Image.fromURL(state.images.main.src, (img) => {
-                        const coverW = state.bookSize * state.ppi;
-                        const scale = Math.max(coverW / img.width, h / img.height);
+                        const coverW = state.bookSize * state.ppi; const scale = Math.max(coverW / img.width, h / img.height);
                         img.set({ scaleX: scale, scaleY: scale, left: frontCenter, top: h/2, originX: 'center', originY: 'center', selectable: false });
-                        img.clipPath = state.maskType === 'circle' 
-                            ? new fabric.Circle({ radius: Math.min(coverW, h)/2/scale, left: -coverW/2/scale, top: -h/2/scale, originX: 'center', originY: 'center' })
-                            : new fabric.Rect({ width: coverW/scale, height: h/scale, left: -coverW/2/scale, top: -h/2/scale });
+                        img.clipPath = new fabric.Rect({ width: coverW/scale, height: h/scale, left: -coverW/2/scale, top: -h/2/scale });
                         canvas.add(img); canvas.sendToBack(img);
                     });
                 }
                 renderTextBlock(frontCenter, 2.0 * state.ppi, false, true); 
-                // Trigger is full screen basically, keep center
             }
             else if(state.layout === 'icon') { renderIcon(frontCenter, cy); } 
             else if(state.layout === 'text_icon') { 
@@ -544,216 +703,28 @@
                 const visualGap = dynamicGap * 1.5; 
                 const totalH = tObj.height + visualGap + iconSize;
                 const startY = cy - (totalH / 2);
-                tObj.set({ left: frontCenter, top: startY + tObj.height/2 });
-                canvas.add(tObj);
+                tObj.set({ left: frontCenter, top: startY + tObj.height/2 }); canvas.add(tObj);
                 renderIcon(frontCenter, startY + tObj.height + visualGap + iconSize/2, iconSize);
             } 
             else if(state.layout === 'graphic' || state.layout === 'photo_text') {
-                let imgY = cy;
-                if(state.layout === 'photo_text') imgY = cy - gap/2;
-                triggerY = imgY; // Update trigger pos to image slot center
-                
+                let imgY = cy; if(state.layout === 'photo_text') imgY = cy - gap/2;
+                triggerY = imgY; 
                 renderImageSlot(frontCenter, imgY);
                 if(state.layout === 'photo_text') renderTextBlock(frontCenter, cy + gap*1.5, true); 
             }
             else if(state.layout === 'text') { const tObj = createTextBlockObj(); tObj.set({ left: frontCenter, top: cy }); canvas.add(tObj); } 
             
-            // Update Trigger Position on DOM
+            // Trigger Pos
             const trigger = document.getElementById('photoTrigger');
             if( (state.layout === 'graphic' || state.layout === 'photo_text' || state.layout === 'magazine') && !state.images.main ) {
                 trigger.classList.remove('hidden');
-                // Calculate position relative to canvas wrapper
-                // frontCenter is Fabric Coord. Need to convert to CSS pixels.
-                // Fabric Canvas Width = curW * ppi. CSS Width = curW * basePPI. Ratio is RENDER_SCALE.
-                const cssX = triggerX / RENDER_SCALE;
-                const cssY = triggerY / RENDER_SCALE;
-                
-                trigger.style.left = `calc(${cssX}px - 25px)`; // -25 is half of 50px width
-                trigger.style.top = `calc(${cssY}px - 25px)`;
-            } else {
-                trigger.classList.add('hidden');
-            }
+                const cssX = triggerX / RENDER_SCALE; const cssY = triggerY / RENDER_SCALE;
+                trigger.style.left = `calc(${cssX}px - 25px)`; trigger.style.top = `calc(${cssY}px - 25px)`;
+            } else { trigger.classList.add('hidden'); }
 
             document.getElementById('debugInfo').innerText = `Print: ${state.bookSize}cm @ 300DPI`;
         }
 
-        function createTextBlockObj(compact = false) {
-            const l1 = document.getElementById('inputLine1').value;
-            const l2 = document.getElementById('inputLine2').value;
-            const l3 = document.getElementById('inputLine3').value;
-            const dateIn = document.getElementById('dateLine').value;
-            const rawLines = [l1, l2, l3];
-            const processedLines = rawLines.map((txt, i) => { return state.text.lines[i].upper ? txt.toUpperCase() : txt; });
-            const hasText = l1 || l2 || l3;
-            let renderTxt = hasText ? processedLines.filter(Boolean).join("\n") : "THE VISUAL DIARY\n\n\n";
-            let finalOpacity = hasText ? GLOBAL_OPACITY : 0.3;
-            const baseSize = compact ? 0.8 : TYPO_CONFIG.baseTitle; 
-            const finalSize = baseSize * state.ppi * state.text.scale;
-            const tObj = new fabric.Text(renderTxt, { fontFamily: state.text.font, fontSize: finalSize, textAlign: 'center', lineHeight: 1.3, fill: state.text.color, opacity: finalOpacity, selectable: false, originX: 'center', originY: 'center' });
-            const group = new fabric.Group([tObj], { originX: 'center', originY: 'center' });
-            if(dateIn || !hasText) { 
-                const dateStr = dateIn ? dateIn : "2025";
-                const dateOp = dateIn ? GLOBAL_OPACITY : 0.3;
-                const dateSize = TYPO_CONFIG.baseDetails * state.ppi * state.text.scale;
-                const dObj = new fabric.Text(dateStr, { fontFamily: state.text.font, fontSize: dateSize, fill: state.text.color, opacity: dateOp, originX: 'center', originY: 'top', top: tObj.height/2 + (compact ? 1.0 : 2.0)*state.ppi });
-                group.addWithUpdate(dObj);
-            }
-            return group;
-        }
-        function renderTextBlock(x, y, compact, isMagazine = false) {
-            if(isMagazine) {
-                let txt = [document.getElementById('inputLine1').value, document.getElementById('inputLine2').value].filter(Boolean).join("\n");
-                if(!txt) txt = "MAGAZINE";
-                const tObj = new fabric.Text(txt, { fontFamily: 'Bodoni Moda', fontSize: 2.5 * state.ppi * state.text.scale, textAlign: 'center', lineHeight: 1.0, originX: 'center', originY: 'top', left: x, top: y, fill: state.text.color, selectable: false });
-                canvas.add(tObj);
-                return;
-            }
-            const group = createTextBlockObj(compact);
-            group.set({ left: x, top: y });
-            canvas.add(group);
-        }
-        function renderIcon(x, y, forcedSize = null) {
-            let iconUrl = state.images.icon;
-            let isGhost = false;
-            if(!iconUrl) { iconUrl = 'assets/preview/icons/love/01heart.png'; isGhost = true; }
-            let size = forcedSize ? forcedSize : (2.0 / 1.6) * state.ppi * state.text.scale;
-            fabric.Image.fromURL(iconUrl, (img) => {
-                if(!img) return;
-                img.scaleToWidth(size);
-                img.set({ left: x, top: y, originX: 'center', originY: 'center', selectable: false, opacity: isGhost ? 0.3 : GLOBAL_OPACITY });
-                const filter = new fabric.Image.filters.BlendColor({ color: state.text.color, mode: 'tint', alpha: 1 });
-                img.filters.push(filter); img.applyFilters();
-                canvas.add(img);
-            });
-        }
-        function renderImageSlot(x, y) {
-            const w = state.slotSize.w * state.ppi; const h = state.slotSize.h * state.ppi;
-            if(state.images.main && state.images.main.src) {
-                fabric.Image.fromURL(state.images.main.src, (img) => {
-                    const info = state.images.main.cropInfo; const scaleFactor = w / info.slotPixelSize;
-                    img.set({ scaleX: info.scale * scaleFactor, scaleY: info.scale * scaleFactor, left: x + (info.left * scaleFactor), top: y + (info.top * scaleFactor), originX: 'center', originY: 'center', selectable: false });
-                    
-                    // Apply clip path based on Mask Type
-                    let clip;
-                    if(state.maskType === 'circle') {
-                        // Circle clip needs to be relative to the image
-                        // Radius = half of width
-                        clip = new fabric.Circle({ radius: (w * (1/(info.scale * scaleFactor))) / 2, left: -(info.left * scaleFactor) / (info.scale * scaleFactor), top: -(info.top * scaleFactor) / (info.scale * scaleFactor), originX: 'center', originY: 'center' });
-                    } else {
-                        clip = new fabric.Rect({ width: w * (1/(info.scale * scaleFactor)), height: h * (1/(info.scale * scaleFactor)), left: -(info.left * scaleFactor) / (info.scale * scaleFactor), top: -(info.top * scaleFactor) / (info.scale * scaleFactor), originX: 'center', originY: 'center' });
-                    }
-                    img.clipPath = clip;
-
-                    if (state.layout === 'graphic') { img.set({ opacity: GLOBAL_OPACITY }); const filter = new fabric.Image.filters.BlendColor({ color: state.text.color, mode: 'tint', alpha: 1 }); img.filters.push(filter); img.applyFilters(); }
-                    canvas.add(img);
-                });
-            } else {
-                // Empty slot with dashed border
-                // But we don't need text prompt inside anymore because we have the Pulse Trigger
-                let rect;
-                if(state.maskType === 'circle') {
-                    rect = new fabric.Circle({ radius: w/2, fill: 'transparent', stroke: '#ddd', strokeWidth:2, strokeDashArray: [20,20], left: x, top: y, originX: 'center', originY: 'center', selectable: false });
-                } else {
-                    rect = new fabric.Rect({ width: w, height: h, fill: 'transparent', stroke: '#ddd', strokeWidth:2, strokeDashArray: [20,20], left: x, top: y, originX: 'center', originY: 'center', selectable: false });
-                }
-                canvas.add(rect); 
-            }
-        }
-
-        // --- HANDLERS ---
-        ['inputLine1','inputLine2','inputLine3','dateLine', 'spineInput', 'copyrightInput'].forEach(id => {
-            document.getElementById(id).oninput = (e) => {
-                if(id === 'copyrightInput') state.text.copyright = e.target.value;
-                else if(id === 'spineInput') state.text.spine = e.target.value;
-                renderLayout();
-            };
-        });
-        document.getElementById('fontSelector').addEventListener('change', (e) => { state.text.font = e.target.value; renderLayout(); });
-        document.getElementById('iconLoader').onchange = (e) => { const r = new FileReader(); r.onload = (ev) => { state.images.icon = ev.target.result; updateSymbolUI(); renderLayout(); }; if(e.target.files[0]) r.readAsDataURL(e.target.files[0]); };
-        
-        // Gallery
-        let curGalTarget = 'main'; 
-        window.openGallery = (type, target) => { 
-            curGalTarget = target; 
-            document.getElementById('globalSymbolBtn').classList.remove('pulse-attention'); 
-            document.getElementById('galleryModal').classList.remove('hidden'); 
-            const tabs = document.getElementById('galleryTabs'); tabs.innerHTML = ''; 
-            const db = type === 'icons' ? ASSETS_DB.icons : ASSETS_DB.graphics; 
-            Object.keys(db).forEach((cat, i) => { const t = document.createElement('div'); t.className = `gallery-tab ${i===0?'active':''}`; t.innerText = cat; t.onclick = () => { document.querySelectorAll('.gallery-tab').forEach(x=>x.classList.remove('active')); t.classList.add('active'); loadGal(type, cat); }; tabs.appendChild(t); }); 
-            if(Object.keys(db).length) loadGal(type, Object.keys(db)[0]); 
-        }
-        function loadGal(type, cat) { const grid = document.getElementById('galleryGrid'); const files = (type === 'icons' ? ASSETS_DB.icons : ASSETS_DB.graphics)[cat] || []; grid.innerHTML = ''; for(let f of files) { const item = document.createElement('div'); item.className = 'gallery-item'; const img = document.createElement('img'); const relPath = `${type}/${cat.toLowerCase()}/${f}`; const previewUrl = 'assets/preview/' + relPath; const printUrl = 'assets/print/' + relPath; img.src = previewUrl; img.onerror = () => { img.src = printUrl; }; item.appendChild(img); item.onclick = () => { loadSimpleImage(printUrl, (url1) => { let finalUrl = url1 || previewUrl; document.getElementById('galleryModal').classList.add('hidden'); if(curGalTarget === 'global') { state.images.icon = finalUrl; updateSymbolUI(); renderLayout(); } else { if(type==='icons') { } else openCropper(finalUrl); } }); }; grid.appendChild(item); } }
-        window.closeGallery = () => document.getElementById('galleryModal').classList.add('hidden');
-        document.getElementById('imageLoader').onchange = (e) => { const r = new FileReader(); r.onload = (ev) => { document.getElementById('galleryModal').classList.add('hidden'); openCropper(ev.target.result); }; if(e.target.files[0]) r.readAsDataURL(e.target.files[0]); e.target.value = ''; };
-
-        // Cropper
-        function initCrop() { if(!cropCanvas) { cropCanvas = new fabric.Canvas('cropCanvas', { width: CROP_CANVAS_SIZE, height: CROP_CANVAS_SIZE, backgroundColor: '#111', selection: false }); } cropCanvas.clear(); cropCanvas.setBackgroundColor('#111'); }
-        window.setCropMask = (w, h) => {
-            if(w === 'circle') { state.slotSize = { w: 6, h: 6 }; state.maskType = 'circle'; }
-            else { state.slotSize = { w: w, h: h }; state.maskType = 'rect'; }
-            // Redraw overlay
-            if(tempImgObject) drawCropOverlay();
-        };
-        function drawCropOverlay() {
-            cropCanvas.getObjects('path').forEach(o => cropCanvas.remove(o));
-            cropCanvas.getObjects('rect').forEach(o => cropCanvas.remove(o));
-            cropCanvas.getObjects('circle').forEach(o => cropCanvas.remove(o));
-            
-            const aspect = state.slotSize.w / state.slotSize.h;
-            let slotPW, slotPH; 
-            if(aspect >= 1) { slotPW = CROP_CANVAS_SIZE*0.8; slotPH = slotPW/aspect; } 
-            else { slotPH = CROP_CANVAS_SIZE*0.8; slotPW = slotPH*aspect; }
-            activeCropSlot = { w: slotPW, h: slotPH };
-            
-            const cx = CROP_CANVAS_SIZE/2, cy = CROP_CANVAS_SIZE/2;
-            
-            // Dark Overlay
-            // Complex path for circle is hard, using simple semi-transparent rects for now or just border
-            const overlayColor = 'rgba(0,0,0,0.7)';
-            
-            if(state.maskType === 'circle') {
-                const r = slotPW/2;
-                // Add border
-                cropCanvas.add(new fabric.Circle({ radius: r, left: cx, top: cy, originX:'center', originY:'center', fill: 'transparent', stroke: '#fff', strokeWidth: 1, selectable: false, evented: false }));
-                // We just rely on border for circle crop visual in this simple version
-            } else {
-                // Rect overlay path
-                const path = `M 0 0 H ${CROP_CANVAS_SIZE} V ${CROP_CANVAS_SIZE} H 0 Z M ${cx-slotPW/2} ${cy-slotPH/2} H ${cx+slotPW/2} V ${cy+slotPH/2} H ${cx-slotPW/2} Z`;
-                cropCanvas.add(new fabric.Path(path, { fill: overlayColor, selectable: false, evented: false }));
-                cropCanvas.add(new fabric.Rect({ left: cx, top: cy, width: slotPW, height: slotPH, fill: 'transparent', stroke: '#fff', strokeWidth: 1, originX: 'center', originY: 'center', selectable: false, evented: false }));
-            }
-            cropCanvas.requestRenderAll();
-        }
-
-        function openCropper(url) { 
-            document.getElementById('cropperModal').classList.remove('hidden'); initCrop();
-            // Default Mask if not set
-            if(!state.maskType) state.maskType = 'rect';
-            
-            fabric.Image.fromURL(url, (img) => { 
-                tempImgObject = img; 
-                // Initial scale to fit
-                const aspect = state.slotSize.w / state.slotSize.h;
-                let slotPW, slotPH; 
-                if(aspect >= 1) { slotPW = CROP_CANVAS_SIZE*0.8; slotPH = slotPW/aspect; } 
-                else { slotPH = CROP_CANVAS_SIZE*0.8; slotPW = slotPH*aspect; }
-                const scale = Math.max(slotPW/img.width, slotPH/img.height); 
-                img.set({ left: CROP_CANVAS_SIZE/2, top: CROP_CANVAS_SIZE/2, originX: 'center', originY: 'center', scaleX: scale, scaleY: scale, hasControls: false, hasBorders: false }); 
-                cropCanvas.add(img); 
-                drawCropOverlay();
-                
-                const slider = document.getElementById('zoomSlider'); slider.min = scale*0.5; slider.max = scale*4; slider.value = scale; 
-                slider.oninput = function() { img.scale(parseFloat(this.value)); cropCanvas.requestRenderAll(); }; 
-            }); 
-        }
-        
-        document.getElementById('applyCropBtn').onclick = () => { 
-            if(!tempImgObject) return; 
-            const offX = tempImgObject.left - CROP_CANVAS_SIZE/2; const offY = tempImgObject.top - CROP_CANVAS_SIZE/2; 
-            state.images.main = { src: tempImgObject.getSrc(), cropInfo: { left: offX, top: offY, scale: tempImgObject.scaleX, slotPixelSize: activeCropSlot.w } }; 
-            renderLayout(); document.getElementById('cropperModal').classList.add('hidden'); 
-        };
-        document.getElementById('cancelCropBtn').onclick = () => document.getElementById('cropperModal').classList.add('hidden');
         document.getElementById('saveBtn').onclick = () => { try { const mult = (EXPORT_DPI / CM_TO_INCH) / state.ppi; canvas.getObjects('line').forEach(o => o.opacity = 0); const data = canvas.toDataURL({ format: 'png', multiplier: mult, quality: 1 }); canvas.getObjects('line').forEach(o => o.opacity = 0.3); const a = document.createElement('a'); a.download = `cover_${state.bookSize}cm.png`; a.href = data; document.body.appendChild(a); a.click(); document.body.removeChild(a); } catch(e) { alert("Ошибка сохранения: Браузер блокирует доступ (CORS)."); } };
         window.onload = loadDefaultAssets;
         window.addEventListener('resize', () => setTimeout(updateCanvasDimensions, 100));
