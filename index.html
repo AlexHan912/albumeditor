@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MALEVICH | Configurator V47 (Core Refactoring)</title>
+    <title>MALEVICH | Configurator V48 (Graphic Art)</title>
     
     <script src="assets.js"></script>
 
@@ -15,7 +15,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
 
     <style>
-        /* --- STYLES (V46) --- */
+        /* --- STYLES --- */
         @font-face { font-family: 'Tenor Sans'; src: url('fonts/TenorSans.ttf') format('truetype'); font-weight: normal; font-style: normal; font-display: swap; }
         @font-face { font-family: 'Bodoni Moda'; src: url('fonts/BodoniModa.ttf') format('truetype'); font-weight: 400 900; font-style: normal; font-display: swap; }
 
@@ -40,7 +40,7 @@
         h2 { font-family: 'Bodoni Moda', serif; font-size: 13px; color: var(--accent-gold); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 12px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-top: 5px; }
         label { display: block; margin-bottom: 8px; font-size: 10px; font-weight: bold; color: #888; text-transform: uppercase; letter-spacing: 1px; }
 
-        /* Components */
+        /* Formats */
         .format-selector { display: flex; gap: 10px; justify-content: flex-start; align-items: flex-end; margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #333; overflow-x: auto; padding-top: 5px; }
         .format-card { border: 1px solid #444; background: var(--card-bg); cursor: pointer; display: flex; justify-content: center; align-items: center; transition: all 0.2s; position: relative; flex-shrink: 0; }
         .format-card:hover { border-color: #777; background: var(--card-hover); }
@@ -48,6 +48,7 @@
         .format-card span { font-size: 10px; color: #aaa; pointer-events: none; }
         .f-30 { width: 60px; height: 60px; } .f-25 { width: 50px; height: 50px; } .f-20 { width: 40px; height: 40px; }
 
+        /* Typo */
         .typo-row { display: flex; gap: 15px; align-items: center; } .typo-col { flex: 1; display: flex; flex-direction: column; gap: 5px; }
         .scale-control { display: flex; justify-content: space-between; align-items: center; background: var(--input-bg); border: 1px solid var(--border-color); height: 38px; padding: 0 10px; border-radius: 2px; }
         .scale-label { font-size: 10px; color: #777; cursor: pointer; font-weight: bold; } .scale-label:hover { color: #ccc; }
@@ -55,12 +56,14 @@
         input[type=range].scale-slider { -webkit-appearance: none; width: 100%; height: 2px; background: transparent; outline: none; margin: 0; cursor: pointer; position: absolute; top: 0; }
         input[type=range].scale-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 12px; height: 12px; border-radius: 50%; background: var(--accent-gold); border: 2px solid #222; cursor: pointer; margin-top: -5px; }
 
+        /* Palette */
         .palette-selector { width: 100%; margin-bottom: 15px; }
         .pairs-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 8px; margin-bottom: 15px; }
         .pair-btn { width: 100%; aspect-ratio: 1; border-radius: 50%; cursor: pointer; border: 2px solid transparent; position: relative; transition: border-color 0.2s; }
         .pair-btn:hover { border-color: #777; } .pair-btn.active { border-color: #fff; box-shadow: 0 0 5px rgba(255,255,255,0.2); }
         .pair-heart { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 10px; line-height: 1; }
 
+        /* Layouts */
         .layout-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 10px; }
         .layout-card { aspect-ratio: 1; background: var(--card-bg); border: 1px solid #444; cursor: pointer; border-radius: 4px; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0; transition: all 0.2s; overflow: hidden; }
         .layout-card:hover { border-color: #777; background: var(--card-hover); } .layout-card.active { border-color: var(--accent-gold); box-shadow: 0 0 8px rgba(212, 175, 55, 0.2); }
@@ -71,6 +74,7 @@
         .mini-dashed-rect { width: 36px; height: 24px; border: 1px dashed #666; display: grid; place-items: center; } .mini-dashed-rect::after { content: '+'; color: #666; font-size: 10px; }
         .mini-mag-container { width: 100%; height: 100%; background: #333; display: flex; flex-direction: column; align-items: center; padding-top: 8px; } .mini-mag-title { width: 70%; height: 2px; background: #fff; margin-bottom: 2px; }
 
+        /* Text Builder */
         .text-row { display: flex; gap: 5px; margin-bottom: 8px; align-items: stretch; height: 38px; }
         .text-row input { margin-bottom: 0; flex-grow: 1; height: 100%; }
         .tool-btn { width: 38px; min-width: 38px; height: 100%; border: 1px solid #444; background: var(--input-bg); color: #777; display: grid; place-items: center; cursor: pointer; transition: 0.2s; font-family: 'Tenor Sans'; font-size: 12px; }
@@ -106,12 +110,18 @@
         .gallery-tab { padding: 8px 15px; font-size: 11px; color: #888; cursor: pointer; border: 1px solid transparent; white-space: nowrap; }
         .gallery-tab.active { color: #fff; border: 1px solid var(--accent-gold); background: rgba(212, 175, 55, 0.1); }
         
+        /* Subtle link style for upload */
+        #galUploadBtn {
+            background: transparent; border: none; color: #555; text-decoration: underline; font-size: 10px;
+            cursor: pointer; padding: 5px; text-transform: none; letter-spacing: 0.5px;
+        }
+        #galUploadBtn:hover { color: #999; }
+
         .crop-controls { display: flex; gap: 10px; justify-content: center; margin-bottom: 10px; }
         .crop-btn { padding: 5px 10px; font-size: 10px; background: #333; border: 1px solid #555; color: #ccc; cursor: pointer; } .crop-btn:hover { color: #fff; border-color: #fff; }
         .crop-area-wrapper { background: #000; padding: 10px; display: flex; justify-content: center; }
         .zoom-controls { color: #fff; font-size: 12px; display: flex; align-items: center; gap: 15px; } 
 
-        /* LOADER */
         #app-loader { position: fixed; top:0; left:0; width:100%; height:100%; background: #1a1a1a; z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; color: #fff; transition: opacity 0.8s ease; }
         .loader-text { font-family: 'Bodoni Moda', serif; font-size: 32px; letter-spacing: 5px; margin-bottom: 20px; animation: pulse 2s infinite; }
         .loader-sub { font-size: 10px; color: #555; letter-spacing: 2px; font-family: 'Tenor Sans'; text-transform: uppercase; }
@@ -135,34 +145,29 @@
         
         <div class="section">
             <h2>1. Название Книги</h2>
-            
             <div id="textBuilder">
                 <div class="text-row" id="row1">
                     <input type="text" id="inputLine1" placeholder="THE VISUAL DIARY">
                     <div class="tool-btn" onclick="toggleCase(1)" id="btnTt1">Tt</div>
                     <div class="tool-btn" onclick="showRow(2)">+</div>
                 </div>
-
                 <div class="text-row hidden" id="row2">
                     <input type="text" id="inputLine2" placeholder="Доп. строка">
                     <div class="tool-btn" onclick="toggleCase(2)" id="btnTt2">Tt</div>
                     <div class="tool-btn" onclick="showRow(3)">+</div>
                     <div class="tool-btn red" onclick="hideRow(2)">×</div>
                 </div>
-
                 <div class="text-row hidden" id="row3">
                     <input type="text" id="inputLine3" placeholder="Доп. строка">
                     <div class="tool-btn" onclick="toggleCase(3)" id="btnTt3">Tt</div>
                     <div class="tool-btn red" onclick="hideRow(3)">×</div>
                 </div>
-
                 <label style="margin-top:10px;">Символ и Дата</label>
                 <div class="input-row-icon">
                     <div id="globalSymbolBtn" class="icon-trigger-btn pulse-attention" onclick="openGallery('icons', 'global')"></div>
                     <input type="text" id="dateLine" placeholder="2025 / Подпись" style="margin-bottom:0;">
                 </div>
             </div>
-
             <input type="file" id="imageLoader" hidden accept="image/*">
             <input type="file" id="iconLoader" hidden accept="image/png">
         </div>
@@ -292,7 +297,7 @@
             <div class="gallery-tabs" id="galleryTabs"></div>
             <div class="gallery-grid" id="galleryGrid"></div>
             <div style="border-top:1px solid #333; padding-top:15px; text-align:center;">
-                <button id="galUploadBtn" class="secondary" onclick="handleGalleryUpload()">Загрузить свое</button>
+                <button id="galUploadBtn" onclick="handleGalleryUpload()">Загрузить свое</button>
             </div>
         </div>
     </div>
@@ -315,22 +320,13 @@
     </div>
 
     <script>
-        // --- CONSTANTS ---
-        const CONFIG = {
-            dpi: 300,
-            cmToInch: 2.54,
-            spineWidthCm: 1.5,
-            renderScale: 3.0,
-            globalOpacity: 0.85,
-            typo: { baseTitle: 1.2, baseDetails: 0.5, baseCopy: 0.35 },
-            scales: [0.8, 1.0, 1.2, 1.5]
-        };
+        const EXPORT_DPI = 300, CM_TO_INCH = 2.54, SPINE_WIDTH_CM = 1.5, COPYRIGHT_TEXT = "DESIGN BY MALEVICH", RENDER_SCALE = 3.0;
+        const GLOBAL_OPACITY = 0.85; 
+        const TYPO_CONFIG = { baseTitle: 1.2, baseDetails: 0.5, baseCopy: 0.35 };
+        const SCALES = [0.8, 1.0, 1.2, 1.5];
 
-        // --- STATE ---
         let state = {
-            bookSize: 30, 
-            layout: 'text_icon', 
-            ppi: 10,
+            bookSize: 30, layout: 'text_icon', ppi: 10,
             slotSize: { w: 6, h: 6 },
             maskType: 'rect',
             text: { 
@@ -345,12 +341,10 @@
             visualW: 0, visualH: 0
         };
 
-        // --- GLOBAL OBJECTS ---
         const canvas = new fabric.Canvas('c', { backgroundColor: '#fff', selection: false, enableRetinaScaling: false });
         let cropCanvas = null, tempImgObject = null, activeCropSlot = { w: 0, h: 0 };
         const CROP_CANVAS_SIZE = 500;
 
-        // --- INIT ---
         window.onload = () => {
             loadDefaultAssets();
             initColors();
@@ -359,7 +353,6 @@
 
         function loadDefaultAssets() {
             setTimeout(() => { document.getElementById('app-loader').style.opacity = '0'; setTimeout(() => document.getElementById('app-loader').style.display='none', 800); }, 1500);
-            
             const iconPath = 'assets/print/icons/love/01heart.png';
             loadSimpleImage(iconPath, (url) => {
                 const final = url || 'assets/preview/icons/love/01heart.png';
@@ -369,29 +362,25 @@
 
         function finishInit() {
             updateSymbolUI();
-            // Default select Text+Symbol
+            // Default: Text+Symbol
             const defCard = document.querySelector('.layout-card[title="Текст+Символ"]') || document.querySelector('.layout-card');
             setLayout('text_icon', defCard); 
             updateCanvasDimensions();
         }
 
         // --- RENDER PIPELINE ---
-        
         function renderLayout() {
-            canvas.clear(); 
-            canvas.setBackgroundColor(state.coverColor);
+            canvas.clear(); canvas.setBackgroundColor(state.coverColor);
             
             const h = canvas.height;
             const x1 = state.bookSize * state.ppi; 
             const x2 = (state.bookSize + 1.5) * state.ppi;
             const coords = {
-                h: h,
-                spineX: x1 + ((x2 - x1) / 2),
+                h: h, spineX: x1 + ((x2 - x1) / 2),
                 frontCenter: x2 + (state.bookSize * state.ppi / 2),
                 backCenter: (state.bookSize * state.ppi) / 2,
                 bottomBase: h - (1.5 * state.ppi),
-                centerY: h / 2,
-                gap: 2.0 * state.ppi
+                centerY: h / 2, gap: 2.0 * state.ppi
             };
 
             drawGuides(x1, x2, h);
@@ -403,8 +392,6 @@
             document.getElementById('debugInfo').innerText = `Print: ${state.bookSize}cm @ 300DPI`;
         }
 
-        // --- RENDER MODULES ---
-
         function drawGuides(x1, x2, h) {
             const opts = { stroke: state.text.color, strokeWidth: 2, strokeDashArray: [10,10], selectable: false, evented: false, opacity: 0.3 };
             canvas.add(new fabric.Line([x1, 0, x1, h], opts)); 
@@ -415,7 +402,7 @@
             if(state.spine.symbol && state.images.icon) {
                 placeImage(state.images.icon, c.spineX, c.bottomBase, 1.0 * state.ppi, { originY: 'bottom', color: state.text.color });
             }
-
+            // Text assembly
             let parts = [];
             const l1 = document.getElementById('inputLine1').value;
             const l2 = document.getElementById('inputLine2').value;
@@ -433,12 +420,9 @@
                 const fullStr = parts.join("  •  ");
                 let yPos = c.bottomBase;
                 if(state.spine.symbol && state.images.icon) yPos -= (1.8 * state.ppi);
-                
                 const txt = new fabric.Text(fullStr, {
-                    fontFamily: state.text.font,
-                    fontSize: CONFIG.typo.baseDetails * state.ppi * state.text.scale,
-                    fill: state.text.color, opacity: CONFIG.globalOpacity,
-                    originX: 'left', originY: 'center',
+                    fontFamily: state.text.font, fontSize: CONFIG.typo.baseDetails * state.ppi * state.text.scale,
+                    fill: state.text.color, opacity: CONFIG.globalOpacity, originX: 'left', originY: 'center',
                     left: c.spineX, top: yPos, angle: -90, selectable: false
                 });
                 canvas.add(txt);
@@ -481,7 +465,6 @@
                 const visualGap = dynGap * 1.5; 
                 const totalH = tObj.height + visualGap + iconSize;
                 const startY = y - (totalH / 2);
-                
                 tObj.set({ left: x, top: startY + tObj.height/2 }); 
                 canvas.add(tObj);
                 renderIcon(x, startY + tObj.height + visualGap + iconSize/2, iconSize);
@@ -499,7 +482,6 @@
         }
 
         // --- HELPERS ---
-
         function placeImage(url, x, y, width, opts = {}) {
             fabric.Image.fromURL(url, (img) => {
                 if(!img) return;
@@ -519,23 +501,14 @@
             fabric.Image.fromURL(imgData.src, (img) => {
                 const info = imgData.cropInfo; 
                 const scaleFactor = w / info.slotPixelSize;
-                
                 if(isBack) {
                     const coverW = w; 
                     const scale = Math.max(coverW / img.width, h / img.height);
                     img.set({ scaleX: scale, scaleY: scale, left: x, top: h/2, originX: 'center', originY: 'center', selectable: false });
                     img.clipPath = new fabric.Rect({ width: coverW/scale, height: h/scale, left: -coverW/2/scale, top: -h/2/scale });
-                    canvas.add(img);
-                    canvas.sendToBack(img);
+                    canvas.add(img); canvas.sendToBack(img);
                 } else {
-                    img.set({ 
-                        scaleX: info.scale * scaleFactor, 
-                        scaleY: info.scale * scaleFactor, 
-                        left: x + (info.left * scaleFactor), 
-                        top: y + (info.top * scaleFactor), 
-                        originX: 'center', originY: 'center', selectable: false 
-                    });
-                    
+                    img.set({ scaleX: info.scale * scaleFactor, scaleY: info.scale * scaleFactor, left: x + (info.left * scaleFactor), top: y + (info.top * scaleFactor), originX: 'center', originY: 'center', selectable: false });
                     let clip;
                     if(maskType === 'circle') {
                         clip = new fabric.Circle({ radius: (w * (1/(info.scale * scaleFactor))) / 2, left: -(info.left * scaleFactor) / (info.scale * scaleFactor), top: -(info.top * scaleFactor) / (info.scale * scaleFactor), originX: 'center', originY: 'center' });
@@ -543,6 +516,12 @@
                         clip = new fabric.Rect({ width: w * (1/(info.scale * scaleFactor)), height: h * (1/(info.scale * scaleFactor)), left: -(info.left * scaleFactor) / (info.scale * scaleFactor), top: -(info.top * scaleFactor) / (info.scale * scaleFactor), originX: 'center', originY: 'center' });
                     }
                     img.clipPath = clip;
+                    
+                    // GRAPHIC ART RECOLORING
+                    if(state.layout === 'graphic') {
+                        img.filters.push(new fabric.Image.filters.BlendColor({ color: state.text.color, mode: 'tint', alpha: 1 }));
+                        img.applyFilters();
+                    }
                     canvas.add(img);
                 }
             });
@@ -567,9 +546,7 @@
                 textAlign: 'center', lineHeight: 1.3, fill: state.text.color, opacity: opacity, 
                 selectable: false, originX: 'center', originY: 'center' 
             });
-            
             const group = new fabric.Group([tObj], { originX: 'center', originY: 'center' });
-            
             if(d1 || !hasText) {
                 const dateStr = d1 ? d1 : "2025";
                 const dateOp = d1 ? CONFIG.globalOpacity : 0.3;
@@ -586,15 +563,11 @@
         }
 
         function renderTextBlock(x, y, compact, isMag = false) {
+            if(state.layout === 'graphic') return; // NO TEXT ON GRAPHIC COVER
             if(isMag) {
                 let txt = [document.getElementById('inputLine1').value, document.getElementById('inputLine2').value].filter(Boolean).join("\n");
                 if(!txt) txt = "MAGAZINE";
-                canvas.add(new fabric.Text(txt, { 
-                    fontFamily: 'Bodoni Moda', fontSize: 2.5 * state.ppi * state.text.scale, 
-                    textAlign: 'center', lineHeight: 1.0, 
-                    originX: 'center', originY: 'top', left: x, top: y, 
-                    fill: state.text.color, selectable: false 
-                }));
+                canvas.add(new fabric.Text(txt, { fontFamily: 'Bodoni Moda', fontSize: 2.5 * state.ppi * state.text.scale, textAlign: 'center', lineHeight: 1.0, originX: 'center', originY: 'top', left: x, top: y, fill: state.text.color, selectable: false }));
                 return;
             }
             const g = getTextBlockObj(compact);
@@ -617,6 +590,8 @@
                 placeClippedImage(state.images.main, x, y, w, h, state.maskType);
             } else {
                 let shape;
+                // Dashed placeholder, only show if NOT in graphic mode (or empty graphic)
+                // For graphic mode we show dashed + trigger
                 const opts = { fill: 'transparent', stroke: '#ddd', strokeWidth: 2, strokeDashArray: [20,20], left: x, top: y, originX: 'center', originY: 'center', selectable: false };
                 if(state.maskType === 'circle') shape = new fabric.Circle({ radius: w/2, ...opts });
                 else shape = new fabric.Rect({ width: w, height: h, ...opts });
@@ -624,7 +599,6 @@
             }
         }
 
-        // --- ASSET HELPERS ---
         function loadSimpleImage(path, callback) {
             const img = new Image();
             img.onload = () => callback(path);
@@ -638,7 +612,6 @@
             const maxBookW = 30*2 + CONFIG.spineWidthCm; const maxBookH = 30;
             const basePPI = Math.max(5, Math.min((container.clientWidth - margin*2) / maxBookW, (container.clientHeight - margin*2) / maxBookH));
             state.ppi = basePPI * CONFIG.renderScale;
-            
             const curW = state.bookSize*2 + CONFIG.spineWidthCm; const curH = state.bookSize;
             canvas.setWidth(curW * state.ppi); canvas.setHeight(curH * state.ppi);
             canvas.wrapperEl.style.width = `${curW * basePPI}px`; canvas.wrapperEl.style.height = `${curH * basePPI}px`;
@@ -647,27 +620,24 @@
             renderLayout();
         }
 
-        // --- HANDLERS & LOGIC ---
         function updateTriggerPosition(c) {
             const t = document.getElementById('photoTrigger');
             const needsTrigger = (state.layout === 'graphic' || state.layout === 'photo_text' || state.layout === 'magazine') && !state.images.main;
-            
             if(needsTrigger) {
                 t.classList.remove('hidden');
                 let tx = c.frontCenter; 
                 let ty = c.centerY;
-                if(state.layout === 'photo_text') ty -= c.gap/2;
+                // Graphic: slightly up
+                if(state.layout === 'graphic') ty -= (1.5 * state.ppi); 
+                else if(state.layout === 'photo_text') ty -= c.gap/2;
                 
                 const cssX = tx / CONFIG.renderScale;
                 const cssY = ty / CONFIG.renderScale;
                 t.style.left = `calc(${cssX}px - 25px)`;
                 t.style.top = `calc(${cssY}px - 25px)`;
-            } else {
-                t.classList.add('hidden');
-            }
+            } else { t.classList.add('hidden'); }
         }
 
-        // Color Logic
         function initColors() {
             if(typeof DESIGNER_PALETTES !== 'undefined') changeCollection('Wedding Trends');
             document.getElementById('customCoverPicker').oninput = (e) => { state.coverColor = e.target.value; renderLayout(); };
@@ -678,10 +648,8 @@
             const grid = document.getElementById('pairsGrid');
             const custom = document.getElementById('customPickers');
             grid.innerHTML = '';
-            
             if(name === 'Custom') { grid.classList.add('hidden'); custom.classList.remove('hidden'); return; }
             grid.classList.remove('hidden'); custom.classList.add('hidden');
-
             if(typeof DESIGNER_PALETTES !== 'undefined' && DESIGNER_PALETTES[name]) {
                 DESIGNER_PALETTES[name].forEach(pair => {
                     const btn = document.createElement('div');
@@ -701,14 +669,10 @@
             document.querySelectorAll('.pair-btn').forEach(b => b.classList.remove('active'));
             if(btn) btn.classList.add('active');
             updateSymbolUI();
-            if(state.qr.enabled) { 
-                document.getElementById('qrBtn').style.color = pair.text; 
-                document.getElementById('qrBtn').style.borderColor = pair.text; 
-            }
+            if(state.qr.enabled) { document.getElementById('qrBtn').style.color = pair.text; document.getElementById('qrBtn').style.borderColor = pair.text; }
             renderLayout();
         }
 
-        // Text & UI Logic
         window.toggleCase = (i) => { state.text.lines[i-1].upper = !state.text.lines[i-1].upper; document.getElementById(`btnTt${i}`).classList.toggle('active'); renderLayout(); };
         window.showRow = (i) => document.getElementById(`row${i}`).classList.remove('hidden');
         window.hideRow = (i) => { document.getElementById(`row${i}`).classList.add('hidden'); document.getElementById(`inputLine${i}`).value = ''; state.text.lines[i-1].text = ''; renderLayout(); };
@@ -724,9 +688,11 @@
             state.layout = l;
             document.querySelectorAll('.layout-card').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-            state.images.main = null; // Reset image on layout change
+            state.images.main = null; 
             if(l === 'magazine') state.text.font = 'Bodoni Moda';
-            state.maskType = (l === 'graphic') ? 'circle' : 'rect';
+            // Graphic size base: 10x10. Others 6x6 default.
+            if(l === 'graphic') { state.maskType = 'circle'; state.slotSize = { w: 10, h: 10 }; }
+            else { state.maskType = 'rect'; state.slotSize = { w: 6, h: 6 }; }
             renderLayout();
         };
 
@@ -737,24 +703,34 @@
             updateCanvasDimensions();
         };
 
-        window.updateScaleFromSlider = (v) => { state.text.scale = CONFIG.scales[v-1]; renderLayout(); };
+        window.updateScaleFromSlider = (v) => { 
+            state.text.scale = CONFIG.scales[v-1]; 
+            // Also update graphic slot size if graphic layout
+            if(state.layout === 'graphic') {
+                // Base 10cm. +/- 30% mapped to scales 0.8 - 1.5. 
+                // Let's just use scale factor directly on 10cm.
+                // 0.8 -> 8cm, 1.0 -> 10cm, 1.2 -> 12cm, 1.5 -> 15cm. Matches approx range.
+                state.slotSize = { w: 10 * state.text.scale, h: 10 * state.text.scale };
+            }
+            renderLayout(); 
+        };
         window.setScale = (s) => { 
             const idx = CONFIG.scales.indexOf(s); 
-            if(idx>-1) { document.getElementById('textScale').value = idx+1; state.text.scale = s; renderLayout(); } 
+            if(idx>-1) { document.getElementById('textScale').value = idx+1; window.updateScaleFromSlider(idx+1); } 
         };
 
-        // --- ASSET MANAGERS ---
         window.triggerAssetLoader = () => {
             if(state.layout === 'graphic') openGallery('graphics', 'main');
             else document.getElementById('imageLoader').click();
         };
 
+        let curGalTarget = 'main'; 
         window.openGallery = (type, target) => {
             document.getElementById('globalSymbolBtn').classList.remove('pulse-attention');
             document.getElementById('galleryModal').classList.remove('hidden');
             const upBtn = document.getElementById('galUploadBtn');
             if(type === 'icons') { upBtn.innerText = "Загрузить свою иконку"; upBtn.onclick = () => document.getElementById('iconLoader').click(); }
-            else { upBtn.innerText = "Загрузить свое фото"; upBtn.onclick = () => document.getElementById('imageLoader').click(); }
+            else { upBtn.innerText = "Загрузить свой PNG"; upBtn.onclick = () => document.getElementById('imageLoader').click(); }
             
             const tabs = document.getElementById('galleryTabs'); tabs.innerHTML = '';
             let db = (type === 'icons') ? ASSETS_DB.icons : ASSETS_DB.graphics;
@@ -785,7 +761,11 @@
                         final = final || url;
                         document.getElementById('galleryModal').classList.add('hidden');
                         if(target === 'global') { state.images.icon = final; updateSymbolUI(); renderLayout(); }
-                        else if(type === 'graphics') { state.images.main = { src: final, cropInfo: { scale: 1, left: 0, top: 0, slotPixelSize: 100 } }; renderLayout(); }
+                        else if(type === 'graphics') { 
+                            // Graphic mode: Direct insert, no crop logic needed for library items
+                            state.images.main = { src: final, cropInfo: { scale: 1, left: 0, top: 0, slotPixelSize: 100 } }; // dummy crop
+                            renderLayout(); 
+                        }
                     });
                 };
                 grid.appendChild(item);
@@ -795,7 +775,6 @@
         window.closeGallery = () => document.getElementById('galleryModal').classList.add('hidden');
         window.handleGalleryUpload = () => {}; 
 
-        // Listeners for inputs
         ['inputLine1','inputLine2','inputLine3','dateLine','copyrightInput'].forEach(id => {
             const el = document.getElementById(id);
             if(el) el.oninput = () => renderLayout();
@@ -809,12 +788,18 @@
         
         document.getElementById('imageLoader').onchange = (e) => {
             const r = new FileReader();
-            r.onload = (ev) => { document.getElementById('galleryModal').classList.add('hidden'); openCropper(ev.target.result); };
+            r.onload = (ev) => { 
+                document.getElementById('galleryModal').classList.add('hidden'); 
+                // If Graphic layout, we treat upload as graphic (no crop mask usually needed or full fit?)
+                // But user might upload JPG. 
+                // TBD: If layout == graphic, maybe just use without crop or square crop?
+                // Let's use cropper anyway to ensure fit.
+                openCropper(ev.target.result); 
+            };
             if(e.target.files[0]) r.readAsDataURL(e.target.files[0]);
             e.target.value = '';
         };
 
-        // --- CROPPER (MODULAR) ---
         function initCrop() { if(!cropCanvas) cropCanvas = new fabric.Canvas('cropCanvas', { width: 500, height: 500, backgroundColor: '#111', selection: false }); cropCanvas.clear(); cropCanvas.setBackgroundColor('#111'); }
         
         window.setCropMask = (w, h) => {
@@ -825,17 +810,13 @@
 
         function drawCropOverlay() {
             cropCanvas.getObjects().forEach(o => { if(o !== tempImgObject) cropCanvas.remove(o); });
-            
             const aspect = state.slotSize.w / state.slotSize.h;
             let slotPW, slotPH;
             if(aspect >= 1) { slotPW = 400; slotPH = 400/aspect; } else { slotPH = 400; slotPW = 400*aspect; }
             activeCropSlot = { w: slotPW, h: slotPH };
             const cx = 250, cy = 250;
-            
-            // Mask Overlay
             const overlayColor = 'rgba(0,0,0,0.7)';
             let pathStr = `M 0 0 H 500 V 500 H 0 Z`;
-            
             if(state.maskType === 'circle') {
                 const r = slotPW/2;
                 pathStr += ` M ${cx} ${cy-r} A ${r} ${r} 0 1 0 ${cx} ${cy+r} A ${r} ${r} 0 1 0 ${cx} ${cy-r} Z`;
@@ -844,7 +825,6 @@
                 pathStr += ` M ${cx-slotPW/2} ${cy-slotPH/2} H ${cx+slotPW/2} V ${cy+slotPH/2} H ${cx-slotPW/2} Z`;
                 cropCanvas.add(new fabric.Rect({ left: cx, top: cy, width: slotPW, height: slotPH, fill: 'transparent', stroke: '#fff', strokeWidth: 1, originX: 'center', originY: 'center', selectable: false }));
             }
-            
             cropCanvas.add(new fabric.Path(pathStr, { fill: overlayColor, selectable: false, evented: false, fillRule: 'evenodd' }));
             cropCanvas.requestRenderAll();
         }
@@ -858,7 +838,6 @@
                 img.set({ left: 250, top: 250, originX: 'center', originY: 'center', scaleX: scale, scaleY: scale, hasControls: false, hasBorders: false });
                 cropCanvas.add(img);
                 drawCropOverlay();
-                
                 const slider = document.getElementById('zoomSlider');
                 slider.min = scale * 0.5; slider.max = scale * 4; slider.value = scale;
                 slider.oninput = function() { img.scale(parseFloat(this.value)); cropCanvas.requestRenderAll(); };
@@ -873,7 +852,6 @@
         };
         document.getElementById('cancelCropBtn').onclick = () => document.getElementById('cropperModal').classList.add('hidden');
 
-        // Helpers UI
         function updateSymbolUI() {
             const btn = document.getElementById('globalSymbolBtn');
             if(state.images.icon) {
@@ -884,20 +862,11 @@
             }
         }
 
-        // QR Handlers (Short)
-        window.openQRModal = () => document.getElementById('qrModal').classList.remove('hidden');
-        window.applyQR = () => {
-            const url = document.getElementById('qrLinkInput').value;
-            if(url) { state.qr.enabled = true; state.qr.url = url; renderLayout(); }
-            document.getElementById('qrModal').classList.add('hidden');
-        };
-        window.removeQR = () => { state.qr.enabled = false; renderLayout(); document.getElementById('qrModal').classList.add('hidden'); };
-
         document.getElementById('saveBtn').onclick = () => {
             const mult = (CONFIG.dpi / CONFIG.cmToInch) / state.ppi;
-            canvas.getObjects('line').forEach(o => o.opacity = 0); // Hide guides
+            canvas.getObjects('line').forEach(o => o.opacity = 0);
             const data = canvas.toDataURL({ format: 'png', multiplier: mult, quality: 1 });
-            canvas.getObjects('line').forEach(o => o.opacity = 0.3); // Show guides
+            canvas.getObjects('line').forEach(o => o.opacity = 0.3);
             const a = document.createElement('a'); a.download = `malevich_cover_${state.bookSize}.png`; a.href = data; a.click();
         };
     </script>
