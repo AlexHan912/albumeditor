@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MALEVICH | Configurator V50 (Stable)</title>
+    <title>MALEVICH | Configurator V51</title>
     
     <script src="assets.js"></script>
 
@@ -63,10 +63,10 @@
         .pair-btn:hover { border-color: #777; } .pair-btn.active { border-color: #fff; box-shadow: 0 0 5px rgba(255,255,255,0.2); }
         .pair-heart { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 10px; line-height: 1; }
 
-        /* Layouts - FIXED GRID */
+        /* Layouts */
         .layout-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 10px; }
         .layout-card { 
-            width: 100%; height: 100px; /* Fixed height ensures square-ish look */
+            width: 100%; height: 100px;
             background: var(--card-bg); border: 1px solid #444; cursor: pointer; border-radius: 4px; 
             position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; 
             gap: 0; transition: all 0.2s; overflow: hidden;
@@ -328,49 +328,65 @@
 
     <script>
         const CONFIG = {
-            dpi: 300,
-            cmToInch: 2.54,
-            spineWidthCm: 1.5,
-            renderScale: 3.0,
-            globalOpacity: 0.85,
-            typo: { baseTitle: 1.2, baseDetails: 0.5, baseCopy: 0.35 },
+            dpi: 300, cmToInch: 2.54, spineWidthCm: 1.5, renderScale: 3.0,
+            globalOpacity: 0.85, typo: { baseTitle: 1.2, baseDetails: 0.5, baseCopy: 0.35 },
             scales: [0.8, 1.0, 1.2, 1.5]
         };
 
         let state = {
-            bookSize: 30, layout: 'text_icon', ppi: 10,
-            slotSize: { w: 6, h: 6 },
-            maskType: 'rect',
-            text: { 
-                lines: [ { text: "", upper: false }, { text: "", upper: false }, { text: "", upper: false } ],
-                date: "", copyright: "", 
-                font: "Tenor Sans", color: "#1a1a1a", scale: 1.0 
-            },
-            coverColor: "#FFFFFF",
-            images: { icon: null, main: null }, 
-            spine: { symbol: true, title: false, date: false },
-            qr: { enabled: false, url: "" },
-            visualW: 0, visualH: 0
+            bookSize: 30, layout: 'text_icon', ppi: 10, slotSize: { w: 6, h: 6 }, maskType: 'rect',
+            text: { lines: [ { text: "", upper: false }, { text: "", upper: false }, { text: "", upper: false } ], date: "", copyright: "", font: "Tenor Sans", color: "#1a1a1a", scale: 1.0 },
+            coverColor: "#FFFFFF", images: { icon: null, main: null }, spine: { symbol: true, title: false, date: false },
+            qr: { enabled: false, url: "" }, visualW: 0, visualH: 0
         };
 
         const canvas = new fabric.Canvas('c', { backgroundColor: '#fff', selection: false, enableRetinaScaling: false });
         let cropCanvas = null, tempImgObject = null, activeCropSlot = { w: 0, h: 0 };
         const CROP_CANVAS_SIZE = 500;
 
+        // --- CORE FUNCTIONS DEFINED FIRST ---
+        
+        function loadSimpleImage(path, callback) {
+            const img = new Image();
+            img.onload = () => callback(path);
+            img.onerror = () => callback(null);
+            img.src = path;
+        }
+
+        function updateCanvasDimensions() {
+            const container = document.getElementById('workspace');
+            if(!container || container.clientWidth === 0) return;
+            const margin = 20; 
+            const maxBookW = 30*2 + CONFIG.spineWidthCm; const maxBookH = 30;
+            const basePPI = Math.max(5, Math.min((container.clientWidth - margin*2) / maxBookW, (container.clientHeight - margin*2) / maxBookH));
+            state.ppi = basePPI * CONFIG.renderScale;
+            const curW = state.bookSize*2 + CONFIG.spineWidthCm; const curH = state.bookSize;
+            canvas.setWidth(curW * state.ppi); canvas.setHeight(curH * state.ppi);
+            canvas.wrapperEl.style.width = `${curW * basePPI}px`; canvas.wrapperEl.style.height = `${curH * basePPI}px`;
+            canvas.lowerCanvasEl.style.width = '100%'; canvas.upperCanvasEl.style.width = '100%';
+            canvas.lowerCanvasEl.style.height = '100%'; canvas.upperCanvasEl.style.height = '100%';
+            renderLayout();
+        }
+
+        // --- INIT ---
         window.onload = () => {
             loadDefaultAssets();
             initColors();
-            setTimeout(updateCanvasDimensions, 500); // Robust init delay
+            setTimeout(updateCanvasDimensions, 500); // Wait for CSS layout
         };
         window.addEventListener('resize', () => setTimeout(updateCanvasDimensions, 100));
 
         function loadDefaultAssets() {
             setTimeout(() => { document.getElementById('app-loader').style.opacity = '0'; setTimeout(() => document.getElementById('app-loader').style.display='none', 800); }, 1500);
             
+            // Try loading default icon. Fallback to preview if print fails.
             const iconPath = 'assets/print/icons/love/01heart.png';
             loadSimpleImage(iconPath, (url) => {
                 const final = url || 'assets/preview/icons/love/01heart.png';
-                loadSimpleImage(final, (valid) => { if(valid) state.images.icon = valid; finishInit(); });
+                loadSimpleImage(final, (valid) => { 
+                    if(valid) state.images.icon = valid; 
+                    finishInit(); 
+                });
             });
         }
 
@@ -381,77 +397,47 @@
             updateCanvasDimensions();
         }
 
-        // --- RENDER ---
+        // --- RENDER PIPELINE ---
         function renderLayout() {
             canvas.clear(); canvas.setBackgroundColor(state.coverColor);
-            
             const h = canvas.height;
             const x1 = state.bookSize * state.ppi; 
             const x2 = (state.bookSize + 1.5) * state.ppi;
-            const coords = {
-                h: h, spineX: x1 + ((x2 - x1) / 2),
-                frontCenter: x2 + (state.bookSize * state.ppi / 2),
-                backCenter: (state.bookSize * state.ppi) / 2,
-                bottomBase: h - (1.5 * state.ppi),
-                centerY: h / 2, gap: 2.0 * state.ppi
-            };
+            const coords = { h: h, spineX: x1 + ((x2 - x1) / 2), frontCenter: x2 + (state.bookSize * state.ppi / 2), backCenter: (state.bookSize * state.ppi) / 2, bottomBase: h - (1.5 * state.ppi), centerY: h / 2, gap: 2.0 * state.ppi };
 
             drawGuides(x1, x2, h);
             renderSpine(coords);
             renderBackCover(coords);
             renderFrontCover(coords);
             updateTriggerPosition(coords);
-
             document.getElementById('debugInfo').innerText = `Print: ${state.bookSize}cm @ 300DPI`;
         }
 
         function drawGuides(x1, x2, h) {
             const opts = { stroke: state.text.color, strokeWidth: 2, strokeDashArray: [10,10], selectable: false, evented: false, opacity: 0.3 };
-            canvas.add(new fabric.Line([x1, 0, x1, h], opts)); 
-            canvas.add(new fabric.Line([x2, 0, x2, h], opts));
+            canvas.add(new fabric.Line([x1, 0, x1, h], opts)); canvas.add(new fabric.Line([x2, 0, x2, h], opts));
         }
 
         function renderSpine(c) {
-            if(state.spine.symbol && state.images.icon) {
-                placeImage(state.images.icon, c.spineX, c.bottomBase, 1.0 * state.ppi, { originY: 'bottom', color: state.text.color });
-            }
-
+            if(state.spine.symbol && state.images.icon) placeImage(state.images.icon, c.spineX, c.bottomBase, 1.0 * state.ppi, { originY: 'bottom', color: state.text.color });
             let parts = [];
-            const l1 = document.getElementById('inputLine1').value;
-            const l2 = document.getElementById('inputLine2').value;
-            const l3 = document.getElementById('inputLine3').value;
-            const d1 = document.getElementById('dateLine').value;
-
+            const l1 = document.getElementById('inputLine1').value; const l2 = document.getElementById('inputLine2').value; const l3 = document.getElementById('inputLine3').value; const d1 = document.getElementById('dateLine').value;
             if(state.spine.title) {
                 const raw = [l1, l2, l3];
                 const processed = raw.map((txt, i) => state.text.lines[i].upper ? txt.toUpperCase() : txt).filter(Boolean);
                 if(processed.length > 0) parts.push(processed.join(" "));
             }
             if(state.spine.date && d1) parts.push(d1);
-
             if(parts.length > 0) {
-                const fullStr = parts.join("  •  ");
-                let yPos = c.bottomBase;
-                if(state.spine.symbol && state.images.icon) yPos -= (1.8 * state.ppi);
-                const txt = new fabric.Text(fullStr, {
-                    fontFamily: state.text.font, fontSize: CONFIG.typo.baseDetails * state.ppi * state.text.scale,
-                    fill: state.text.color, opacity: CONFIG.globalOpacity, originX: 'left', originY: 'center',
-                    left: c.spineX, top: yPos, angle: -90, selectable: false
-                });
-                canvas.add(txt);
+                const spineStr = parts.join("  •  ");
+                let yPos = c.bottomBase; if(state.spine.symbol && state.images.icon) yPos -= (1.8 * state.ppi);
+                canvas.add(new fabric.Text(spineStr, { fontFamily: state.text.font, fontSize: CONFIG.typo.baseDetails * state.ppi * state.text.scale, fill: state.text.color, opacity: CONFIG.globalOpacity, originX: 'left', originY: 'center', left: c.spineX, top: yPos, angle: -90, selectable: false }));
             }
         }
 
         function renderBackCover(c) {
             const copyStr = document.getElementById('copyrightInput').value;
-            if(copyStr) {
-                canvas.add(new fabric.Text(copyStr, {
-                    left: c.backCenter, top: c.bottomBase,
-                    fontSize: CONFIG.typo.baseCopy * state.ppi * state.text.scale,
-                    fontFamily: state.text.font, fill: state.text.color, opacity: CONFIG.globalOpacity * 0.7,
-                    originX: 'center', originY: 'bottom', selectable: false, letterSpacing: 50
-                }));
-            }
+            if(copyStr) canvas.add(new fabric.Text(copyStr, { left: c.backCenter, top: c.bottomBase, fontSize: CONFIG.typo.baseCopy * state.ppi * state.text.scale, fontFamily: state.text.font, fill: state.text.color, opacity: CONFIG.globalOpacity * 0.7, originX: 'center', originY: 'bottom', selectable: false, letterSpacing: 50 }));
             if(state.qr.enabled && state.qr.url) {
                 const qrObj = new QRious({ value: state.qr.url, size: 500, level: 'H', foreground: state.text.color, backgroundAlpha: 0 });
                 placeImage(qrObj.toDataURL(), c.backCenter, c.bottomBase - (0.5 * state.ppi) - (0.35 * state.ppi) - (0.5*state.ppi), 1.2 * state.ppi, { originY: 'bottom' });
@@ -459,26 +445,17 @@
         }
 
         function renderFrontCover(c) {
-            const layout = state.layout;
-            const x = c.frontCenter; 
-            const y = c.centerY;
-            const gap = c.gap;
-
+            const layout = state.layout; const x = c.frontCenter; const y = c.centerY; const gap = c.gap;
             if (layout === 'magazine') {
                 if(state.images.main) placeClippedImage(state.images.main, x, y, state.bookSize*state.ppi, c.h, 'rect', true);
                 renderTextBlock(x, 2.0 * state.ppi, false, true);
             } 
-            else if (layout === 'icon') {
-                renderIcon(x, y);
-            } 
+            else if (layout === 'icon') renderIcon(x, y);
             else if (layout === 'text_icon') {
-                const dynGap = gap * state.text.scale;
-                const tObj = getTextBlockObj(true);
+                const dynGap = gap * state.text.scale; const tObj = getTextBlockObj(true);
                 const iconSize = (2.0 / 1.6) * state.ppi * state.text.scale;
-                const visualGap = dynGap * 1.5; 
-                const totalH = tObj.height + visualGap + iconSize;
-                const startY = y - (totalH / 2);
-                tObj.set({ left: x, top: startY + tObj.height/2 }); canvas.add(tObj);
+                const visualGap = dynGap * 1.5; const totalH = tObj.height + visualGap + iconSize;
+                const startY = y - (totalH / 2); tObj.set({ left: x, top: startY + tObj.height/2 }); canvas.add(tObj);
                 renderIcon(x, startY + tObj.height + visualGap + iconSize/2, iconSize);
             } 
             else if (layout === 'graphic' || layout === 'photo_text') {
@@ -489,117 +466,78 @@
             else if (layout === 'text') { const tObj = createTextBlockObj(); tObj.set({ left: x, top: cy }); canvas.add(tObj); } 
         }
 
+        // --- BUILDERS ---
         function createTextBlockObj(compact = false) {
-            const l1 = document.getElementById('inputLine1').value;
-            const l2 = document.getElementById('inputLine2').value;
-            const l3 = document.getElementById('inputLine3').value;
-            const dateIn = document.getElementById('dateLine').value;
-            const rawLines = [l1, l2, l3];
-            const processedLines = rawLines.map((txt, i) => { return state.text.lines[i].upper ? txt.toUpperCase() : txt; });
+            const l1 = document.getElementById('inputLine1').value; const l2 = document.getElementById('inputLine2').value; const l3 = document.getElementById('inputLine3').value; const dateIn = document.getElementById('dateLine').value;
+            const rawLines = [l1, l2, l3]; const processedLines = rawLines.map((txt, i) => { return state.text.lines[i].upper ? txt.toUpperCase() : txt; });
             const hasText = l1 || l2 || l3;
             let renderTxt = hasText ? processedLines.filter(Boolean).join("\n") : "THE VISUAL DIARY\n\n\n";
             let opacity = hasText ? CONFIG.globalOpacity : 0.3;
-            const baseSize = compact ? 0.8 : CONFIG.typo.baseTitle; 
-            const finalSize = baseSize * state.ppi * state.text.scale;
+            const baseSize = compact ? 0.8 : CONFIG.typo.baseTitle; const finalSize = baseSize * state.ppi * state.text.scale;
             const tObj = new fabric.Text(renderTxt, { fontFamily: state.text.font, fontSize: finalSize, textAlign: 'center', lineHeight: 1.3, fill: state.text.color, opacity: opacity, selectable: false, originX: 'center', originY: 'center' });
             const group = new fabric.Group([tObj], { originX: 'center', originY: 'center' });
             if(dateIn || !hasText) { 
-                const dateStr = dateIn ? dateIn : "2025";
-                const dateOp = dateIn ? GLOBAL_OPACITY : 0.3;
-                const dateSize = TYPO_CONFIG.baseDetails * state.ppi * state.text.scale;
+                const dateStr = dateIn ? dateIn : "2025"; const dateOp = dateIn ? CONFIG.globalOpacity : 0.3; const dateSize = TYPO_CONFIG.baseDetails * state.ppi * state.text.scale;
                 const dObj = new fabric.Text(dateStr, { fontFamily: state.text.font, fontSize: dateSize, fill: state.text.color, opacity: dateOp, originX: 'center', originY: 'top', top: tObj.height/2 + (compact ? 1.0 : 2.0)*state.ppi });
                 group.addWithUpdate(dObj);
             }
             return group;
         }
-        function renderTextBlock(x, y, compact, isMagazine = false) {
+        function getTextBlockObj(compact) { return createTextBlockObj(compact); } // Alias for consistency
+
+        function renderTextBlock(x, y, compact, isMag = false) {
             if(state.layout === 'graphic') return;
-            if(isMagazine) {
+            if(isMag) {
                 let txt = [document.getElementById('inputLine1').value, document.getElementById('inputLine2').value].filter(Boolean).join("\n");
                 if(!txt) txt = "MAGAZINE";
-                const tObj = new fabric.Text(txt, { fontFamily: 'Bodoni Moda', fontSize: 2.5 * state.ppi * state.text.scale, textAlign: 'center', lineHeight: 1.0, originX: 'center', originY: 'top', left: x, top: y, fill: state.text.color, selectable: false });
-                canvas.add(tObj);
+                canvas.add(new fabric.Text(txt, { fontFamily: 'Bodoni Moda', fontSize: 2.5 * state.ppi * state.text.scale, textAlign: 'center', lineHeight: 1.0, originX: 'center', originY: 'top', left: x, top: y, fill: state.text.color, selectable: false }));
                 return;
             }
-            const group = createTextBlockObj(compact);
-            group.set({ left: x, top: y });
-            canvas.add(group);
+            const group = createTextBlockObj(compact); group.set({ left: x, top: y }); canvas.add(group);
         }
+
         function renderIcon(x, y, forcedSize = null) {
-            let iconUrl = state.images.icon;
-            let isGhost = false;
+            let iconUrl = state.images.icon; let isGhost = false;
             if(!iconUrl) { iconUrl = 'assets/preview/icons/love/01heart.png'; isGhost = true; }
-            let size = forcedSize ? forcedSize : (2.0 / 1.6) * state.ppi * state.text.scale;
-            fabric.Image.fromURL(iconUrl, (img) => {
-                if(!img) return;
-                img.scaleToWidth(size);
-                img.set({ left: x, top: y, originX: 'center', originY: 'center', selectable: false, opacity: isGhost ? 0.3 : CONFIG.globalOpacity });
-                const filter = new fabric.Image.filters.BlendColor({ color: state.text.color, mode: 'tint', alpha: 1 });
-                img.filters.push(filter); img.applyFilters();
-                canvas.add(img);
-            });
+            placeImage(iconUrl, x, y, forcedSize || (2.0/1.6)*state.ppi*state.text.scale, { color: state.text.color, opacity: isGhost ? 0.3 : CONFIG.globalOpacity });
         }
+
         function renderImageSlot(x, y) {
             const w = state.slotSize.w * state.ppi; const h = state.slotSize.h * state.ppi;
-            if(state.images.main && state.images.main.src) {
-                fabric.Image.fromURL(state.images.main.src, (img) => {
-                    const info = state.images.main.cropInfo; const scaleFactor = w / info.slotPixelSize;
-                    img.set({ scaleX: info.scale * scaleFactor, scaleY: info.scale * scaleFactor, left: x + (info.left * scaleFactor), top: y + (info.top * scaleFactor), originX: 'center', originY: 'center', selectable: false });
-                    let clip;
-                    if(state.maskType === 'circle') {
-                        clip = new fabric.Circle({ radius: (w * (1/(info.scale * scaleFactor))) / 2, left: -(info.left * scaleFactor) / (info.scale * scaleFactor), top: -(info.top * scaleFactor) / (info.scale * scaleFactor), originX: 'center', originY: 'center' });
-                    } else {
-                        clip = new fabric.Rect({ width: w * (1/(info.scale * scaleFactor)), height: h * (1/(info.scale * scaleFactor)), left: -(info.left * scaleFactor) / (info.scale * scaleFactor), top: -(info.top * scaleFactor) / (info.scale * scaleFactor), originX: 'center', originY: 'center' });
-                    }
-                    img.clipPath = clip;
-                    if (state.layout === 'graphic') { img.set({ opacity: CONFIG.globalOpacity }); const filter = new fabric.Image.filters.BlendColor({ color: state.text.color, mode: 'tint', alpha: 1 }); img.filters.push(filter); img.applyFilters(); }
-                    canvas.add(img);
-                });
-            } else {
-                let rect;
-                if(state.maskType === 'circle') {
-                    rect = new fabric.Circle({ radius: w/2, fill: 'transparent', stroke: '#ddd', strokeWidth:2, strokeDashArray: [20,20], left: x, top: y, originX: 'center', originY: 'center', selectable: false });
-                } else {
-                    rect = new fabric.Rect({ width: w, height: h, fill: 'transparent', stroke: '#ddd', strokeWidth:2, strokeDashArray: [20,20], left: x, top: y, originX: 'center', originY: 'center', selectable: false });
-                }
-                canvas.add(rect); 
+            if(state.images.main) { placeClippedImage(state.images.main, x, y, w, h, state.maskType); } 
+            else {
+                let shape;
+                const opts = { fill: 'transparent', stroke: '#ddd', strokeWidth: 2, strokeDashArray: [20,20], left: x, top: y, originX: 'center', originY: 'center', selectable: false };
+                if(state.maskType === 'circle') shape = new fabric.Circle({ radius: w/2, ...opts });
+                else shape = new fabric.Rect({ width: w, height: h, ...opts });
+                canvas.add(shape);
             }
         }
 
-        // --- HANDLERS ---
         function placeImage(url, x, y, width, opts = {}) {
             fabric.Image.fromURL(url, (img) => {
                 if(!img) return;
                 img.scaleToWidth(width);
                 img.set({ left: x, top: y, originX: 'center', originY: 'center', selectable: false, opacity: CONFIG.globalOpacity, ...opts });
-                if(opts.color) {
-                    img.filters.push(new fabric.Image.filters.BlendColor({ color: opts.color, mode: 'tint', alpha: 1 }));
-                    img.applyFilters();
-                }
-                canvas.add(img);
-                if(opts.sendBack) canvas.sendToBack(img);
+                if(opts.color) { img.filters.push(new fabric.Image.filters.BlendColor({ color: opts.color, mode: 'tint', alpha: 1 })); img.applyFilters(); }
+                canvas.add(img); if(opts.sendBack) canvas.sendToBack(img);
             });
         }
 
         function placeClippedImage(imgData, x, y, w, h, maskType, isBack = false) {
             if(!imgData || !imgData.src) return;
             fabric.Image.fromURL(imgData.src, (img) => {
-                const info = imgData.cropInfo; 
-                const scaleFactor = w / info.slotPixelSize;
+                const info = imgData.cropInfo; const scaleFactor = w / info.slotPixelSize;
                 if(isBack) {
-                    const coverW = w; 
-                    const scale = Math.max(coverW / img.width, h / img.height);
+                    const coverW = w; const scale = Math.max(coverW / img.width, h / img.height);
                     img.set({ scaleX: scale, scaleY: scale, left: x, top: h/2, originX: 'center', originY: 'center', selectable: false });
                     img.clipPath = new fabric.Rect({ width: coverW/scale, height: h/scale, left: -coverW/2/scale, top: -h/2/scale });
                     canvas.add(img); canvas.sendToBack(img);
                 } else {
                     img.set({ scaleX: info.scale * scaleFactor, scaleY: info.scale * scaleFactor, left: x + (info.left * scaleFactor), top: y + (info.top * scaleFactor), originX: 'center', originY: 'center', selectable: false });
                     let clip;
-                    if(maskType === 'circle') {
-                        clip = new fabric.Circle({ radius: (w * (1/(info.scale * scaleFactor))) / 2, left: -(info.left * scaleFactor) / (info.scale * scaleFactor), top: -(info.top * scaleFactor) / (info.scale * scaleFactor), originX: 'center', originY: 'center' });
-                    } else {
-                        clip = new fabric.Rect({ width: w * (1/(info.scale * scaleFactor)), height: h * (1/(info.scale * scaleFactor)), left: -(info.left * scaleFactor) / (info.scale * scaleFactor), top: -(info.top * scaleFactor) / (info.scale * scaleFactor), originX: 'center', originY: 'center' });
-                    }
+                    if(maskType === 'circle') clip = new fabric.Circle({ radius: (w * (1/(info.scale * scaleFactor))) / 2, left: -(info.left * scaleFactor) / (info.scale * scaleFactor), top: -(info.top * scaleFactor) / (info.scale * scaleFactor), originX: 'center', originY: 'center' });
+                    else clip = new fabric.Rect({ width: w * (1/(info.scale * scaleFactor)), height: h * (1/(info.scale * scaleFactor)), left: -(info.left * scaleFactor) / (info.scale * scaleFactor), top: -(info.top * scaleFactor) / (info.scale * scaleFactor), originX: 'center', originY: 'center' });
                     img.clipPath = clip;
                     if (state.layout === 'graphic') { img.set({ opacity: CONFIG.globalOpacity }); const filter = new fabric.Image.filters.BlendColor({ color: state.text.color, mode: 'tint', alpha: 1 }); img.filters.push(filter); img.applyFilters(); }
                     canvas.add(img);
@@ -607,20 +545,17 @@
             });
         }
 
+        // --- HANDLERS ---
         function updateTriggerPosition(c) {
             const t = document.getElementById('photoTrigger');
             const needsTrigger = (state.layout === 'graphic' || state.layout === 'photo_text' || state.layout === 'magazine') && !state.images.main;
             if(needsTrigger) {
                 t.classList.remove('hidden');
-                let tx = c.frontCenter; 
-                let ty = c.centerY;
+                let tx = c.frontCenter; let ty = c.centerY;
                 if(state.layout === 'graphic') ty -= (1.5 * state.ppi); 
                 else if(state.layout === 'photo_text') ty -= c.gap/2;
-                
-                const cssX = tx / CONFIG.renderScale;
-                const cssY = ty / CONFIG.renderScale;
-                t.style.left = `calc(${cssX}px - 25px)`;
-                t.style.top = `calc(${cssY}px - 25px)`;
+                const cssX = tx / CONFIG.renderScale; const cssY = ty / CONFIG.renderScale;
+                t.style.left = `calc(${cssX}px - 25px)`; t.style.top = `calc(${cssY}px - 25px)`;
             } else { t.classList.add('hidden'); }
         }
 
@@ -631,21 +566,16 @@
         }
         
         window.changeCollection = (name) => {
-            const grid = document.getElementById('pairsGrid');
-            const custom = document.getElementById('customPickers');
+            const grid = document.getElementById('pairsGrid'); const custom = document.getElementById('customPickers');
             grid.innerHTML = '';
-            
             if(name === 'Custom') { grid.classList.add('hidden'); custom.classList.remove('hidden'); return; }
             grid.classList.remove('hidden'); custom.classList.add('hidden');
-
             if(typeof DESIGNER_PALETTES !== 'undefined' && DESIGNER_PALETTES[name]) {
                 DESIGNER_PALETTES[name].forEach(pair => {
-                    const btn = document.createElement('div');
-                    btn.className = 'pair-btn'; btn.style.backgroundColor = pair.bg;
+                    const btn = document.createElement('div'); btn.className = 'pair-btn'; btn.style.backgroundColor = pair.bg;
                     if(pair.bg.toUpperCase() === '#FFFFFF') btn.style.border = '1px solid #ccc';
                     const h = document.createElement('div'); h.className = 'pair-heart'; h.innerText = '❤'; h.style.color = pair.text;
-                    btn.appendChild(h);
-                    btn.onclick = () => applyPair(pair, btn);
+                    btn.appendChild(h); btn.onclick = () => applyPair(pair, btn);
                     grid.appendChild(btn);
                 });
                 if(DESIGNER_PALETTES[name].length > 0) applyPair(DESIGNER_PALETTES[name][0], grid.firstChild);
@@ -684,27 +614,19 @@
         };
 
         window.setBookSize = (s, btn) => {
-            state.bookSize = s;
-            document.querySelectorAll('.format-card').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            updateCanvasDimensions();
+            state.bookSize = s; document.querySelectorAll('.format-card').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active'); updateCanvasDimensions();
         };
 
-        window.updateScaleFromSlider = (v) => { 
-            state.text.scale = CONFIG.scales[v-1]; 
-            if(state.layout === 'graphic') state.slotSize = { w: 10 * state.text.scale, h: 10 * state.text.scale };
-            renderLayout(); 
-        };
-        window.setScale = (s) => { 
-            const idx = CONFIG.scales.indexOf(s); 
-            if(idx>-1) { document.getElementById('textScale').value = idx+1; window.updateScaleFromSlider(idx+1); } 
-        };
+        window.updateScaleFromSlider = (v) => { state.text.scale = CONFIG.scales[v-1]; if(state.layout === 'graphic') state.slotSize = { w: 10 * state.text.scale, h: 10 * state.text.scale }; renderLayout(); };
+        window.setScale = (s) => { const idx = CONFIG.scales.indexOf(s); if(idx>-1) { document.getElementById('textScale').value = idx+1; window.updateScaleFromSlider(idx+1); } };
 
         window.triggerAssetLoader = () => {
             if(state.layout === 'graphic') openGallery('graphics', 'main');
             else document.getElementById('imageLoader').click();
         };
 
+        // --- GALLERY ---
         let curGalTarget = 'main'; 
         window.openGallery = (type, target) => {
             document.getElementById('globalSymbolBtn').classList.remove('pulse-attention');
@@ -715,10 +637,8 @@
             
             const tabs = document.getElementById('galleryTabs'); tabs.innerHTML = '';
             let db = (type === 'icons') ? ASSETS_DB.icons : ASSETS_DB.graphics;
-            if(!db) return; 
-            
-            let curGalTarget = target; 
-            
+            if(!db) return;
+            curGalTarget = target;
             Object.keys(db).forEach((cat, i) => {
                 const t = document.createElement('div'); t.className = `gallery-tab ${i===0?'active':''}`; t.innerText = cat;
                 t.onclick = () => { document.querySelectorAll('.gallery-tab').forEach(x=>x.classList.remove('active')); t.classList.add('active'); loadGal(type, cat, target); };
@@ -755,10 +675,12 @@
         window.closeGallery = () => document.getElementById('galleryModal').classList.add('hidden');
         window.handleGalleryUpload = () => {}; 
 
+        // Listeners
         ['inputLine1','inputLine2','inputLine3','dateLine','copyrightInput'].forEach(id => {
             const el = document.getElementById(id);
             if(el) el.oninput = () => renderLayout();
         });
+        document.getElementById('fontSelector').addEventListener('change', (e) => { state.text.font = e.target.value; renderLayout(); });
         
         document.getElementById('iconLoader').onchange = (e) => { 
             const r = new FileReader(); 
@@ -781,6 +703,7 @@
             e.target.value = '';
         };
 
+        // --- CROPPER ---
         function initCrop() { if(!cropCanvas) cropCanvas = new fabric.Canvas('cropCanvas', { width: 500, height: 500, backgroundColor: '#111', selection: false }); cropCanvas.clear(); cropCanvas.setBackgroundColor('#111'); }
         
         window.setCropMask = (w, h) => {
@@ -850,33 +773,6 @@
             canvas.getObjects('line').forEach(o => o.opacity = 0.3);
             const a = document.createElement('a'); a.download = `malevich_cover_${state.bookSize}.png`; a.href = data; a.click();
         };
-
-        // --- ROBUST CANVAS INIT ---
-        function updateCanvasDimensions() {
-            const container = document.getElementById('workspace');
-            if(!container || container.clientWidth === 0) return; // Safety check
-            
-            const margin = 20; 
-            const maxBookW = 30*2 + CONFIG.spineWidthCm; const maxBookH = 30;
-            const basePPI = Math.max(5, Math.min((container.clientWidth - margin*2) / maxBookW, (container.clientHeight - margin*2) / maxBookH));
-            
-            state.ppi = basePPI * CONFIG.renderScale;
-            const curW = state.bookSize*2 + CONFIG.spineWidthCm; const curH = state.bookSize;
-            
-            // Set fabric logical size
-            canvas.setWidth(curW * state.ppi); 
-            canvas.setHeight(curH * state.ppi);
-            
-            // Set CSS wrapper size (physical size on screen)
-            canvas.wrapperEl.style.width = `${curW * basePPI}px`; 
-            canvas.wrapperEl.style.height = `${curH * basePPI}px`;
-            
-            // Ensure inner canvas elements fill wrapper
-            canvas.lowerCanvasEl.style.width = '100%'; canvas.upperCanvasEl.style.width = '100%';
-            canvas.lowerCanvasEl.style.height = '100%'; canvas.upperCanvasEl.style.height = '100%';
-            
-            renderLayout();
-        }
     </script>
 </body>
 </html>
