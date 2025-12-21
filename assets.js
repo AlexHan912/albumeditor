@@ -3,18 +3,12 @@
 const ASSETS_DB = {
     // 1. ИКОНКИ (Для корешка и макета Символ - маленькие)
     icons: {
-        "Love": ["01heart.png"],
-        "Stars": ["01heart.png"], // Пример, можно заменить файлы
-        "Nature": ["01heart.png"]
+        "Love": ["01heart.png"]
     },
 
     // 2. ГРАФИКА (Для макета Графика - большие 10х10см, черные PNG)
     graphics: {
-        "Wedding": ["01heart.png"], 
-        "Baby": ["01heart.png"],
-        "Geometry": ["01heart.png"],
-        "Abstract": ["01heart.png"],
-        "Floral": ["01heart.png"]
+        "Love": ["01heart.png"]
     }
 };
 
@@ -57,3 +51,4 @@ const DESIGNER_PALETTES = {
         { bg: '#FF0000', text: '#00FFFF' }, { bg: '#FFFFFF', text: '#FF0000' }
     ]
 };
+
