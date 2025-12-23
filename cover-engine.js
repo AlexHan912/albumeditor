@@ -1,0 +1,318 @@
+/* cover-engine.js - Logic for Rendering & Cropping */
+
+const CONFIG = {
+    dpi: 300, cmToInch: 2.54, spineWidthCm: 1.5, renderScale: 3.0,
+    globalOpacity: 0.85, typo: { baseTitle: 1.2, baseDetails: 0.5, baseCopy: 0.35 },
+    scales: [0.8, 1.0, 1.2, 1.5]
+};
+
+const CoverEngine = {
+    canvas: null,
+    
+    init: function(canvasId) {
+        this.canvas = new fabric.Canvas(canvasId, { backgroundColor: '#fff', selection: false, enableRetinaScaling: false });
+    },
+
+    loadSimpleImage: function(path, callback) {
+        const img = new Image();
+        img.onload = () => callback(path);
+        img.onerror = () => callback(null);
+        img.src = path;
+    },
+
+    updateDimensions: function(container, state) {
+        if(!container || container.clientWidth === 0) return;
+        const margin = 20; 
+        const maxBookW = 30*2 + CONFIG.spineWidthCm; 
+        const maxBookH = 30;
+        const basePPI = Math.max(5, Math.min((container.clientWidth - margin*2) / maxBookW, (container.clientHeight - margin*2) / maxBookH));
+        state.ppi = basePPI * CONFIG.renderScale;
+        const curW = state.bookSize*2 + CONFIG.spineWidthCm; 
+        const curH = state.bookSize;
+        
+        this.canvas.setWidth(curW * state.ppi); 
+        this.canvas.setHeight(curH * state.ppi);
+        
+        // CSS Scaling
+        this.canvas.wrapperEl.style.width = `${curW * basePPI}px`; 
+        this.canvas.wrapperEl.style.height = `${curH * basePPI}px`;
+        this.canvas.lowerCanvasEl.style.width = '100%'; this.canvas.upperCanvasEl.style.width = '100%';
+        this.canvas.lowerCanvasEl.style.height = '100%'; this.canvas.upperCanvasEl.style.height = '100%';
+        
+        this.render(state);
+    },
+
+    render: function(state) {
+        if(!this.canvas) return;
+        this.canvas.clear(); 
+        this.canvas.setBackgroundColor(state.coverColor);
+        
+        const h = this.canvas.height;
+        const x1 = state.bookSize * state.ppi; 
+        const x2 = (state.bookSize + 1.5) * state.ppi;
+        
+        // Coordinates Calculation
+        const c = { 
+            h: h, 
+            spineX: x1 + ((x2 - x1) / 2), 
+            frontCenter: x2 + (state.bookSize * state.ppi / 2), 
+            backCenter: (state.bookSize * state.ppi) / 2, 
+            bottomBase: h - (1.5 * state.ppi), 
+            centerY: h / 2, 
+            gap: 2.0 * state.ppi 
+        };
+
+        this._drawGuides(x1, x2, h, state);
+        this._renderSpine(c, state);
+        this._renderBackCover(c, state);
+        this._renderFrontCover(c, state);
+        
+        // Return trigger coordinates for UI
+        return { 
+            triggerX: c.frontCenter, 
+            triggerY: (state.layout === 'graphic' ? c.centerY - (1.5 * state.ppi) : (state.layout === 'photo_text' ? c.centerY - c.gap/2 : c.centerY)),
+            scale: CONFIG.renderScale 
+        };
+    },
+
+    _drawGuides: function(x1, x2, h, state) {
+        const opts = { stroke: state.text.color, strokeWidth: 2, strokeDashArray: [10,10], selectable: false, evented: false, opacity: 0.3 };
+        this.canvas.add(new fabric.Line([x1, 0, x1, h], opts)); 
+        this.canvas.add(new fabric.Line([x2, 0, x2, h], opts));
+    },
+
+    _renderSpine: function(c, state) {
+        if(state.spine.symbol && state.images.icon) {
+            this._placeImage(state.images.icon, c.spineX, c.bottomBase, 1.0 * state.ppi, { originY: 'bottom', color: state.text.color });
+        }
+        let parts = [];
+        const raw = state.text.lines.map(l => l.text);
+        if(state.spine.title) {
+            const processed = raw.map((txt, i) => state.text.lines[i].upper ? txt.toUpperCase() : txt).filter(Boolean);
+            if(processed.length > 0) parts.push(processed.join(" "));
+        }
+        if(state.spine.date && state.text.date) parts.push(state.text.date);
+        if(parts.length > 0) {
+            const spineStr = parts.join("  •  ");
+            let yPos = c.bottomBase; 
+            if(state.spine.symbol && state.images.icon) yPos -= (1.8 * state.ppi);
+            this.canvas.add(new fabric.Text(spineStr, { fontFamily: state.text.font, fontSize: CONFIG.typo.baseDetails * state.ppi * state.text.scale, fill: state.text.color, opacity: CONFIG.globalOpacity, originX: 'left', originY: 'center', left: c.spineX, top: yPos, angle: -90, selectable: false }));
+        }
+    },
+
+    _renderBackCover: function(c, state) {
+        if(state.text.copyright) {
+            this.canvas.add(new fabric.Text(state.text.copyright, { left: c.backCenter, top: c.bottomBase, fontSize: CONFIG.typo.baseCopy * state.ppi * state.text.scale, fontFamily: state.text.font, fill: state.text.color, opacity: CONFIG.globalOpacity * 0.7, originX: 'center', originY: 'bottom', selectable: false, letterSpacing: 50 }));
+        }
+        if(state.qr.enabled && state.qr.url) {
+            const qrObj = new QRious({ value: state.qr.url, size: 500, level: 'H', foreground: state.text.color, backgroundAlpha: 0 });
+            this._placeImage(qrObj.toDataURL(), c.backCenter, c.bottomBase - (0.5 * state.ppi) - (0.35 * state.ppi) - (0.5*state.ppi), 1.2 * state.ppi, { originY: 'bottom' });
+        }
+    },
+
+    _renderFrontCover: function(c, state) {
+        const layout = state.layout; 
+        const x = c.frontCenter; 
+        const y = c.centerY; 
+        const gap = c.gap;
+
+        if (layout === 'magazine') {
+            if(state.images.main) this._placeClippedImage(state.images.main, x, y, state.bookSize*state.ppi, c.h, 'rect', true, state);
+            this._renderTextBlock(x, 2.0 * state.ppi, false, true, state);
+        } 
+        else if (layout === 'icon') {
+            this._renderIcon(x, y, null, state);
+        }
+        else if (layout === 'text_icon') {
+            const dynGap = gap * state.text.scale; 
+            const tObj = this._createTextBlockObj(true, state);
+            const iconSize = (2.0 / 1.6) * state.ppi * state.text.scale;
+            const visualGap = dynGap * 1.5; 
+            const totalH = tObj.height + visualGap + iconSize;
+            const startY = y - (totalH / 2); 
+            tObj.set({ left: x, top: startY + tObj.height/2 }); 
+            this.canvas.add(tObj);
+            this._renderIcon(x, startY + tObj.height + visualGap + iconSize/2, iconSize, state);
+        } 
+        else if (layout === 'graphic' || layout === 'photo_text') {
+            let imgY = c.centerY; 
+            if(layout === 'photo_text') imgY = c.centerY - gap/2;
+            this._renderImageSlot(x, imgY, state);
+            if(layout === 'photo_text') this._renderTextBlock(x, y + gap*1.5, true, false, state); 
+        }
+        else if (layout === 'text') { 
+            const tObj = this._createTextBlockObj(false, state); 
+            tObj.set({ left: x, top: c.centerY }); 
+            this.canvas.add(tObj); 
+        } 
+    },
+
+    _createTextBlockObj: function(compact, state) {
+        const rawLines = state.text.lines.map(l => l.text); 
+        const processedLines = rawLines.map((txt, i) => { return state.text.lines[i].upper ? txt.toUpperCase() : txt; });
+        const hasText = rawLines.some(t => t.length > 0);
+        
+        let renderTxt = hasText ? processedLines.filter(Boolean).join("\n") : "THE VISUAL DIARY\n\n\n";
+        let opacity = hasText ? CONFIG.globalOpacity : 0.3;
+        const baseSize = compact ? 0.8 : CONFIG.typo.baseTitle; 
+        const finalSize = baseSize * state.ppi * state.text.scale;
+        
+        const tObj = new fabric.Text(renderTxt, { fontFamily: state.text.font, fontSize: finalSize, textAlign: 'center', lineHeight: 1.3, fill: state.text.color, opacity: opacity, selectable: false, originX: 'center', originY: 'center' });
+        const group = new fabric.Group([tObj], { originX: 'center', originY: 'center' });
+        
+        if(state.text.date || !hasText) { 
+            const dateStr = state.text.date ? state.text.date : "2025"; 
+            const dateOp = state.text.date ? CONFIG.globalOpacity : 0.3; 
+            const dateSize = CONFIG.typo.baseDetails * state.ppi * state.text.scale;
+            const dObj = new fabric.Text(dateStr, { fontFamily: state.text.font, fontSize: dateSize, fill: state.text.color, opacity: dateOp, originX: 'center', originY: 'top', top: tObj.height/2 + (compact ? 1.0 : 2.0)*state.ppi });
+            group.addWithUpdate(dObj);
+        }
+        return group;
+    },
+
+    _renderTextBlock: function(x, y, compact, isMag, state) {
+        if(state.layout === 'graphic') return;
+        if(isMag) {
+            let txt = [state.text.lines[0].text, state.text.lines[1].text].filter(Boolean).join("\n");
+            if(!txt) txt = "MAGAZINE";
+            this.canvas.add(new fabric.Text(txt, { fontFamily: 'Bodoni Moda', fontSize: 2.5 * state.ppi * state.text.scale, textAlign: 'center', lineHeight: 1.0, originX: 'center', originY: 'top', left: x, top: y, fill: state.text.color, selectable: false }));
+            return;
+        }
+        const group = this._createTextBlockObj(compact, state); 
+        group.set({ left: x, top: y }); 
+        this.canvas.add(group);
+    },
+
+    _renderIcon: function(x, y, forcedSize, state) {
+        let iconUrl = state.images.icon; 
+        let isGhost = false;
+        if(!iconUrl) { iconUrl = 'assets/preview/icons/love/01heart.png'; isGhost = true; }
+        this._placeImage(iconUrl, x, y, forcedSize || (2.0/1.6)*state.ppi*state.text.scale, { color: state.text.color, opacity: isGhost ? 0.3 : CONFIG.globalOpacity });
+    },
+
+    _renderImageSlot: function(x, y, state) {
+        const w = state.slotSize.w * state.ppi; 
+        const h = state.slotSize.h * state.ppi;
+        if(state.images.main) { 
+            this._placeClippedImage(state.images.main, x, y, w, h, state.maskType, false, state); 
+        } else {
+            let shape;
+            const opts = { fill: 'transparent', stroke: '#ddd', strokeWidth: 2, strokeDashArray: [20,20], left: x, top: y, originX: 'center', originY: 'center', selectable: false };
+            if(state.maskType === 'circle') shape = new fabric.Circle({ radius: w/2, ...opts });
+            else shape = new fabric.Rect({ width: w, height: h, ...opts });
+            this.canvas.add(shape);
+        }
+    },
+
+    _placeImage: function(url, x, y, width, opts = {}) {
+        fabric.Image.fromURL(url, (img) => {
+            if(!img) return;
+            img.scaleToWidth(width);
+            img.set({ left: x, top: y, originX: 'center', originY: 'center', selectable: false, opacity: CONFIG.globalOpacity, ...opts });
+            if(opts.color) { img.filters.push(new fabric.Image.filters.BlendColor({ color: opts.color, mode: 'tint', alpha: 1 })); img.applyFilters(); }
+            this.canvas.add(img); 
+            if(opts.sendBack) this.canvas.sendToBack(img);
+        });
+    },
+
+    _placeClippedImage: function(imgData, x, y, w, h, maskType, isBack, state) {
+        if(!imgData || !imgData.src) return;
+        fabric.Image.fromURL(imgData.src, (img) => {
+            const info = imgData.cropInfo; 
+            const scaleFactor = w / info.slotPixelSize;
+            if(isBack) {
+                const coverW = w; 
+                const scale = Math.max(coverW / img.width, h / img.height);
+                img.set({ scaleX: scale, scaleY: scale, left: x, top: h/2, originX: 'center', originY: 'center', selectable: false });
+                img.clipPath = new fabric.Rect({ width: coverW/scale, height: h/scale, left: -coverW/2/scale, top: -h/2/scale });
+                this.canvas.add(img); 
+                this.canvas.sendToBack(img);
+            } else {
+                img.set({ scaleX: info.scale * scaleFactor, scaleY: info.scale * scaleFactor, left: x + (info.left * scaleFactor), top: y + (info.top * scaleFactor), originX: 'center', originY: 'center', selectable: false });
+                let clip;
+                if(maskType === 'circle') clip = new fabric.Circle({ radius: (w * (1/(info.scale * scaleFactor))) / 2, left: -(info.left * scaleFactor) / (info.scale * scaleFactor), top: -(info.top * scaleFactor) / (info.scale * scaleFactor), originX: 'center', originY: 'center' });
+                else clip = new fabric.Rect({ width: w * (1/(info.scale * scaleFactor)), height: h * (1/(info.scale * scaleFactor)), left: -(info.left * scaleFactor) / (info.scale * scaleFactor), top: -(info.top * scaleFactor) / (info.scale * scaleFactor), originX: 'center', originY: 'center' });
+                img.clipPath = clip;
+                if (state.layout === 'graphic') { img.set({ opacity: CONFIG.globalOpacity }); const filter = new fabric.Image.filters.BlendColor({ color: state.text.color, mode: 'tint', alpha: 1 }); img.filters.push(filter); img.applyFilters(); }
+                this.canvas.add(img);
+            }
+        });
+    },
+    
+    download: function(state) {
+        const mult = (CONFIG.dpi / CONFIG.cmToInch) / state.ppi;
+        this.canvas.getObjects('line').forEach(o => o.opacity = 0);
+        const data = this.canvas.toDataURL({ format: 'png', multiplier: mult, quality: 1 });
+        this.canvas.getObjects('line').forEach(o => o.opacity = 0.3);
+        const a = document.createElement('a'); a.download = `malevich_cover_${state.bookSize}.png`; a.href = data; a.click();
+    }
+};
+
+/* --- CROPPER TOOL --- */
+const CropperTool = {
+    canvas: null,
+    tempImgObject: null,
+    activeSlot: { w: 0, h: 0 },
+    maskType: 'rect',
+    
+    init: function() {
+        if(!this.canvas) this.canvas = new fabric.Canvas('cropCanvas', { width: 500, height: 500, backgroundColor: '#111', selection: false });
+        this.canvas.clear(); 
+        this.canvas.setBackgroundColor('#111');
+    },
+
+    start: function(url, slotW, slotH, maskType) {
+        this.init();
+        this.maskType = maskType;
+        fabric.Image.fromURL(url, (img) => {
+            this.tempImgObject = img;
+            const scale = Math.max(400/img.width, 400/img.height);
+            img.set({ left: 250, top: 250, originX: 'center', originY: 'center', scaleX: scale, scaleY: scale, hasControls: false, hasBorders: false });
+            this.canvas.add(img);
+            this.drawOverlay(slotW, slotH);
+            
+            // Slider Linkage
+            const slider = document.getElementById('zoomSlider');
+            slider.min = scale * 0.5; slider.max = scale * 4; slider.value = scale;
+            slider.oninput = () => { img.scale(parseFloat(slider.value)); this.canvas.requestRenderAll(); };
+        });
+    },
+
+    drawOverlay: function(slotW, slotH) {
+        this.canvas.getObjects().forEach(o => { if(o !== this.tempImgObject) this.canvas.remove(o); });
+        
+        // Slot logic
+        let aspect = slotW / slotH;
+        let pW, pH;
+        // Logic specific to layout
+        if(this.maskType === 'circle') { pW = 400; pH = 400; }
+        else if(aspect >= 1) { pW = 400; pH = 400/aspect; } 
+        else { pH = 400; pW = 400*aspect; }
+        
+        this.activeSlot = { w: pW, h: pH }; // Store pixels for crop calc
+        
+        const cx = 250, cy = 250;
+        let pathStr = `M 0 0 H 500 V 500 H 0 Z`;
+        
+        if(this.maskType === 'circle') {
+            const r = pW/2;
+            pathStr += ` M ${cx} ${cy-r} A ${r} ${r} 0 1 0 ${cx} ${cy+r} A ${r} ${r} 0 1 0 ${cx} ${cy-r} Z`;
+            this.canvas.add(new fabric.Circle({ radius: r, left: cx, top: cy, originX:'center', originY:'center', fill: 'transparent', stroke: '#fff', strokeWidth: 1, selectable: false }));
+        } else {
+            pathStr += ` M ${cx-pW/2} ${cy-pH/2} H ${cx+pW/2} V ${cy+pH/2} H ${cx-pW/2} Z`;
+            this.canvas.add(new fabric.Rect({ left: cx, top: cy, width: pW, height: pH, fill: 'transparent', stroke: '#fff', strokeWidth: 1, originX: 'center', originY: 'center', selectable: false }));
+        }
+        this.canvas.add(new fabric.Path(pathStr, { fill: 'rgba(0,0,0,0.7)', selectable: false, evented: false, fillRule: 'evenodd' }));
+        this.canvas.requestRenderAll();
+    },
+
+    apply: function() {
+        if(!this.tempImgObject) return null;
+        const offX = this.tempImgObject.left - 250; 
+        const offY = this.tempImgObject.top - 250;
+        return { 
+            src: this.tempImgObject.getSrc(), 
+            cropInfo: { left: offX, top: offY, scale: this.tempImgObject.scaleX, slotPixelSize: this.activeSlot.w } 
+        };
+    }
+};
