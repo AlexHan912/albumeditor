@@ -25,9 +25,10 @@ function refresh() {
 
 function loadDefaultAssets() {
     setTimeout(() => { document.getElementById('app-loader').style.opacity = '0'; setTimeout(() => document.getElementById('app-loader').style.display='none', 800); }, 1500);
-    // Default Icon
-    CoverEngine.loadSimpleImage('assets/print/icons/love/01heart.png', (url) => {
-        const final = url || 'assets/preview/icons/love/01heart.png';
+    
+    // --- ПРАВКА ШЛЯХІВ (icons_print) ---
+    CoverEngine.loadSimpleImage('assets/icons_print/love/01heart.png', (url) => {
+        const final = url || 'assets/icons_preview/love/01heart.png';
         CoverEngine.loadSimpleImage(final, (valid) => { 
             if(valid) state.images.icon = valid; 
             finishInit(); 
@@ -45,7 +46,6 @@ function finishInit() {
 // --- UI HELPERS ---
 function updateTriggerPosition(tx, ty, scale) {
     const t = document.getElementById('photoTrigger');
-    // Триггер нужен только если нет картинки
     const needsTrigger = (state.layout === 'graphic' || state.layout === 'photo_text' || state.layout === 'magazine') && !state.images.main;
     
     if(needsTrigger) {
@@ -88,21 +88,14 @@ window.setLayout = (l, btn) => {
     document.querySelectorAll('.layout-card').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     
-    // Сбрасываем картинку только если сменился тип макета
-    if (!isSameMode) {
-        state.images.main = null; 
-    }
+    if (!isSameMode) state.images.main = null; 
     
     if(l === 'magazine') state.text.font = 'Bodoni Moda';
     
     if(l === 'graphic') { 
         state.maskType = 'none'; 
         state.slotSize = { w: 0, h: 0 }; 
-        
-        // ОБНОВЛЕНО: Открываем галерею только при первом переключении на этот режим
-        if (!isSameMode) {
-            openGallery('graphics', 'main');
-        }
+        if (!isSameMode) openGallery('graphics', 'main');
     }
     else { 
         state.maskType = 'rect'; 
@@ -111,18 +104,10 @@ window.setLayout = (l, btn) => {
     refresh();
 };
 
-// НОВАЯ ФУНКЦИЯ: Обработка клика по объекту на холсте
 window.handleCanvasClick = (objType) => {
     if (objType === 'mainImage') {
-        // Если кликнули по картинке в режиме Графика -> открываем галерею для замены
-        if (state.layout === 'graphic') {
-            openGallery('graphics', 'main');
-        }
-        // Если кликнули по картинке в режиме Фото -> открываем кроппер
-        else if (state.layout === 'photo_text' || state.layout === 'magazine') {
-            // Тут можно добавить логику повторного выбора фото, если нужно
-             document.getElementById('imageLoader').click();
-        }
+        if (state.layout === 'graphic') openGallery('graphics', 'main');
+        else if (state.layout === 'photo_text' || state.layout === 'magazine') document.getElementById('imageLoader').click();
     }
 };
 
@@ -196,7 +181,6 @@ function initListeners() {
     document.getElementById('fontSelector').addEventListener('change', (e) => { state.text.font = e.target.value; refresh(); });
     document.getElementById('saveBtn').onclick = () => CoverEngine.download(state);
 
-    // --- UPLOADERS ---
     document.getElementById('iconLoader').onchange = (e) => { 
         const r = new FileReader(); 
         r.onload = (ev) => { 
@@ -211,7 +195,6 @@ function initListeners() {
         const r = new FileReader();
         r.onload = (ev) => { 
             document.getElementById('galleryModal').classList.add('hidden'); 
-            
             if(state.layout === 'graphic') {
                 state.images.main = { src: ev.target.result, natural: true };
                 refresh();
@@ -224,7 +207,6 @@ function initListeners() {
         e.target.value = '';
     };
 
-    // --- CROPPER UI ---
     window.setCropMask = (w, h) => {
         if(w === 'circle') { state.slotSize = { w: 6, h: 6 }; state.maskType = 'circle'; }
         else { state.slotSize = { w: w, h: h }; state.maskType = 'rect'; }
@@ -239,7 +221,7 @@ function initListeners() {
     document.getElementById('cancelCropBtn').onclick = () => document.getElementById('cropperModal').classList.add('hidden');
 }
 
-// --- GALLERY ---
+// --- GALLERY LOGIC (UPDATED PATHS) ---
 window.openGallery = (type, target) => {
     document.getElementById('globalSymbolBtn').classList.remove('pulse-attention');
     document.getElementById('galleryModal').classList.remove('hidden');
@@ -265,8 +247,14 @@ function loadGal(type, cat, target) {
     files.forEach(f => {
         const item = document.createElement('div'); item.className = 'gallery-item';
         const img = document.createElement('img');
-        const url = `assets/preview/${type}/${cat.toLowerCase()}/${f}`;
-        const printUrl = `assets/print/${type}/${cat.toLowerCase()}/${f}`;
+        
+        // --- НОВА ЛОГІКА ШЛЯХІВ ---
+        // type = 'icons' або 'graphics'
+        // Папки: icons_preview, icons_print, graphics_preview, graphics_print
+        
+        const url = `assets/${type}_preview/${cat.toLowerCase()}/${f}`;
+        const printUrl = `assets/${type}_print/${cat.toLowerCase()}/${f}`;
+        
         img.src = url; img.onerror = () => { img.src = printUrl; };
         item.appendChild(img);
         item.onclick = () => {
@@ -289,7 +277,6 @@ function loadGal(type, cat, target) {
 window.closeGallery = () => document.getElementById('galleryModal').classList.add('hidden');
 window.handleGalleryUpload = () => {}; 
 
-// --- QR ---
 window.openQRModal = () => document.getElementById('qrModal').classList.remove('hidden');
 window.applyQR = () => { state.qr.enabled = true; state.qr.url = document.getElementById('qrLinkInput').value; document.getElementById('qrModal').classList.add('hidden'); refresh(); };
 window.removeQR = () => { state.qr.enabled = false; document.getElementById('qrModal').classList.add('hidden'); refresh(); };
