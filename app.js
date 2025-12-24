@@ -82,24 +82,48 @@ window.toggleSpinePart = (part) => {
 };
 
 window.setLayout = (l, btn) => {
+    const isSameMode = (state.layout === l);
     state.layout = l;
+    
     document.querySelectorAll('.layout-card').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     
-    state.images.main = null; 
+    // Сбрасываем картинку только если сменился тип макета
+    if (!isSameMode) {
+        state.images.main = null; 
+    }
     
     if(l === 'magazine') state.text.font = 'Bodoni Moda';
     
     if(l === 'graphic') { 
-        state.maskType = 'none'; // Кроппер не нужен
+        state.maskType = 'none'; 
         state.slotSize = { w: 0, h: 0 }; 
-        openGallery('graphics', 'main');
+        
+        // ОБНОВЛЕНО: Открываем галерею только при первом переключении на этот режим
+        if (!isSameMode) {
+            openGallery('graphics', 'main');
+        }
     }
     else { 
         state.maskType = 'rect'; 
         state.slotSize = { w: 6, h: 6 }; 
     }
     refresh();
+};
+
+// НОВАЯ ФУНКЦИЯ: Обработка клика по объекту на холсте
+window.handleCanvasClick = (objType) => {
+    if (objType === 'mainImage') {
+        // Если кликнули по картинке в режиме Графика -> открываем галерею для замены
+        if (state.layout === 'graphic') {
+            openGallery('graphics', 'main');
+        }
+        // Если кликнули по картинке в режиме Фото -> открываем кроппер
+        else if (state.layout === 'photo_text' || state.layout === 'magazine') {
+            // Тут можно добавить логику повторного выбора фото, если нужно
+             document.getElementById('imageLoader').click();
+        }
+    }
 };
 
 window.setBookSize = (s, btn) => {
@@ -189,11 +213,9 @@ function initListeners() {
             document.getElementById('galleryModal').classList.add('hidden'); 
             
             if(state.layout === 'graphic') {
-                // ОБНОВЛЕНО: Загрузка "как есть", без кропера, с флагом natural
                 state.images.main = { src: ev.target.result, natural: true };
                 refresh();
             } else {
-                // Для фото остался кропер
                 document.getElementById('cropperModal').classList.remove('hidden');
                 CropperTool.start(ev.target.result, state.slotSize.w, state.slotSize.h, state.maskType);
             }
@@ -256,7 +278,6 @@ function loadGal(type, cat, target) {
                     state.images.icon = final; updateSymbolUI(); refresh(); 
                 }
                 else if(type === 'graphics') { 
-                    // ОБНОВЛЕНО: Загрузка графики в натуральную величину
                     state.images.main = { src: final, natural: true }; 
                     refresh(); 
                 }
