@@ -3,7 +3,6 @@
 const CONFIG = {
     dpi: 300, cmToInch: 2.54, spineWidthCm: 1.5, renderScale: 3.0,
     globalOpacity: 0.85, typo: { baseTitle: 1.2, baseDetails: 0.5, baseCopy: 0.35 },
-    // ОБНОВЛЕНО: Шкала масштабов 0.7 .. 1.3
     scales: [0.7, 0.9, 1.1, 1.3]
 };
 
@@ -34,7 +33,6 @@ const CoverEngine = {
         this.canvas.setWidth(curW * state.ppi); 
         this.canvas.setHeight(curH * state.ppi);
         
-        // CSS Scaling
         this.canvas.wrapperEl.style.width = `${curW * basePPI}px`; 
         this.canvas.wrapperEl.style.height = `${curH * basePPI}px`;
         this.canvas.lowerCanvasEl.style.width = '100%'; this.canvas.upperCanvasEl.style.width = '100%';
@@ -52,7 +50,6 @@ const CoverEngine = {
         const x1 = state.bookSize * state.ppi; 
         const x2 = (state.bookSize + 1.5) * state.ppi;
         
-        // Coordinates Calculation
         const c = { 
             h: h, 
             spineX: x1 + ((x2 - x1) / 2), 
@@ -68,11 +65,14 @@ const CoverEngine = {
         this._renderBackCover(c, state);
         this._renderFrontCover(c, state);
         
-        // Return trigger coordinates for UI
+        // Return trigger coords
+        let trigY = c.centerY;
+        if(state.layout === 'graphic') trigY = c.centerY - (2.0 * state.ppi);
+        else if(state.layout === 'photo_text') trigY = c.centerY - c.gap/2;
+        
         return { 
             triggerX: c.frontCenter, 
-            // ОБНОВЛЕНО: Смещение триггера для графики вверх
-            triggerY: (state.layout === 'graphic' ? c.centerY - (2.0 * state.ppi) : (state.layout === 'photo_text' ? c.centerY - c.gap/2 : c.centerY)),
+            triggerY: trigY,
             scale: CONFIG.renderScale 
         };
     },
@@ -138,14 +138,18 @@ const CoverEngine = {
         } 
         else if (layout === 'graphic' || layout === 'photo_text') {
             let imgY = c.centerY; 
-            if(layout === 'photo_text') imgY = c.centerY - gap/2;
             
-            // ОБНОВЛЕНО: Поднимаем графику на 2 см выше
-            if(layout === 'graphic') imgY = c.centerY - (2.0 * state.ppi);
-            
-            this._renderImageSlot(x, imgY, state);
-            
-            if(layout === 'photo_text') this._renderTextBlock(x, y + gap*1.5, true, false, state); 
+            // Если Графика - поднимаем на 2 см
+            if(layout === 'graphic') {
+                imgY = c.centerY - (2.0 * state.ppi);
+                this._renderNaturalImage(x, imgY, state); // Новый метод для натуральной величины
+            } 
+            else {
+                // Если фото+текст
+                if(layout === 'photo_text') imgY = c.centerY - gap/2;
+                this._renderImageSlot(x, imgY, state);
+                if(layout === 'photo_text') this._renderTextBlock(x, y + gap*1.5, true, false, state); 
+            }
         }
         else if (layout === 'text') { 
             const tObj = this._createTextBlockObj(false, state); 
@@ -198,15 +202,59 @@ const CoverEngine = {
     },
 
     _renderImageSlot: function(x, y, state) {
+        // Старый метод для Фото (через кроппер)
         const w = state.slotSize.w * state.ppi; 
         const h = state.slotSize.h * state.ppi;
-        if(state.images.main) { 
+        if(state.images.main && !state.images.main.natural) { 
             this._placeClippedImage(state.images.main, x, y, w, h, state.maskType, false, state); 
         } else {
+            // Placeholder (пунктирный прямоугольник/круг)
             let shape;
             const opts = { fill: 'transparent', stroke: '#ddd', strokeWidth: 2, strokeDashArray: [20,20], left: x, top: y, originX: 'center', originY: 'center', selectable: false };
             if(state.maskType === 'circle') shape = new fabric.Circle({ radius: w/2, ...opts });
             else shape = new fabric.Rect({ width: w, height: h, ...opts });
+            this.canvas.add(shape);
+        }
+    },
+    
+    // ОБНОВЛЕНО: Новый метод для "Натуральной величины"
+    _renderNaturalImage: function(x, y, state) {
+        if(state.images.main && state.images.main.natural) {
+            // Загружаем и считаем размер
+            fabric.Image.fromURL(state.images.main.src, (img) => {
+                if(!img) return;
+                
+                // Расчет размера: (Ширина картинки / 300) * state.ppi
+                // Это дает ширину на холсте в пикселях, соответствующую физическому размеру в 300dpi
+                const naturalScaleX = (state.ppi / 300);
+                const naturalScaleY = (state.ppi / 300);
+                
+                // Применяем зум от слайдера (0.7 - 1.3)
+                const finalScale = naturalScaleX * state.text.scale;
+                
+                img.set({
+                    left: x, 
+                    top: y, 
+                    originX: 'center', 
+                    originY: 'center', 
+                    selectable: false, 
+                    opacity: CONFIG.globalOpacity,
+                    scaleX: finalScale,
+                    scaleY: finalScale
+                });
+
+                // Перекрашивание в цвет текста
+                const filter = new fabric.Image.filters.BlendColor({ color: state.text.color, mode: 'tint', alpha: 1 }); 
+                img.filters.push(filter); 
+                img.applyFilters();
+                
+                this.canvas.add(img);
+            });
+        } else {
+            // Если картинки нет - рисуем плейсхолдер (символ)
+            // Имитация 10х10 см
+            const w = 10 * state.ppi;
+            const shape = new fabric.Circle({ radius: w/2, fill: 'transparent', stroke: '#ddd', strokeWidth: 2, strokeDashArray: [20,20], left: x, top: y, originX: 'center', originY: 'center', selectable: false });
             this.canvas.add(shape);
         }
     },
@@ -240,13 +288,6 @@ const CoverEngine = {
                 if(maskType === 'circle') clip = new fabric.Circle({ radius: (w * (1/(info.scale * scaleFactor))) / 2, left: -(info.left * scaleFactor) / (info.scale * scaleFactor), top: -(info.top * scaleFactor) / (info.scale * scaleFactor), originX: 'center', originY: 'center' });
                 else clip = new fabric.Rect({ width: w * (1/(info.scale * scaleFactor)), height: h * (1/(info.scale * scaleFactor)), left: -(info.left * scaleFactor) / (info.scale * scaleFactor), top: -(info.top * scaleFactor) / (info.scale * scaleFactor), originX: 'center', originY: 'center' });
                 img.clipPath = clip;
-                if (state.layout === 'graphic') { 
-                    img.set({ opacity: CONFIG.globalOpacity }); 
-                    // ОБНОВЛЕНО: Перекрашивание PNG в цвет текста
-                    const filter = new fabric.Image.filters.BlendColor({ color: state.text.color, mode: 'tint', alpha: 1 }); 
-                    img.filters.push(filter); 
-                    img.applyFilters(); 
-                }
                 this.canvas.add(img);
             }
         });
@@ -261,7 +302,7 @@ const CoverEngine = {
     }
 };
 
-/* --- CROPPER TOOL (Используем тот же, так как он универсален) --- */
+/* --- CROPPER TOOL (Без изменений) --- */
 const CropperTool = {
     canvas: null,
     tempImgObject: null,
