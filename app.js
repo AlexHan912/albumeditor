@@ -4,7 +4,6 @@ let state = {
     bookSize: 30, layout: 'text_icon', ppi: 10, slotSize: { w: 6, h: 6 }, maskType: 'rect',
     text: { lines: [ { text: "", upper: false }, { text: "", upper: false }, { text: "", upper: false } ], date: "", copyright: "", font: "Tenor Sans", color: "#1a1a1a", scale: 1.0 },
     coverColor: "#FFFFFF", images: { icon: null, main: null }, 
-    // ОБНОВЛЕНО: Все элементы корешка активны
     spine: { symbol: true, title: true, date: true },
     qr: { enabled: false, url: "" }
 };
@@ -46,7 +45,9 @@ function finishInit() {
 // --- UI HELPERS ---
 function updateTriggerPosition(tx, ty, scale) {
     const t = document.getElementById('photoTrigger');
+    // Триггер нужен только если нет картинки
     const needsTrigger = (state.layout === 'graphic' || state.layout === 'photo_text' || state.layout === 'magazine') && !state.images.main;
+    
     if(needsTrigger) {
         t.classList.remove('hidden');
         const cssX = tx / scale; 
@@ -90,9 +91,8 @@ window.setLayout = (l, btn) => {
     if(l === 'magazine') state.text.font = 'Bodoni Moda';
     
     if(l === 'graphic') { 
-        state.maskType = 'circle';
-        state.slotSize = { w: 10 * state.text.scale, h: 10 * state.text.scale }; 
-        // ОБНОВЛЕНО: Открытие галереи графики при выборе макета
+        state.maskType = 'none'; // Кроппер не нужен
+        state.slotSize = { w: 0, h: 0 }; 
         openGallery('graphics', 'main');
     }
     else { 
@@ -109,9 +109,6 @@ window.setBookSize = (s, btn) => {
 
 window.updateScaleFromSlider = (v) => { 
     state.text.scale = CONFIG.scales[v-1]; 
-    if(state.layout === 'graphic') {
-        state.slotSize = { w: 10 * state.text.scale, h: 10 * state.text.scale }; 
-    }
     refresh(); 
 };
 window.setScale = (s) => { 
@@ -190,13 +187,15 @@ function initListeners() {
         const r = new FileReader();
         r.onload = (ev) => { 
             document.getElementById('galleryModal').classList.add('hidden'); 
+            
             if(state.layout === 'graphic') {
-                    // Manual upload handler for graphic mode
-                    state.images.main = { src: ev.target.result, cropInfo: { scale: 1, left: 0, top: 0, slotPixelSize: 100 } };
-                    refresh();
+                // ОБНОВЛЕНО: Загрузка "как есть", без кропера, с флагом natural
+                state.images.main = { src: ev.target.result, natural: true };
+                refresh();
             } else {
-                    document.getElementById('cropperModal').classList.remove('hidden');
-                    CropperTool.start(ev.target.result, state.slotSize.w, state.slotSize.h, state.maskType);
+                // Для фото остался кропер
+                document.getElementById('cropperModal').classList.remove('hidden');
+                CropperTool.start(ev.target.result, state.slotSize.w, state.slotSize.h, state.maskType);
             }
         };
         if(e.target.files[0]) r.readAsDataURL(e.target.files[0]);
@@ -252,9 +251,13 @@ function loadGal(type, cat, target) {
             CoverEngine.loadSimpleImage(printUrl, (final) => {
                 final = final || url;
                 document.getElementById('galleryModal').classList.add('hidden');
-                if(target === 'global') { state.images.icon = final; updateSymbolUI(); refresh(); }
+                
+                if(target === 'global') { 
+                    state.images.icon = final; updateSymbolUI(); refresh(); 
+                }
                 else if(type === 'graphics') { 
-                    state.images.main = { src: final, cropInfo: { scale: 1, left: 0, top: 0, slotPixelSize: 100 } }; 
+                    // ОБНОВЛЕНО: Загрузка графики в натуральную величину
+                    state.images.main = { src: final, natural: true }; 
                     refresh(); 
                 }
             });
