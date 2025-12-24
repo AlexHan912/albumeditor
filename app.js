@@ -3,7 +3,9 @@
 let state = {
     bookSize: 30, layout: 'text_icon', ppi: 10, slotSize: { w: 6, h: 6 }, maskType: 'rect',
     text: { lines: [ { text: "", upper: false }, { text: "", upper: false }, { text: "", upper: false } ], date: "", copyright: "", font: "Tenor Sans", color: "#1a1a1a", scale: 1.0 },
-    coverColor: "#FFFFFF", images: { icon: null, main: null }, spine: { symbol: true, title: true, date: true },
+    coverColor: "#FFFFFF", images: { icon: null, main: null }, 
+    // ОБНОВЛЕНО: Все элементы корешка активны
+    spine: { symbol: true, title: true, date: true },
     qr: { enabled: false, url: "" }
 };
 
@@ -66,7 +68,7 @@ function updateSymbolUI() {
     }
 }
 
-// --- GLOBAL ACTIONS (Called from HTML) ---
+// --- GLOBAL ACTIONS ---
 window.toggleCase = (i) => { state.text.lines[i-1].upper = !state.text.lines[i-1].upper; document.getElementById(`btnTt${i}`).classList.toggle('active'); refresh(); };
 window.showRow = (i) => document.getElementById(`row${i}`).classList.remove('hidden');
 window.hideRow = (i) => { document.getElementById(`row${i}`).classList.add('hidden'); document.getElementById(`inputLine${i}`).value = ''; state.text.lines[i-1].text = ''; refresh(); };
@@ -82,10 +84,21 @@ window.setLayout = (l, btn) => {
     state.layout = l;
     document.querySelectorAll('.layout-card').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
+    
     state.images.main = null; 
+    
     if(l === 'magazine') state.text.font = 'Bodoni Moda';
-    if(l === 'graphic') { state.maskType = 'circle'; state.slotSize = { w: 10, h: 10 }; }
-    else { state.maskType = 'rect'; state.slotSize = { w: 6, h: 6 }; }
+    
+    if(l === 'graphic') { 
+        state.maskType = 'circle';
+        state.slotSize = { w: 10 * state.text.scale, h: 10 * state.text.scale }; 
+        // ОБНОВЛЕНО: Открытие галереи графики при выборе макета
+        openGallery('graphics', 'main');
+    }
+    else { 
+        state.maskType = 'rect'; 
+        state.slotSize = { w: 6, h: 6 }; 
+    }
     refresh();
 };
 
@@ -96,10 +109,18 @@ window.setBookSize = (s, btn) => {
 
 window.updateScaleFromSlider = (v) => { 
     state.text.scale = CONFIG.scales[v-1]; 
-    if(state.layout === 'graphic') state.slotSize = { w: 10 * state.text.scale, h: 10 * state.text.scale }; 
+    if(state.layout === 'graphic') {
+        state.slotSize = { w: 10 * state.text.scale, h: 10 * state.text.scale }; 
+    }
     refresh(); 
 };
-window.setScale = (s) => { const idx = CONFIG.scales.indexOf(s); if(idx>-1) { document.getElementById('textScale').value = idx+1; window.updateScaleFromSlider(idx+1); } };
+window.setScale = (s) => { 
+    const idx = CONFIG.scales.indexOf(s); 
+    if(idx > -1) { 
+        document.getElementById('textScale').value = idx+1; 
+        window.updateScaleFromSlider(idx+1); 
+    } 
+};
 
 window.changeCollection = (name) => {
     const grid = document.getElementById('pairsGrid'); const custom = document.getElementById('customPickers');
@@ -170,6 +191,7 @@ function initListeners() {
         r.onload = (ev) => { 
             document.getElementById('galleryModal').classList.add('hidden'); 
             if(state.layout === 'graphic') {
+                    // Manual upload handler for graphic mode
                     state.images.main = { src: ev.target.result, cropInfo: { scale: 1, left: 0, top: 0, slotPixelSize: 100 } };
                     refresh();
             } else {
