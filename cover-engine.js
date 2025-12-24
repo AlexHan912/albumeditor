@@ -202,7 +202,11 @@ const CoverEngine = {
     _renderIcon: function(x, y, forcedSize, state) {
         let iconUrl = state.images.icon; 
         let isGhost = false;
-        if(!iconUrl) { iconUrl = 'assets/preview/icons/love/01heart.png'; isGhost = true; }
+        if(!iconUrl) { 
+            // ОНОВЛЕНИЙ ШЛЯХ
+            iconUrl = 'assets/icons_preview/love/01heart.png'; 
+            isGhost = true; 
+        }
         this._placeImage(iconUrl, x, y, forcedSize || (2.0/1.6)*state.ppi*state.text.scale, { color: state.text.color, opacity: isGhost ? 0.3 : CONFIG.globalOpacity });
     },
 
