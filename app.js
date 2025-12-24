@@ -3,7 +3,7 @@
 let state = {
     bookSize: 30, layout: 'text_icon', ppi: 10, slotSize: { w: 6, h: 6 }, maskType: 'rect',
     text: { lines: [ { text: "", upper: false }, { text: "", upper: false }, { text: "", upper: false } ], date: "", copyright: "", font: "Tenor Sans", color: "#1a1a1a", scale: 1.0 },
-    coverColor: "#FFFFFF", images: { icon: null, main: null }, spine: { symbol: true, title: false, date: false },
+    coverColor: "#FFFFFF", images: { icon: null, main: null }, spine: { symbol: true, title: true, date: true },
     qr: { enabled: false, url: "" }
 };
 
