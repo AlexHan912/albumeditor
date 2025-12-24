@@ -3,7 +3,8 @@
 const CONFIG = {
     dpi: 300, cmToInch: 2.54, spineWidthCm: 1.5, renderScale: 3.0,
     globalOpacity: 0.85, typo: { baseTitle: 1.2, baseDetails: 0.5, baseCopy: 0.35 },
-    scales: [0.8, 1.0, 1.2, 1.5]
+    // ОБНОВЛЕНО: Шкала масштабов 0.7 .. 1.3
+    scales: [0.7, 0.9, 1.1, 1.3]
 };
 
 const CoverEngine = {
@@ -70,7 +71,8 @@ const CoverEngine = {
         // Return trigger coordinates for UI
         return { 
             triggerX: c.frontCenter, 
-            triggerY: (state.layout === 'graphic' ? c.centerY - (1.5 * state.ppi) : (state.layout === 'photo_text' ? c.centerY - c.gap/2 : c.centerY)),
+            // ОБНОВЛЕНО: Смещение триггера для графики вверх
+            triggerY: (state.layout === 'graphic' ? c.centerY - (2.0 * state.ppi) : (state.layout === 'photo_text' ? c.centerY - c.gap/2 : c.centerY)),
             scale: CONFIG.renderScale 
         };
     },
@@ -137,7 +139,12 @@ const CoverEngine = {
         else if (layout === 'graphic' || layout === 'photo_text') {
             let imgY = c.centerY; 
             if(layout === 'photo_text') imgY = c.centerY - gap/2;
+            
+            // ОБНОВЛЕНО: Поднимаем графику на 2 см выше
+            if(layout === 'graphic') imgY = c.centerY - (2.0 * state.ppi);
+            
             this._renderImageSlot(x, imgY, state);
+            
             if(layout === 'photo_text') this._renderTextBlock(x, y + gap*1.5, true, false, state); 
         }
         else if (layout === 'text') { 
@@ -233,7 +240,13 @@ const CoverEngine = {
                 if(maskType === 'circle') clip = new fabric.Circle({ radius: (w * (1/(info.scale * scaleFactor))) / 2, left: -(info.left * scaleFactor) / (info.scale * scaleFactor), top: -(info.top * scaleFactor) / (info.scale * scaleFactor), originX: 'center', originY: 'center' });
                 else clip = new fabric.Rect({ width: w * (1/(info.scale * scaleFactor)), height: h * (1/(info.scale * scaleFactor)), left: -(info.left * scaleFactor) / (info.scale * scaleFactor), top: -(info.top * scaleFactor) / (info.scale * scaleFactor), originX: 'center', originY: 'center' });
                 img.clipPath = clip;
-                if (state.layout === 'graphic') { img.set({ opacity: CONFIG.globalOpacity }); const filter = new fabric.Image.filters.BlendColor({ color: state.text.color, mode: 'tint', alpha: 1 }); img.filters.push(filter); img.applyFilters(); }
+                if (state.layout === 'graphic') { 
+                    img.set({ opacity: CONFIG.globalOpacity }); 
+                    // ОБНОВЛЕНО: Перекрашивание PNG в цвет текста
+                    const filter = new fabric.Image.filters.BlendColor({ color: state.text.color, mode: 'tint', alpha: 1 }); 
+                    img.filters.push(filter); 
+                    img.applyFilters(); 
+                }
                 this.canvas.add(img);
             }
         });
@@ -248,7 +261,7 @@ const CoverEngine = {
     }
 };
 
-/* --- CROPPER TOOL --- */
+/* --- CROPPER TOOL (Используем тот же, так как он универсален) --- */
 const CropperTool = {
     canvas: null,
     tempImgObject: null,
@@ -270,8 +283,6 @@ const CropperTool = {
             img.set({ left: 250, top: 250, originX: 'center', originY: 'center', scaleX: scale, scaleY: scale, hasControls: false, hasBorders: false });
             this.canvas.add(img);
             this.drawOverlay(slotW, slotH);
-            
-            // Slider Linkage
             const slider = document.getElementById('zoomSlider');
             slider.min = scale * 0.5; slider.max = scale * 4; slider.value = scale;
             slider.oninput = () => { img.scale(parseFloat(slider.value)); this.canvas.requestRenderAll(); };
@@ -280,20 +291,14 @@ const CropperTool = {
 
     drawOverlay: function(slotW, slotH) {
         this.canvas.getObjects().forEach(o => { if(o !== this.tempImgObject) this.canvas.remove(o); });
-        
-        // Slot logic
         let aspect = slotW / slotH;
         let pW, pH;
-        // Logic specific to layout
         if(this.maskType === 'circle') { pW = 400; pH = 400; }
         else if(aspect >= 1) { pW = 400; pH = 400/aspect; } 
         else { pH = 400; pW = 400*aspect; }
-        
-        this.activeSlot = { w: pW, h: pH }; // Store pixels for crop calc
-        
+        this.activeSlot = { w: pW, h: pH };
         const cx = 250, cy = 250;
         let pathStr = `M 0 0 H 500 V 500 H 0 Z`;
-        
         if(this.maskType === 'circle') {
             const r = pW/2;
             pathStr += ` M ${cx} ${cy-r} A ${r} ${r} 0 1 0 ${cx} ${cy+r} A ${r} ${r} 0 1 0 ${cx} ${cy-r} Z`;
