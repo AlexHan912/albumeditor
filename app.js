@@ -26,9 +26,13 @@ function refresh() {
 function loadDefaultAssets() {
     setTimeout(() => { document.getElementById('app-loader').style.opacity = '0'; setTimeout(() => document.getElementById('app-loader').style.display='none', 800); }, 1500);
     
-    // --- ПРАВКА ШЛЯХІВ (icons_print) ---
-    CoverEngine.loadSimpleImage('assets/icons_print/love/01heart.png', (url) => {
-        const final = url || 'assets/icons_preview/love/01heart.png';
+    // --- ЗАГРУЗКА ДЕФОЛТНОГО СИМВОЛА (из папки symbols) ---
+    // Пытаемся загрузить love_heart.png, если нет - берем превью love_heart_icon.png
+    const defaultPath = 'assets/symbols/love_heart.png';
+    const defaultPreview = 'assets/symbols/love_heart_icon.png';
+
+    CoverEngine.loadSimpleImage(defaultPath, (url) => {
+        const final = url || defaultPreview;
         CoverEngine.loadSimpleImage(final, (valid) => { 
             if(valid) state.images.icon = valid; 
             finishInit(); 
@@ -221,16 +225,30 @@ function initListeners() {
     document.getElementById('cancelCropBtn').onclick = () => document.getElementById('cropperModal').classList.add('hidden');
 }
 
-// --- GALLERY LOGIC (UPDATED PATHS) ---
+// --- GALLERY LOGIC (FLAT FOLDERS) ---
 window.openGallery = (type, target) => {
     document.getElementById('globalSymbolBtn').classList.remove('pulse-attention');
     document.getElementById('galleryModal').classList.remove('hidden');
     const upBtn = document.getElementById('galUploadBtn');
-    if(type === 'icons') { upBtn.innerText = "Загрузить свою иконку"; upBtn.onclick = () => document.getElementById('iconLoader').click(); }
-    else { upBtn.innerText = "Загрузить свой PNG"; upBtn.onclick = () => document.getElementById('imageLoader').click(); }
+    
+    // Динамическая смена заголовка галереи
+    const galTitle = document.getElementById('galleryTitle');
+    
+    // type = 'symbols' (бывш. icons) или 'graphics'
+    let db;
+    if(type === 'symbols') {
+        db = ASSETS_DB.symbols;
+        galTitle.innerText = "Галерея символов";
+        upBtn.innerText = "Загрузить свой символ"; 
+        upBtn.onclick = () => document.getElementById('iconLoader').click();
+    } else {
+        db = ASSETS_DB.graphics;
+        galTitle.innerText = "Галерея графики";
+        upBtn.innerText = "Загрузить свою графику"; 
+        upBtn.onclick = () => document.getElementById('imageLoader').click();
+    }
     
     const tabs = document.getElementById('galleryTabs'); tabs.innerHTML = '';
-    let db = (type === 'icons') ? ASSETS_DB.icons : ASSETS_DB.graphics;
     if(!db) return;
     
     Object.keys(db).forEach((cat, i) => {
@@ -243,19 +261,29 @@ window.openGallery = (type, target) => {
 
 function loadGal(type, cat, target) {
     const grid = document.getElementById('galleryGrid'); grid.innerHTML = '';
-    let files = (type === 'icons' ? ASSETS_DB.icons[cat] : ASSETS_DB.graphics[cat]) || [];
+    
+    // type = 'symbols' или 'graphics'
+    let files = (type === 'symbols' ? ASSETS_DB.symbols[cat] : ASSETS_DB.graphics[cat]) || [];
+    
     files.forEach(f => {
         const item = document.createElement('div'); item.className = 'gallery-item';
         const img = document.createElement('img');
         
-        // --- НОВА ЛОГІКА ШЛЯХІВ ---
-        // type = 'icons' або 'graphics'
-        // Папки: icons_preview, icons_print, graphics_preview, graphics_print
+        // --- НОВАЯ ЛОГИКА ПУТЕЙ (ПЛОСКАЯ) ---
+        // Папка: assets/symbols/ или assets/graphics/
+        // Превью: имя_файла_icon.png
+        // Печать: имя_файла.png
         
-        const url = `assets/${type}_preview/${cat.toLowerCase()}/${f}`;
-        const printUrl = `assets/${type}_print/${cat.toLowerCase()}/${f}`;
+        const folder = (type === 'symbols') ? 'symbols' : 'graphics';
+        const previewName = f.replace('.png', '_icon.png');
         
-        img.src = url; img.onerror = () => { img.src = printUrl; };
+        const url = `assets/${folder}/${previewName}`; // Превью
+        const printUrl = `assets/${folder}/${f}`;      // Оригинал
+        
+        img.src = url; 
+        // Если превью нет, пробуем загрузить оригинал (fallback)
+        img.onerror = () => { img.src = printUrl; };
+        
         item.appendChild(img);
         item.onclick = () => {
             CoverEngine.loadSimpleImage(printUrl, (final) => {
