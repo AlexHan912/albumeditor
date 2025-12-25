@@ -5,7 +5,7 @@ const ASSETS_DB = {
     // Файлы: имя_файла.png (печать) + имя_файла_icon.png (превью)
     symbols: {
         "Love": ["love_heart.png"],
-        "Test": ["test_29x29.png"] // Пример
+        "Test": ["test_2x2.png"] // Пример
     },
 
     // 2. ГРАФИКА (Папка: assets/graphics)
@@ -55,3 +55,4 @@ const DESIGNER_PALETTES = {
         { bg: '#FF0000', text: '#00FFFF' }, { bg: '#FFFFFF', text: '#FF0000' }
     ]
 };
+
