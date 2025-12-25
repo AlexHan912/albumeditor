@@ -1,18 +1,20 @@
-// assets.js - База данных V48 (Final Structure)
+// assets.js - База данных (Обновленная структура под наличие файлов)
 
 const ASSETS_DB = {
-    // 1. ИКОНКИ (Для корешка и макета Символ - маленькие)
+    // 1. ИКОНКИ (Папки: assets/icons_preview и assets/icons_print)
     icons: {
-        "Love": ["01heart.png"]
+        "Love": ["01heart.png"],
+        "Test_2x2": ["2.png"]
     },
 
-    // 2. ГРАФИКА (Для макета Графика - большие 10х10см, черные PNG)
+    // 2. ГРАФИКА (Папки: assets/graphics_preview и assets/graphics_print)
     graphics: {
-        "Love": ["01heart.png"]
+        "Love": ["01heart.png"],
+        "Test_12x12": ["12x12.png", "29x29.png"]
     }
 };
 
-// 3. ДИЗАЙНЕРСКИЕ ПАЛИТРЫ (Тренды)
+// 3. ДИЗАЙНЕРСКИЕ ПАЛИТРЫ (Тренды) - Оставляем без изменений
 const DESIGNER_PALETTES = {
     'Wedding Trends': [
         { bg: '#FDFBF7', text: '#3A3A3A' }, { bg: '#F2E8E3', text: '#5D4037' },
@@ -51,4 +53,3 @@ const DESIGNER_PALETTES = {
         { bg: '#FF0000', text: '#00FFFF' }, { bg: '#FFFFFF', text: '#FF0000' }
     ]
 };
-
