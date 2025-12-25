@@ -11,7 +11,7 @@ const ASSETS_DB = {
     // 2. ГРАФИКА (Папка: assets/graphics)
     // Файлы: имя_файла.png (печать) + имя_файла_icon.png (превью)
     graphics: {
-        "Test": ["test_29x29.png"],
+        "Test": ["test_29x29.png", "test_12x12.png"],
         "Love": ["love_0heart.png"] // Пример
     }
 };
@@ -55,5 +55,6 @@ const DESIGNER_PALETTES = {
         { bg: '#FF0000', text: '#00FFFF' }, { bg: '#FFFFFF', text: '#FF0000' }
     ]
 };
+
 
 
