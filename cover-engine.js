@@ -12,7 +12,7 @@ const CoverEngine = {
     init: function(canvasId) {
         this.canvas = new fabric.Canvas(canvasId, { backgroundColor: '#fff', selection: false, enableRetinaScaling: false });
         
-        // ОБНОВЛЕНО: Слушаем клики по объектам на холсте
+        // Слушаем клики по объектам на холсте
         this.canvas.on('mouse:down', (e) => {
             if(e.target && e.target.isMain) {
                 if(window.handleCanvasClick) window.handleCanvasClick('mainImage');
@@ -145,7 +145,6 @@ const CoverEngine = {
         else if (layout === 'graphic' || layout === 'photo_text') {
             let imgY = c.centerY; 
             
-            // Если Графика - поднимаем на 2 см
             if(layout === 'graphic') {
                 imgY = c.centerY - (2.0 * state.ppi);
                 this._renderNaturalImage(x, imgY, state);
@@ -203,8 +202,8 @@ const CoverEngine = {
         let iconUrl = state.images.icon; 
         let isGhost = false;
         if(!iconUrl) { 
-            // ОНОВЛЕНИЙ ШЛЯХ
-            iconUrl = 'assets/icons_preview/love/01heart.png'; 
+            // ОБНОВЛЕН ПУТЬ К ДЕФОЛТУ
+            iconUrl = 'assets/symbols/love_heart_icon.png'; 
             isGhost = true; 
         }
         this._placeImage(iconUrl, x, y, forcedSize || (2.0/1.6)*state.ppi*state.text.scale, { color: state.text.color, opacity: isGhost ? 0.3 : CONFIG.globalOpacity });
@@ -238,12 +237,10 @@ const CoverEngine = {
                     top: y, 
                     originX: 'center', 
                     originY: 'center', 
-                    // ОБНОВЛЕНО: Делаем объект кликабельным (evented: true), но не перемещаемым
                     selectable: false, 
                     evented: true, 
                     hoverCursor: 'pointer',
-                    isMain: true, // Флаг для отслеживания клика
-                    
+                    isMain: true,
                     opacity: CONFIG.globalOpacity,
                     scaleX: finalScale,
                     scaleY: finalScale
@@ -293,8 +290,6 @@ const CoverEngine = {
                     top: y + (info.top * scaleFactor), 
                     originX: 'center', 
                     originY: 'center', 
-                    
-                    // ОБНОВЛЕНО: Также делаем кликабельным для фото
                     selectable: false,
                     evented: true,
                     hoverCursor: 'pointer',
