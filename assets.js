@@ -1,20 +1,22 @@
-// assets.js - База данных (Обновленная структура под наличие файлов)
+// assets.js - База данных V54 (Flat Structure)
 
 const ASSETS_DB = {
-    // 1. ИКОНКИ (Папки: assets/icons_preview и assets/icons_print)
-    icons: {
-        "Love": ["01heart.png"],
-        "Test_2x2": ["2.png"]
+    // 1. СИМВОЛЫ (Папка: assets/symbols)
+    // Файлы: имя_файла.png (печать) + имя_файла_icon.png (превью)
+    symbols: {
+        "Love": ["love_heart.png"],
+        "Test": ["test_29x29.png"] // Пример
     },
 
-    // 2. ГРАФИКА (Папки: assets/graphics_preview и assets/graphics_print)
+    // 2. ГРАФИКА (Папка: assets/graphics)
+    // Файлы: имя_файла.png (печать) + имя_файла_icon.png (превью)
     graphics: {
-        "Love": ["01heart.png"],
-        "Test_12x12": ["12x12.png", "29x29.png"]
+        "Test": ["test_29x29.png"],
+        "Love": ["love_heart.png"] // Пример
     }
 };
 
-// 3. ДИЗАЙНЕРСКИЕ ПАЛИТРЫ (Тренды) - Оставляем без изменений
+// 3. ДИЗАЙНЕРСКИЕ ПАЛИТРЫ (Тренды) - Без изменений
 const DESIGNER_PALETTES = {
     'Wedding Trends': [
         { bg: '#FDFBF7', text: '#3A3A3A' }, { bg: '#F2E8E3', text: '#5D4037' },
