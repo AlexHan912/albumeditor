@@ -12,7 +12,7 @@ const CoverEngine = {
     init: function(canvasId) {
         this.canvas = new fabric.Canvas(canvasId, { backgroundColor: '#fff', selection: false, enableRetinaScaling: false });
         
-        // Слушаем клики по объектам
+        // Слушаем клики по объектам на холсте
         this.canvas.on('mouse:down', (e) => {
             if(e.target && e.target.isMain) {
                 if(window.handleCanvasClick) window.handleCanvasClick('mainImage');
@@ -238,68 +238,73 @@ const CoverEngine = {
         }
     },
     
-    // --- УМНЫЙ РЕНДЕР ГРАФИКИ (ПОЗИЦИОНИРОВАНИЕ ИСПРАВЛЕНО) ---
+    // --- УМНЫЙ РЕНДЕР ГРАФИКИ (ФІКС ЦЕНТРУВАННЯ) ---
     _renderNaturalImage: function(x, y, state) {
         if(state.images.main && state.images.main.src) {
             fabric.Image.fromURL(state.images.main.src, (img) => {
                 if(!img) return;
                 
-                // 1. Настройки CSS
+                // 1. Налаштування CSS
                 const style = getComputedStyle(document.documentElement);
                 const maxCm = parseFloat(style.getPropertyValue('--graphic-max-size-cm')) || 12;
                 
-                // 2. Расчет реального размера (300 dpi = 118.11 px/cm)
+                // 2. Реальний розмір в см (300 dpi = 118.11 px/cm)
                 const realW_cm = img.width / 118.11;
                 const realH_cm = img.height / 118.11;
                 const maxSide_cm = Math.max(realW_cm, realH_cm);
 
-                // 3. Логика сжатия
+                // 3. Розрахунок коефіцієнта масштабування (baseScale)
+                // Ціль: перетворити оригінальні пікселі в пікселі екрану (state.ppi)
+                
                 let targetW_cm = realW_cm;
-                let targetH_cm = realH_cm;
-
+                
+                // Логіка обмеження
                 if (maxSide_cm > maxCm) {
                     const ratio = maxCm / maxSide_cm;
                     targetW_cm = realW_cm * ratio;
-                    targetH_cm = realH_cm * ratio;
                 } else if (maxSide_cm < 5) {
-                    // Превьюшка? Растягиваем до лимита
                     const ratio = maxCm / maxSide_cm;
                     targetW_cm = realW_cm * ratio;
-                    targetH_cm = realH_cm * ratio;
                 }
 
-                // 4. Перевод в пиксели экрана
-                const finalW_px = targetW_cm * state.ppi;
+                // 4. Фінальні розрахунки
+                const targetW_px_screen = targetW_cm * state.ppi; // Скільки пікселів на екрані має займати
                 const userZoom = state.text.scale || 1.0;
                 
-                // Вычисляем финальный масштаб
-                const finalScale = (finalW_px / img.width) * userZoom;
+                // Масштаб для Fabric: (Бажані пікселі / Реальні пікселі картинки) * Зум
+                const finalScale = (targetW_px_screen / img.width) * userZoom;
 
+                // 5. Встановлюємо параметри
                 img.set({
-                    scaleX: finalScale,
-                    scaleY: finalScale,
-                    opacity: CONFIG.globalOpacity,
+                    // ВАЖЛИВО: Центрування по Origin
                     originX: 'center', 
                     originY: 'center',
+                    
+                    // Координати центру (приходять у функцію як x, y)
+                    left: x, 
+                    top: y, 
+                    
+                    scaleX: finalScale,
+                    scaleY: finalScale,
+                    
+                    opacity: CONFIG.globalOpacity,
                     selectable: false, 
                     evented: true, 
                     hoverCursor: 'pointer',
                     isMain: true
                 });
 
-                // 5. Жесткое позиционирование (Fix смещения)
-                img.setPositionByOrigin(new fabric.Point(x, y), 'center', 'center');
-                img.setCoords(); // Обновляем границы
-
-                // 6. Цвет
                 const filter = new fabric.Image.filters.BlendColor({ color: state.text.color, mode: 'tint', alpha: 1 }); 
                 img.filters.push(filter); 
                 img.applyFilters();
                 
                 this.canvas.add(img);
+                
+                // Примусово оновлюємо координати після всіх трансформацій
+                img.setCoords(); 
             });
         } else {
-            // Плейсхолдер
+            // Placeholder
             const style = getComputedStyle(document.documentElement);
             const maxCm = parseFloat(style.getPropertyValue('--graphic-max-size-cm')) || 12;
             const sizePx = maxCm * state.ppi; 
