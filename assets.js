@@ -6,7 +6,7 @@ const ASSETS_DB = {
     symbols: {
         "Love symbols": ["love_heart.png"],
         "Games symbols": ["games_ghost.png"],
-        "Test symbols": ["test_2.png"] // Пример
+        "Test symbols": ["test_2x2.png"] // Пример
     },
 
     // 2. ГРАФИКА (Папка: assets/graphics)
@@ -56,6 +56,7 @@ const DESIGNER_PALETTES = {
         { bg: '#FF0000', text: '#00FFFF' }, { bg: '#FFFFFF', text: '#FF0000' }
     ]
 };
+
 
 
 
