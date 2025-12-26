@@ -30,12 +30,18 @@ const CoverEngine = {
     updateDimensions: function(container, state) {
         if(!container || container.clientWidth === 0) return;
         const margin = 20; 
-        const maxBookW = 30*2 + CONFIG.spineWidthCm; 
-        const maxBookH = 30;
+        
+        // Принудительно конвертируем bookSize в число
+        const bookSize = parseFloat(state.bookSize);
+        
+        const maxBookW = bookSize*2 + CONFIG.spineWidthCm; 
+        const maxBookH = bookSize;
         const basePPI = Math.max(5, Math.min((container.clientWidth - margin*2) / maxBookW, (container.clientHeight - margin*2) / maxBookH));
+        
         state.ppi = basePPI * CONFIG.renderScale;
-        const curW = state.bookSize*2 + CONFIG.spineWidthCm; 
-        const curH = state.bookSize;
+        
+        const curW = bookSize*2 + CONFIG.spineWidthCm; 
+        const curH = bookSize;
         
         this.canvas.setWidth(curW * state.ppi); 
         this.canvas.setHeight(curH * state.ppi);
@@ -54,14 +60,16 @@ const CoverEngine = {
         this.canvas.setBackgroundColor(state.coverColor);
         
         const h = this.canvas.height;
-        const x1 = state.bookSize * state.ppi; 
-        const x2 = (state.bookSize + 1.5) * state.ppi;
+        const bookSize = parseFloat(state.bookSize); // Гарантируем число
+        
+        const x1 = bookSize * state.ppi; 
+        const x2 = (bookSize + 1.5) * state.ppi;
         
         const c = { 
             h: h, 
             spineX: x1 + ((x2 - x1) / 2), 
-            frontCenter: x2 + (state.bookSize * state.ppi / 2), 
-            backCenter: (state.bookSize * state.ppi) / 2, 
+            frontCenter: x2 + (bookSize * state.ppi / 2), 
+            backCenter: (bookSize * state.ppi) / 2, 
             bottomBase: h - (1.5 * state.ppi), 
             centerY: h / 2, 
             gap: 2.0 * state.ppi 
@@ -78,7 +86,7 @@ const CoverEngine = {
         if(state.layout === 'graphic') {
             const style = getComputedStyle(document.documentElement);
             const offsetCm = parseFloat(style.getPropertyValue('--graphic-offset-y-cm')) || 2;
-            const pixelOffset = offsetCm * state.ppi; // Тут см * ppi = пікселі
+            const pixelOffset = offsetCm * state.ppi; 
             trigY = c.centerY - pixelOffset;
         }
         else if(state.layout === 'photo_text') trigY = c.centerY - c.gap/2;
@@ -155,7 +163,7 @@ const CoverEngine = {
             if(layout === 'graphic') {
                 const style = getComputedStyle(document.documentElement);
                 const offsetCm = parseFloat(style.getPropertyValue('--graphic-offset-y-cm')) || 2;
-                const pixelOffset = offsetCm * state.ppi; // См в пікселі
+                const pixelOffset = offsetCm * state.ppi; 
                 imgY = c.centerY - pixelOffset;
                 
                 this._renderNaturalImage(x, imgY, state);
@@ -233,51 +241,74 @@ const CoverEngine = {
         }
     },
     
-    // --- УМНЫЙ РЕНДЕР ГРАФИКИ (ВИПРАВЛЕНО МАСШТАБУВАННЯ) ---
+    // --- УМНЫЙ РЕНДЕР ГРАФИКИ (ПОФИКСЕННЫЙ) ---
     _renderNaturalImage: function(x, y, state) {
         if(state.images.main && state.images.main.natural) {
             fabric.Image.fromURL(state.images.main.src, (img) => {
                 if(!img) return;
                 
-                // 1. Читаем CSS конфиг (ліміт в см)
+                // 1. Настройки CSS
                 const style = getComputedStyle(document.documentElement);
                 const maxCm = parseFloat(style.getPropertyValue('--graphic-max-size-cm')) || 12;
                 
-                // 2. Считаем реальный размер (300 dpi) в см
-                const realW_cm = (img.width / 300) * 2.54;
-                const realH_cm = (img.height / 300) * 2.54;
+                // 2. Считаем реальный размер в см (300 dpi = 118.11 px/cm)
+                const realW_cm = img.width / 118.11;
+                const realH_cm = img.height / 118.11;
                 const maxSide_cm = Math.max(realW_cm, realH_cm);
 
-                // 3. Логика сжатия (якщо більше ліміту)
-                let baseScale = 1.0;
-                if (maxSide_cm > maxCm) {
-                    baseScale = maxCm / maxSide_cm;
-                }
+                // 3. Логика сжатия/растяжения
+                let targetW_cm = realW_cm;
+                let targetH_cm = realH_cm;
 
-                // 4. Итоговый зум (ВИПРАВЛЕНО: додано множник 2.54)
-                // Пояснення: 300 пікселів = 1 дюйм = 2.54 см. 
-                // Нам потрібно перевести пікселі картинки в пікселі екрану (state.ppi).
-                // Формула: (state.ppi * 2.54) / 300
-                const screenScale = (state.ppi * 2.54) / 300;
+                // Если больше лимита (12см) -> уменьшаем до лимита
+                if (maxSide_cm > maxCm) {
+                    const ratio = maxCm / maxSide_cm;
+                    targetW_cm = realW_cm * ratio;
+                    targetH_cm = realH_cm * ratio;
+                }
+                // Если критично маленькое (превью < 5см) -> растягиваем до лимита
+                else if (maxSide_cm < 5) {
+                    const ratio = maxCm / maxSide_cm;
+                    targetW_cm = realW_cm * ratio;
+                    targetH_cm = realH_cm * ratio;
+                }
+                // Иначе оставляем "натуральный" размер (между 5 и 12 см)
+
+                // 4. Переводим целевые сантиметры в пиксели Канваса
+                const finalW_px = targetW_cm * state.ppi;
                 
-                const finalScale = baseScale * screenScale * state.text.scale;
+                // 5. Пользовательский зум
+                const userZoom = state.text.scale || 1.0;
 
                 img.set({
-                    left: x, top: y, originX: 'center', originY: 'center', 
-                    selectable: false, evented: true, hoverCursor: 'pointer', isMain: true,
-                    opacity: CONFIG.globalOpacity, scaleX: finalScale, scaleY: finalScale
+                    left: x, 
+                    top: y, 
+                    originX: 'center', 
+                    originY: 'center', 
+                    selectable: false, 
+                    evented: true, 
+                    hoverCursor: 'pointer',
+                    isMain: true,
+                    opacity: CONFIG.globalOpacity
                 });
 
+                // Используем scaleToWidth для точного размера
+                img.scaleToWidth(finalW_px * userZoom);
+
                 const filter = new fabric.Image.filters.BlendColor({ color: state.text.color, mode: 'tint', alpha: 1 }); 
-                img.filters.push(filter); img.applyFilters();
+                img.filters.push(filter); 
+                img.applyFilters();
                 
                 this.canvas.add(img);
+                
+                // ВАЖНО: Принудительный пересчет координат
+                img.setCoords(); 
             });
         } else {
             // Плейсхолдер
             const style = getComputedStyle(document.documentElement);
             const maxCm = parseFloat(style.getPropertyValue('--graphic-max-size-cm')) || 12;
-            const sizePx = maxCm * state.ppi; // Тут просто см -> екранні пікселі
+            const sizePx = maxCm * state.ppi; 
             
             const shape = new fabric.Circle({ 
                 radius: sizePx/2, fill: 'transparent', stroke: '#ddd', strokeWidth: 2, 
