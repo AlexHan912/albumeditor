@@ -26,17 +26,21 @@ function refresh() {
 function loadDefaultAssets() {
     setTimeout(() => { document.getElementById('app-loader').style.opacity = '0'; setTimeout(() => document.getElementById('app-loader').style.display='none', 800); }, 1500);
     
-    // --- ЗАГРУЗКА ДЕФОЛТНОГО СИМВОЛА (из папки symbols) ---
-    // Пытаемся загрузить love_heart.png, если нет - берем превью love_heart_icon.png
+    // Попытка загрузить дефолт
     const defaultPath = 'assets/symbols/love_heart.png';
     const defaultPreview = 'assets/symbols/love_heart_icon.png';
 
     CoverEngine.loadSimpleImage(defaultPath, (url) => {
         const final = url || defaultPreview;
-        CoverEngine.loadSimpleImage(final, (valid) => { 
-            if(valid) state.images.icon = valid; 
-            finishInit(); 
-        });
+        // Если и превью нет, то final будет null, и ничего не загрузится (безопасно)
+        if(final) {
+            CoverEngine.loadSimpleImage(final, (valid) => { 
+                if(valid) state.images.icon = valid; 
+                finishInit(); 
+            });
+        } else {
+            finishInit();
+        }
     });
 }
 
@@ -225,16 +229,13 @@ function initListeners() {
     document.getElementById('cancelCropBtn').onclick = () => document.getElementById('cropperModal').classList.add('hidden');
 }
 
-// --- GALLERY LOGIC (FLAT FOLDERS) ---
+// --- GALLERY LOGIC (WITH BUG-FIXING CHECK) ---
 window.openGallery = (type, target) => {
     document.getElementById('globalSymbolBtn').classList.remove('pulse-attention');
     document.getElementById('galleryModal').classList.remove('hidden');
     const upBtn = document.getElementById('galUploadBtn');
     
-    // Динамическая смена заголовка галереи
     const galTitle = document.getElementById('galleryTitle');
-    
-    // type = 'symbols' (бывш. icons) или 'graphics'
     let db;
     if(type === 'symbols') {
         db = ASSETS_DB.symbols;
@@ -261,33 +262,47 @@ window.openGallery = (type, target) => {
 
 function loadGal(type, cat, target) {
     const grid = document.getElementById('galleryGrid'); grid.innerHTML = '';
-    
-    // type = 'symbols' или 'graphics'
     let files = (type === 'symbols' ? ASSETS_DB.symbols[cat] : ASSETS_DB.graphics[cat]) || [];
     
     files.forEach(f => {
-        const item = document.createElement('div'); item.className = 'gallery-item';
+        const item = document.createElement('div'); 
+        item.className = 'gallery-item';
+        
         const img = document.createElement('img');
         
-        // --- НОВАЯ ЛОГИКА ПУТЕЙ (ПЛОСКАЯ) ---
-        // Папка: assets/symbols/ или assets/graphics/
-        // Превью: имя_файла_icon.png
-        // Печать: имя_файла.png
-        
+        // Формируем пути
         const folder = (type === 'symbols') ? 'symbols' : 'graphics';
         const previewName = f.replace('.png', '_icon.png');
+        const previewUrl = `assets/${folder}/${previewName}`;
+        const printUrl = `assets/${folder}/${f}`;
         
-        const url = `assets/${folder}/${previewName}`; // Превью
-        const printUrl = `assets/${folder}/${f}`;      // Оригинал
-        
-        img.src = url; 
-        // Если превью нет, пробуем загрузить оригинал (fallback)
-        img.onerror = () => { img.src = printUrl; };
-        
+        // 1. ПРОВЕРКА ПРЕВЬЮ
+        img.src = previewUrl;
+        img.onerror = () => {
+            item.classList.add('broken-file'); // Красная рамка
+            item.title = "Ошибка: Нет файла иконки";
+        };
+
+        // 2. ПРОВЕРКА ПЕЧАТНОГО ФАЙЛА (В ФОНЕ)
+        // Создаем невидимую картинку, чтобы проверить, загрузится ли оригинал
+        const checkPrint = new Image();
+        checkPrint.src = printUrl;
+        checkPrint.onerror = () => {
+            item.classList.add('broken-file'); // Красная рамка
+            item.title = "Ошибка: Нет файла для печати";
+        };
+
         item.appendChild(img);
+        
+        // Логика клика (Только если не сломано)
         item.onclick = () => {
+            if (item.classList.contains('broken-file')) {
+                alert("Этот файл поврежден или отсутствует на сервере.");
+                return;
+            }
+
             CoverEngine.loadSimpleImage(printUrl, (final) => {
-                final = final || url;
+                final = final || previewUrl;
                 document.getElementById('galleryModal').classList.add('hidden');
                 
                 if(target === 'global') { 
@@ -299,6 +314,7 @@ function loadGal(type, cat, target) {
                 }
             });
         };
+        
         grid.appendChild(item);
     });
 }
