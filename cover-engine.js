@@ -73,7 +73,15 @@ const CoverEngine = {
         this._renderFrontCover(c, state);
         
         let trigY = c.centerY;
-        if(state.layout === 'graphic') trigY = c.centerY - (2.0 * state.ppi);
+        
+        // Читаем смещение из CSS для правильной позиции плюсика
+        if(state.layout === 'graphic') {
+            const style = getComputedStyle(document.documentElement);
+            // Default 2 если не прочитается
+            const offsetCm = parseFloat(style.getPropertyValue('--graphic-offset-y-cm')) || 2;
+            const pixelOffset = offsetCm * (state.ppi / 2.54);
+            trigY = c.centerY - pixelOffset;
+        }
         else if(state.layout === 'photo_text') trigY = c.centerY - c.gap/2;
         
         return { 
@@ -145,8 +153,13 @@ const CoverEngine = {
         else if (layout === 'graphic' || layout === 'photo_text') {
             let imgY = c.centerY; 
             
+            // Графика: используем умный рендер
             if(layout === 'graphic') {
-                imgY = c.centerY - (2.0 * state.ppi);
+                const style = getComputedStyle(document.documentElement);
+                const offsetCm = parseFloat(style.getPropertyValue('--graphic-offset-y-cm')) || 2;
+                const pixelOffset = offsetCm * (state.ppi / 2.54);
+                imgY = c.centerY - pixelOffset;
+                
                 this._renderNaturalImage(x, imgY, state);
             } 
             else {
@@ -202,7 +215,6 @@ const CoverEngine = {
         let iconUrl = state.images.icon; 
         let isGhost = false;
         if(!iconUrl) { 
-            // ОБНОВЛЕН ПУТЬ К ДЕФОЛТУ
             iconUrl = 'assets/symbols/love_heart_icon.png'; 
             isGhost = true; 
         }
@@ -223,38 +235,52 @@ const CoverEngine = {
         }
     },
     
+    // --- УМНЫЙ РЕНДЕР ГРАФИКИ (С ЧТЕНИЕМ CSS) ---
     _renderNaturalImage: function(x, y, state) {
         if(state.images.main && state.images.main.natural) {
             fabric.Image.fromURL(state.images.main.src, (img) => {
                 if(!img) return;
                 
-                const naturalScaleX = (state.ppi / 300);
-                const naturalScaleY = (state.ppi / 300);
-                const finalScale = naturalScaleX * state.text.scale;
+                // 1. Читаем CSS конфиг
+                const style = getComputedStyle(document.documentElement);
+                const maxCm = parseFloat(style.getPropertyValue('--graphic-max-size-cm')) || 12;
                 
+                // 2. Считаем реальный размер (300 dpi)
+                const realW_cm = (img.width / 300) * 2.54;
+                const realH_cm = (img.height / 300) * 2.54;
+                const maxSide_cm = Math.max(realW_cm, realH_cm);
+
+                // 3. Логика сжатия
+                let baseScale = 1.0;
+                if (maxSide_cm > maxCm) {
+                    baseScale = maxCm / maxSide_cm;
+                }
+
+                // 4. Итоговый зум
+                const screenScale = (state.ppi / 300);
+                const finalScale = baseScale * screenScale * state.text.scale;
+
                 img.set({
-                    left: x, 
-                    top: y, 
-                    originX: 'center', 
-                    originY: 'center', 
-                    selectable: false, 
-                    evented: true, 
-                    hoverCursor: 'pointer',
-                    isMain: true,
-                    opacity: CONFIG.globalOpacity,
-                    scaleX: finalScale,
-                    scaleY: finalScale
+                    left: x, top: y, originX: 'center', originY: 'center', 
+                    selectable: false, evented: true, hoverCursor: 'pointer', isMain: true,
+                    opacity: CONFIG.globalOpacity, scaleX: finalScale, scaleY: finalScale
                 });
 
                 const filter = new fabric.Image.filters.BlendColor({ color: state.text.color, mode: 'tint', alpha: 1 }); 
-                img.filters.push(filter); 
-                img.applyFilters();
+                img.filters.push(filter); img.applyFilters();
                 
                 this.canvas.add(img);
             });
         } else {
-            const w = 10 * state.ppi;
-            const shape = new fabric.Circle({ radius: w/2, fill: 'transparent', stroke: '#ddd', strokeWidth: 2, strokeDashArray: [20,20], left: x, top: y, originX: 'center', originY: 'center', selectable: false });
+            // Плейсхолдер - круг диаметром maxCm
+            const style = getComputedStyle(document.documentElement);
+            const maxCm = parseFloat(style.getPropertyValue('--graphic-max-size-cm')) || 12;
+            const sizePx = maxCm * (state.ppi / 2.54); 
+            
+            const shape = new fabric.Circle({ 
+                radius: sizePx/2, fill: 'transparent', stroke: '#ddd', strokeWidth: 2, 
+                strokeDashArray: [20,20], left: x, top: y, originX: 'center', originY: 'center', selectable: false 
+            });
             this.canvas.add(shape);
         }
     },
@@ -290,10 +316,7 @@ const CoverEngine = {
                     top: y + (info.top * scaleFactor), 
                     originX: 'center', 
                     originY: 'center', 
-                    selectable: false,
-                    evented: true,
-                    hoverCursor: 'pointer',
-                    isMain: true
+                    selectable: false, evented: true, hoverCursor: 'pointer', isMain: true
                 });
                 let clip;
                 if(maskType === 'circle') clip = new fabric.Circle({ radius: (w * (1/(info.scale * scaleFactor))) / 2, left: -(info.left * scaleFactor) / (info.scale * scaleFactor), top: -(info.top * scaleFactor) / (info.scale * scaleFactor), originX: 'center', originY: 'center' });
