@@ -106,32 +106,6 @@ button.secondary { background: transparent; border: 1px solid #555; color: #ccc;
 
 /* Gallery Specifics */
 .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 15px; overflow-y: auto; padding: 10px; min-height: 200px; }
-.gallery-item { aspect-ratio: 1; border: 1px solid #333; background: #222; display: flex; justify-content: center; align-items: center; cursor: pointer; transition: all 0.2s; padding: 10px; }
-.gallery-item img { max-width: 100%; max-height: 100%; object-fit: contain; filter: grayscale(1); pointer-events: none; }
-.gallery-item:hover { border-color: var(--accent-gold); background: #2a2a2a; } .gallery-item:hover img { filter: grayscale(0); transform: scale(1.1); }
-.gallery-tabs { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 10px; border-bottom: 1px solid #333; }
-.gallery-tab { padding: 8px 15px; font-size: 11px; color: #888; cursor: pointer; border: 1px solid transparent; white-space: nowrap; }
-.gallery-tab.active { color: #fff; border: 1px solid var(--accent-gold); background: rgba(212, 175, 55, 0.1); }
-#galUploadBtn { background: transparent; border: none; color: #555; text-decoration: underline; font-size: 10px; cursor: pointer; padding: 5px; text-transform: none; letter-spacing: 0.5px; } #galUploadBtn:hover { color: #999; }
-
-/* Cropper Specifics */
-.crop-controls { display: flex; gap: 10px; justify-content: center; margin-bottom: 10px; }
-.crop-btn { padding: 5px 10px; font-size: 10px; background: #333; border: 1px solid #555; color: #ccc; cursor: pointer; } .crop-btn:hover { color: #fff; border-color: #fff; }
-.crop-area-wrapper { background: #000; padding: 10px; display: flex; justify-content: center; }
-.zoom-controls { color: #fff; font-size: 12px; display: flex; align-items: center; gap: 15px; } 
-
-/* Loader */
-#app-loader { position: fixed; top:0; left:0; width:100%; height:100%; background: #1a1a1a; z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; color: #fff; transition: opacity 0.8s ease; }
-.loader-text { font-family: 'Bodoni Moda', serif; font-size: 32px; letter-spacing: 5px; margin-bottom: 20px; animation: pulse 2s infinite; }
-.loader-sub { font-size: 10px; color: #555; letter-spacing: 2px; font-family: 'Tenor Sans'; text-transform: uppercase; }
-@keyframes pulse { 0% { opacity: 0.8; } 50% { opacity: 1; } 100% { opacity: 0.8; } }
-@keyframes glow { 0% { box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.4); border-color: #777; } 50% { box-shadow: 0 0 10px 0 rgba(212, 175, 55, 0.8); border-color: var(--accent-gold); } 100% { box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.4); border-color: #777; } }
-.pulse-attention { animation: glow 2s infinite; }
-
-/* ... (весь предыдущий код style.css) ... */
-
-/* --- GALLERY UTILS --- */
-.gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 15px; overflow-y: auto; padding: 10px; min-height: 200px; }
 
 .gallery-item { 
     aspect-ratio: 1; 
@@ -143,7 +117,7 @@ button.secondary { background: transparent; border: 1px solid #555; color: #ccc;
     cursor: pointer; 
     transition: all 0.2s; 
     padding: 10px; 
-    position: relative; /* Для позиционирования метки ошибки */
+    position: relative; 
 }
 
 .gallery-item img { 
@@ -171,7 +145,7 @@ button.secondary { background: transparent; border: 1px solid #555; color: #ccc;
 }
 
 .gallery-item.broken-file::after {
-    content: 'MISSING'; /* Текст ошибки */
+    content: 'MISSING';
     position: absolute;
     bottom: 5px;
     left: 0;
@@ -184,4 +158,21 @@ button.secondary { background: transparent; border: 1px solid #555; color: #ccc;
     padding: 2px 0;
 }
 
-/* ... (остальной код) ... */
+.gallery-tabs { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 10px; border-bottom: 1px solid #333; }
+.gallery-tab { padding: 8px 15px; font-size: 11px; color: #888; cursor: pointer; border: 1px solid transparent; white-space: nowrap; }
+.gallery-tab.active { color: #fff; border: 1px solid var(--accent-gold); background: rgba(212, 175, 55, 0.1); }
+#galUploadBtn { background: transparent; border: none; color: #555; text-decoration: underline; font-size: 10px; cursor: pointer; padding: 5px; text-transform: none; letter-spacing: 0.5px; } #galUploadBtn:hover { color: #999; }
+
+/* Cropper Specifics */
+.crop-controls { display: flex; gap: 10px; justify-content: center; margin-bottom: 10px; }
+.crop-btn { padding: 5px 10px; font-size: 10px; background: #333; border: 1px solid #555; color: #ccc; cursor: pointer; } .crop-btn:hover { color: #fff; border-color: #fff; }
+.crop-area-wrapper { background: #000; padding: 10px; display: flex; justify-content: center; }
+.zoom-controls { color: #fff; font-size: 12px; display: flex; align-items: center; gap: 15px; } 
+
+/* Loader */
+#app-loader { position: fixed; top:0; left:0; width:100%; height:100%; background: #1a1a1a; z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; color: #fff; transition: opacity 0.8s ease; }
+.loader-text { font-family: 'Bodoni Moda', serif; font-size: 32px; letter-spacing: 5px; margin-bottom: 20px; animation: pulse 2s infinite; }
+.loader-sub { font-size: 10px; color: #555; letter-spacing: 2px; font-family: 'Tenor Sans'; text-transform: uppercase; }
+@keyframes pulse { 0% { opacity: 0.8; } 50% { opacity: 1; } 100% { opacity: 0.8; } }
+@keyframes glow { 0% { box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.4); border-color: #777; } 50% { box-shadow: 0 0 10px 0 rgba(212, 175, 55, 0.8); border-color: var(--accent-gold); } 100% { box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.4); border-color: #777; } }
+.pulse-attention { animation: glow 2s infinite; }
