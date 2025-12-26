@@ -4,7 +4,7 @@ const ASSETS_DB = {
     // 1. СИМВОЛЫ (Папка: assets/symbols)
     // Файлы: имя_файла.png (печать) + имя_файла_icon.png (превью)
     symbols: {
-        "Love symbols": ["love_01heart.png"],
+        "Love symbols": ["love_heart.png"],
         "Games symbols": ["games_ghost.png"],
         "Test symbols": ["test_2.png"] // Пример
     },
@@ -13,7 +13,7 @@ const ASSETS_DB = {
     // Файлы: имя_файла.png (печать) + имя_файла_icon.png (превью)
     graphics: {
         "Test graphics": ["test_29x29.png", "test_12x12.png"],
-        "Love graphics": ["love_01heart.png"] // Пример
+        "Love graphics": ["love_heart.png"] // Пример
     }
 };
 
@@ -56,6 +56,7 @@ const DESIGNER_PALETTES = {
         { bg: '#FF0000', text: '#00FFFF' }, { bg: '#FFFFFF', text: '#FF0000' }
     ]
 };
+
 
 
 
