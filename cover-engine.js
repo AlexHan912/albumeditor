@@ -77,9 +77,8 @@ const CoverEngine = {
         // Читаем смещение из CSS для правильной позиции плюсика
         if(state.layout === 'graphic') {
             const style = getComputedStyle(document.documentElement);
-            // Default 2 если не прочитается
             const offsetCm = parseFloat(style.getPropertyValue('--graphic-offset-y-cm')) || 2;
-            const pixelOffset = offsetCm * (state.ppi / 2.54);
+            const pixelOffset = offsetCm * state.ppi; // Тут см * ppi = пікселі
             trigY = c.centerY - pixelOffset;
         }
         else if(state.layout === 'photo_text') trigY = c.centerY - c.gap/2;
@@ -153,11 +152,10 @@ const CoverEngine = {
         else if (layout === 'graphic' || layout === 'photo_text') {
             let imgY = c.centerY; 
             
-            // Графика: используем умный рендер
             if(layout === 'graphic') {
                 const style = getComputedStyle(document.documentElement);
                 const offsetCm = parseFloat(style.getPropertyValue('--graphic-offset-y-cm')) || 2;
-                const pixelOffset = offsetCm * (state.ppi / 2.54);
+                const pixelOffset = offsetCm * state.ppi; // См в пікселі
                 imgY = c.centerY - pixelOffset;
                 
                 this._renderNaturalImage(x, imgY, state);
@@ -235,29 +233,33 @@ const CoverEngine = {
         }
     },
     
-    // --- УМНЫЙ РЕНДЕР ГРАФИКИ (С ЧТЕНИЕМ CSS) ---
+    // --- УМНЫЙ РЕНДЕР ГРАФИКИ (ВИПРАВЛЕНО МАСШТАБУВАННЯ) ---
     _renderNaturalImage: function(x, y, state) {
         if(state.images.main && state.images.main.natural) {
             fabric.Image.fromURL(state.images.main.src, (img) => {
                 if(!img) return;
                 
-                // 1. Читаем CSS конфиг
+                // 1. Читаем CSS конфиг (ліміт в см)
                 const style = getComputedStyle(document.documentElement);
                 const maxCm = parseFloat(style.getPropertyValue('--graphic-max-size-cm')) || 12;
                 
-                // 2. Считаем реальный размер (300 dpi)
+                // 2. Считаем реальный размер (300 dpi) в см
                 const realW_cm = (img.width / 300) * 2.54;
                 const realH_cm = (img.height / 300) * 2.54;
                 const maxSide_cm = Math.max(realW_cm, realH_cm);
 
-                // 3. Логика сжатия
+                // 3. Логика сжатия (якщо більше ліміту)
                 let baseScale = 1.0;
                 if (maxSide_cm > maxCm) {
                     baseScale = maxCm / maxSide_cm;
                 }
 
-                // 4. Итоговый зум
-                const screenScale = (state.ppi / 300);
+                // 4. Итоговый зум (ВИПРАВЛЕНО: додано множник 2.54)
+                // Пояснення: 300 пікселів = 1 дюйм = 2.54 см. 
+                // Нам потрібно перевести пікселі картинки в пікселі екрану (state.ppi).
+                // Формула: (state.ppi * 2.54) / 300
+                const screenScale = (state.ppi * 2.54) / 300;
+                
                 const finalScale = baseScale * screenScale * state.text.scale;
 
                 img.set({
@@ -272,10 +274,10 @@ const CoverEngine = {
                 this.canvas.add(img);
             });
         } else {
-            // Плейсхолдер - круг диаметром maxCm
+            // Плейсхолдер
             const style = getComputedStyle(document.documentElement);
             const maxCm = parseFloat(style.getPropertyValue('--graphic-max-size-cm')) || 12;
-            const sizePx = maxCm * (state.ppi / 2.54); 
+            const sizePx = maxCm * state.ppi; // Тут просто см -> екранні пікселі
             
             const shape = new fabric.Circle({ 
                 radius: sizePx/2, fill: 'transparent', stroke: '#ddd', strokeWidth: 2, 
