@@ -12,7 +12,7 @@ const CoverEngine = {
     init: function(canvasId) {
         this.canvas = new fabric.Canvas(canvasId, { backgroundColor: '#fff', selection: false, enableRetinaScaling: false });
         
-        // Слушаем клики по объектам на холсте
+        // Слушаем клики по объектам
         this.canvas.on('mouse:down', (e) => {
             if(e.target && e.target.isMain) {
                 if(window.handleCanvasClick) window.handleCanvasClick('mainImage');
@@ -23,7 +23,10 @@ const CoverEngine = {
     loadSimpleImage: function(path, callback) {
         const img = new Image();
         img.onload = () => callback(path);
-        img.onerror = () => callback(null);
+        img.onerror = () => {
+            console.warn('Failed to load image:', path);
+            callback(null);
+        };
         img.src = path;
     },
 
@@ -31,15 +34,12 @@ const CoverEngine = {
         if(!container || container.clientWidth === 0) return;
         const margin = 20; 
         
-        // Принудительно конвертируем bookSize в число
         const bookSize = parseFloat(state.bookSize);
         
         const maxBookW = bookSize*2 + CONFIG.spineWidthCm; 
         const maxBookH = bookSize;
         const basePPI = Math.max(5, Math.min((container.clientWidth - margin*2) / maxBookW, (container.clientHeight - margin*2) / maxBookH));
-        
         state.ppi = basePPI * CONFIG.renderScale;
-        
         const curW = bookSize*2 + CONFIG.spineWidthCm; 
         const curH = bookSize;
         
@@ -60,7 +60,7 @@ const CoverEngine = {
         this.canvas.setBackgroundColor(state.coverColor);
         
         const h = this.canvas.height;
-        const bookSize = parseFloat(state.bookSize); // Гарантируем число
+        const bookSize = parseFloat(state.bookSize);
         
         const x1 = bookSize * state.ppi; 
         const x2 = (bookSize + 1.5) * state.ppi;
@@ -81,13 +81,10 @@ const CoverEngine = {
         this._renderFrontCover(c, state);
         
         let trigY = c.centerY;
-        
-        // Читаем смещение из CSS для правильной позиции плюсика
         if(state.layout === 'graphic') {
             const style = getComputedStyle(document.documentElement);
             const offsetCm = parseFloat(style.getPropertyValue('--graphic-offset-y-cm')) || 2;
-            const pixelOffset = offsetCm * state.ppi; 
-            trigY = c.centerY - pixelOffset;
+            trigY = c.centerY - (offsetCm * state.ppi);
         }
         else if(state.layout === 'photo_text') trigY = c.centerY - c.gap/2;
         
@@ -241,9 +238,9 @@ const CoverEngine = {
         }
     },
     
-    // --- УМНЫЙ РЕНДЕР ГРАФИКИ (ПОФИКСЕННЫЙ) ---
+    // --- УМНЫЙ РЕНДЕР ГРАФИКИ (ПОЗИЦИОНИРОВАНИЕ ИСПРАВЛЕНО) ---
     _renderNaturalImage: function(x, y, state) {
-        if(state.images.main && state.images.main.natural) {
+        if(state.images.main && state.images.main.src) {
             fabric.Image.fromURL(state.images.main.src, (img) => {
                 if(!img) return;
                 
@@ -251,58 +248,55 @@ const CoverEngine = {
                 const style = getComputedStyle(document.documentElement);
                 const maxCm = parseFloat(style.getPropertyValue('--graphic-max-size-cm')) || 12;
                 
-                // 2. Считаем реальный размер в см (300 dpi = 118.11 px/cm)
+                // 2. Расчет реального размера (300 dpi = 118.11 px/cm)
                 const realW_cm = img.width / 118.11;
                 const realH_cm = img.height / 118.11;
                 const maxSide_cm = Math.max(realW_cm, realH_cm);
 
-                // 3. Логика сжатия/растяжения
+                // 3. Логика сжатия
                 let targetW_cm = realW_cm;
                 let targetH_cm = realH_cm;
 
-                // Если больше лимита (12см) -> уменьшаем до лимита
                 if (maxSide_cm > maxCm) {
                     const ratio = maxCm / maxSide_cm;
                     targetW_cm = realW_cm * ratio;
                     targetH_cm = realH_cm * ratio;
-                }
-                // Если критично маленькое (превью < 5см) -> растягиваем до лимита
-                else if (maxSide_cm < 5) {
+                } else if (maxSide_cm < 5) {
+                    // Превьюшка? Растягиваем до лимита
                     const ratio = maxCm / maxSide_cm;
                     targetW_cm = realW_cm * ratio;
                     targetH_cm = realH_cm * ratio;
                 }
-                // Иначе оставляем "натуральный" размер (между 5 и 12 см)
 
-                // 4. Переводим целевые сантиметры в пиксели Канваса
+                // 4. Перевод в пиксели экрана
                 const finalW_px = targetW_cm * state.ppi;
-                
-                // 5. Пользовательский зум
                 const userZoom = state.text.scale || 1.0;
+                
+                // Вычисляем финальный масштаб
+                const finalScale = (finalW_px / img.width) * userZoom;
 
                 img.set({
-                    left: x, 
-                    top: y, 
+                    scaleX: finalScale,
+                    scaleY: finalScale,
+                    opacity: CONFIG.globalOpacity,
                     originX: 'center', 
-                    originY: 'center', 
+                    originY: 'center',
                     selectable: false, 
                     evented: true, 
                     hoverCursor: 'pointer',
-                    isMain: true,
-                    opacity: CONFIG.globalOpacity
+                    isMain: true
                 });
 
-                // Используем scaleToWidth для точного размера
-                img.scaleToWidth(finalW_px * userZoom);
+                // 5. Жесткое позиционирование (Fix смещения)
+                img.setPositionByOrigin(new fabric.Point(x, y), 'center', 'center');
+                img.setCoords(); // Обновляем границы
 
+                // 6. Цвет
                 const filter = new fabric.Image.filters.BlendColor({ color: state.text.color, mode: 'tint', alpha: 1 }); 
                 img.filters.push(filter); 
                 img.applyFilters();
                 
                 this.canvas.add(img);
-                
-                // ВАЖНО: Принудительный пересчет координат
-                img.setCoords(); 
             });
         } else {
             // Плейсхолдер
