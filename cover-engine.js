@@ -15,6 +15,7 @@ const CoverEngine = {
     
     init: function(canvasId) {
         this.canvas = new fabric.Canvas(canvasId, { backgroundColor: '#fff', selection: false, enableRetinaScaling: false });
+        
         this.canvas.on('mouse:down', (e) => {
             if(e.target) {
                 if(e.target.isMain || e.target.isPlaceholder) {
@@ -56,12 +57,21 @@ const CoverEngine = {
         if(!this.canvas) return;
         this.canvas.clear(); 
         this.canvas.setBackgroundColor(state.coverColor);
+        
         const h = this.canvas.height;
         const bookSize = parseFloat(state.bookSize);
         const x1 = bookSize * state.ppi; 
         const x2 = (bookSize + 1.5) * state.ppi;
         
-        const c = { h: h, spineX: x1 + ((x2 - x1) / 2), frontCenter: x2 + (bookSize * state.ppi / 2), backCenter: (bookSize * state.ppi) / 2, bottomBase: h - (1.5 * state.ppi), centerY: h / 2, gap: 2.0 * state.ppi };
+        const c = { 
+            h: h, 
+            spineX: x1 + ((x2 - x1) / 2), 
+            frontCenter: x2 + (bookSize * state.ppi / 2), 
+            backCenter: (bookSize * state.ppi) / 2, 
+            bottomBase: h - (1.5 * state.ppi), 
+            centerY: h / 2, 
+            gap: 2.0 * state.ppi 
+        };
 
         this._drawGuides(x1, x2, h, state);
         this._renderSpine(c, state);
@@ -113,8 +123,12 @@ const CoverEngine = {
         if (layout === 'magazine') {
             const coverW = state.bookSize * state.ppi; 
             const coverH = c.h; 
-            if(state.images.main) this._placeClippedImage(state.images.main, x, y, coverW, coverH, 'rect', true, state);
-            else this._renderImageSlot(x, y, state, { w: coverW, h: coverH });
+
+            if(state.images.main) {
+                this._placeClippedImage(state.images.main, x, y, coverW, coverH, 'rect', true, state);
+            } else {
+                this._renderImageSlot(x, y, state, { w: coverW, h: coverH });
+            }
             this._renderTextBlock(x, 2.0 * state.ppi, false, true, state);
         } 
         else if (layout === 'icon') {
@@ -164,6 +178,7 @@ const CoverEngine = {
         const rawLines = state.text.lines.map(l => l.text); 
         const processedLines = rawLines.map((txt, i) => { return state.text.lines[i].upper ? txt.toUpperCase() : txt; });
         const hasText = rawLines.some(t => t.length > 0);
+        
         let renderTxt = hasText ? processedLines.filter(Boolean).join("\n") : "THE VISUAL DIARY\n\n\n";
         let opacity = hasText ? CONFIG.globalOpacity : 0.3;
         const baseSize = compact ? 0.8 : CONFIG.typo.baseTitle; 
@@ -188,8 +203,10 @@ const CoverEngine = {
         if(isMag) {
             let l1 = String(state.text.lines[0].text || "");
             let l2 = String(state.text.lines[1].text || "");
+            
             if(state.text.lines[0].upper) l1 = l1.toUpperCase();
             if(state.text.lines[1].upper) l2 = l2.toUpperCase();
+
             let txtParts = [l1, l2].filter(t => t.length > 0);
             let txt = txtParts.length > 0 ? txtParts.join("\n") : "THE VISUAL DIARY";
             
@@ -305,7 +322,7 @@ const CoverEngine = {
     }
 };
 
-/* --- CROPPER TOOL (BOUNDARY FIXED) --- */
+/* --- CROPPER TOOL --- */
 const CropperTool = {
     canvas: null,
     tempImgObject: null,
@@ -318,90 +335,51 @@ const CropperTool = {
                 width: 500, height: 500, backgroundColor: '#111', selection: false,
                 preserveObjectStacking: true 
             });
-            
-            // ДОБАВЛЕНО: Слушаем перемещение, чтобы картинка не вылетала
             this.canvas.on('object:moving', (e) => {
-                if(e.target === this.tempImgObject) {
-                    this.constrainImage(e.target);
-                }
+                if(e.target === this.tempImgObject) this.constrainImage(e.target);
             });
         }
         this.canvas.clear(); 
         this.canvas.setBackgroundColor('#111', this.canvas.renderAll.bind(this.canvas));
     },
 
-    // --- НОВАЯ ФУНКЦИЯ ОГРАНИЧЕНИЯ ---
     constrainImage: function(img) {
         const cropW = this.activeSlot.w;
         const cropH = this.activeSlot.h;
-        const cx = 250, cy = 250; // Центр канваса
-        
-        // Границы рамки (в координатах канваса)
+        const cx = 250, cy = 250; 
         const frameLeft = cx - cropW/2;
         const frameTop = cy - cropH/2;
         const frameRight = cx + cropW/2;
         const frameBottom = cy + cropH/2;
-        
-        // Размеры картинки (с учетом зума)
         const imgW = img.width * img.scaleX;
         const imgH = img.height * img.scaleY;
-        
-        // Текущие координаты картинки (центр)
-        // Fabric.js: originX/Y = center
-        // Левый верхний угол картинки = img.left - imgW/2
-        
-        // Правило: Край картинки не должен быть ВНУТРИ рамки
-        // Левый край картинки <= Левый край рамки
-        // Правый край картинки >= Правый край рамки
-        
-        // Расчет допустимых диапазонов для ЦЕНТРА картинки
-        
-        // Максимально вправо: левый край картинки совпадает с левым краем рамки
-        // center.x - imgW/2 <= frameLeft  =>  center.x <= frameLeft + imgW/2
         const maxLeft = frameLeft + imgW/2;
-        
-        // Максимально влево: правый край картинки совпадает с правым краем рамки
-        // center.x + imgW/2 >= frameRight =>  center.x >= frameRight - imgW/2
         const minLeft = frameRight - imgW/2;
-        
-        // Аналогично для Y
         const maxTop = frameTop + imgH/2;
         const minTop = frameBottom - imgH/2;
         
-        // Применяем ограничения
-        // Примечание: если картинка меньше рамки (баг зума), эти условия могут схлопнуться,
-        // но мы гарантируем minScale, так что imgW >= cropW
+        if (imgW >= cropW) img.left = Math.min(Math.max(img.left, minLeft), maxLeft);
+        else img.left = cx; 
         
-        if (imgW >= cropW) {
-            img.left = Math.min(Math.max(img.left, minLeft), maxLeft);
-        } else {
-            img.left = cx; // Если вдруг меньше, центрируем
-        }
-        
-        if (imgH >= cropH) {
-            img.top = Math.min(Math.max(img.top, minTop), maxTop);
-        } else {
-            img.top = cy;
-        }
+        if (imgH >= cropH) img.top = Math.min(Math.max(img.top, minTop), maxTop);
+        else img.top = cy;
     },
 
     start: function(url, slotW, slotH, maskType) {
         this.init();
+        this.tempImgObject = null; // ИЗМЕНЕНО: Сброс предыдущей картинки!
         this.maskType = maskType;
         
-        // 1. Сначала рисуем маску, чтобы знать размеры слота
         this.drawOverlay(slotW, slotH);
         
         fabric.Image.fromURL(url, (img) => {
             if(!img) return;
             this.tempImgObject = img;
             
-            // 2. Считаем минимальный зум (Cover)
             const minScaleX = this.activeSlot.w / img.width;
             const minScaleY = this.activeSlot.h / img.height;
             const minCoverScale = Math.max(minScaleX, minScaleY);
             
-            // 3. Ставим по центру
             img.set({ 
                 left: 250, top: 250, originX: 'center', originY: 'center', 
                 scaleX: minCoverScale, scaleY: minCoverScale, 
@@ -411,7 +389,6 @@ const CropperTool = {
             this.canvas.add(img);
             this.canvas.sendToBack(img);
             
-            // 4. Настраиваем слайдер
             const slider = document.getElementById('zoomSlider');
             slider.min = minCoverScale;
             slider.max = minCoverScale * 4;
@@ -420,7 +397,6 @@ const CropperTool = {
             
             slider.oninput = () => { 
                 img.scale(parseFloat(slider.value)); 
-                // После зума тоже проверяем границы, чтобы не уехали углы
                 this.constrainImage(img); 
                 this.canvas.requestRenderAll(); 
             };
@@ -445,29 +421,23 @@ const CropperTool = {
         this.activeSlot = { w: pW, h: pH };
         const cx = 250, cy = 250;
         
-        // ЕСЛИ УЖЕ ЕСТЬ КАРТИНКА - ПРОВЕРЯЕМ ЕЁ МАСШТАБ И ПОЗИЦИЮ ПОД НОВУЮ РАМКУ
+        // Пересчет позиции существующей картинки при смене рамки
         if(this.tempImgObject) {
             this.canvas.sendToBack(this.tempImgObject);
-            
             const minScaleX = pW / this.tempImgObject.width;
             const minScaleY = pH / this.tempImgObject.height;
             const newMinScale = Math.max(minScaleX, minScaleY);
             
-            // Если текущий зум меньше нового минимума - увеличиваем
-            if(this.tempImgObject.scaleX < newMinScale) {
-                this.tempImgObject.scale(newMinScale);
-            }
+            if(this.tempImgObject.scaleX < newMinScale) this.tempImgObject.scale(newMinScale);
             
-            // Обновляем слайдер
             const slider = document.getElementById('zoomSlider');
             slider.min = newMinScale;
             slider.max = newMinScale * 4;
             slider.step = newMinScale * 0.01;
             if(parseFloat(slider.value) < newMinScale) slider.value = newMinScale;
             
-            // Центрируем или ограничиваем (проще центрировать при смене маски, чтобы не думать)
             this.tempImgObject.set({ left: 250, top: 250 });
-            this.constrainImage(this.tempImgObject); // На всякий случай
+            this.constrainImage(this.tempImgObject);
         }
         
         let pathStr = `M 0 0 H 500 V 500 H 0 Z`; 
