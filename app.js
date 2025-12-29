@@ -87,13 +87,13 @@ function updateSymbolUI() {
     }
 }
 
-// Управление видом Кропера (Скрываем кнопки для Журнала)
+// Управление видом Кропера
 function updateCropperUI() {
     const controls = document.querySelector('.crop-controls');
     if (state.layout === 'magazine') {
-        controls.style.display = 'none'; // Скрываем выбор пропорций
+        controls.style.display = 'none'; 
     } else {
-        controls.style.display = 'flex'; // Показываем для остальных
+        controls.style.display = 'flex'; 
     }
 }
 
@@ -120,11 +120,11 @@ window.setLayout = (l, btn) => {
         state.images.main = null; 
     }
     
+    // ИЗМЕНЕНО: Убрано переключение на Bodoni. Теперь всегда Tenor Sans (по умолчанию из state)
+    // state.text.font больше не меняем здесь
+    
     if(l === 'magazine') {
-        state.text.font = 'Bodoni Moda';
         state.maskType = 'rect';
-        // Для журнала размер 1:1 (обложка квадратная)
-        state.slotSize = { w: state.bookSize, h: state.bookSize }; 
     }
     else if(l === 'graphic') { 
         state.maskType = 'rect'; 
@@ -149,7 +149,6 @@ window.setBookSize = (s, btn) => {
     document.querySelectorAll('.format-card').forEach(b => b.classList.remove('active'));
     btn.classList.add('active'); 
     
-    // Если мы в режиме журнала, обновляем размер слота под новый размер книги
     if (state.layout === 'magazine') {
         state.slotSize = { w: s, h: s };
     }
@@ -241,15 +240,9 @@ function initListeners() {
                     state.images.main = { src: resizedUrl, natural: true };
                     refresh();
                 } else {
-                    // Открываем модалку
                     document.getElementById('cropperModal').classList.remove('hidden');
-                    
-                    // Обновляем UI кропера (скрываем кнопки если журнал)
                     updateCropperUI();
-                    
-                    // Если журнал - принудительно 1:1, иначе берем настройки из state
                     if (state.layout === 'magazine') {
-                        // Для журнала всегда 1:1 (обложка)
                         CropperTool.start(resizedUrl, 1, 1, 'rect'); 
                     } else {
                         CropperTool.start(resizedUrl, state.slotSize.w, state.slotSize.h, state.maskType);
