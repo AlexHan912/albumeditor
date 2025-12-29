@@ -26,13 +26,12 @@ function refresh() {
 function loadDefaultAssets() {
     setTimeout(() => { document.getElementById('app-loader').style.opacity = '0'; setTimeout(() => document.getElementById('app-loader').style.display='none', 800); }, 1500);
     
-    // Попытка загрузить дефолт
+    // Дефолтный символ
     const defaultPath = 'assets/symbols/love_heart.png';
     const defaultPreview = 'assets/symbols/love_heart_icon.png';
 
     CoverEngine.loadSimpleImage(defaultPath, (url) => {
         const final = url || defaultPreview;
-        // Если и превью нет, то final будет null, и ничего не загрузится (безопасно)
         if(final) {
             CoverEngine.loadSimpleImage(final, (valid) => { 
                 if(valid) state.images.icon = valid; 
@@ -54,15 +53,21 @@ function finishInit() {
 // --- UI HELPERS ---
 function updateTriggerPosition(tx, ty, scale) {
     const t = document.getElementById('photoTrigger');
+    
+    // Логика: Триггер ("+") показываем, если выбран макет с графикой/фото, НО самой картинки нет
     const needsTrigger = (state.layout === 'graphic' || state.layout === 'photo_text' || state.layout === 'magazine') && !state.images.main;
     
     if(needsTrigger) {
         t.classList.remove('hidden');
+        // Переводим координаты Canvas в координаты CSS
         const cssX = tx / scale; 
         const cssY = ty / scale;
+        // Центрируем div 50x50
         t.style.left = `calc(${cssX}px - 25px)`; 
         t.style.top = `calc(${cssY}px - 25px)`;
-    } else { t.classList.add('hidden'); }
+    } else { 
+        t.classList.add('hidden'); 
+    }
     
     document.getElementById('debugInfo').innerText = `Print: ${state.bookSize}cm @ 300DPI`;
 }
@@ -96,14 +101,20 @@ window.setLayout = (l, btn) => {
     document.querySelectorAll('.layout-card').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     
-    if (!isSameMode) state.images.main = null; 
+    // Если сменили режим - сбрасываем главную картинку, чтобы появился Плюсик
+    if (!isSameMode) {
+        state.images.main = null; 
+    }
     
     if(l === 'magazine') state.text.font = 'Bodoni Moda';
     
     if(l === 'graphic') { 
-        state.maskType = 'none'; 
-        state.slotSize = { w: 0, h: 0 }; 
-        if (!isSameMode) openGallery('graphics', 'main');
+        state.maskType = 'circle'; // Для пунктира
+        // Размер слота ставим 12x12 условно для пунктира, реальный размер будет от файла
+        state.slotSize = { w: 12, h: 12 }; 
+        
+        // ВАЖНО: Мы НЕ открываем галерею автоматически.
+        // Пользователь увидит плюсик и нажмет сам.
     }
     else { 
         state.maskType = 'rect'; 
@@ -112,6 +123,7 @@ window.setLayout = (l, btn) => {
     refresh();
 };
 
+// Обработка клика по уже загруженной картинке (для замены)
 window.handleCanvasClick = (objType) => {
     if (objType === 'mainImage') {
         if (state.layout === 'graphic') openGallery('graphics', 'main');
@@ -229,7 +241,7 @@ function initListeners() {
     document.getElementById('cancelCropBtn').onclick = () => document.getElementById('cropperModal').classList.add('hidden');
 }
 
-// --- GALLERY LOGIC (WITH BUG-FIXING CHECK) ---
+// --- GALLERY ---
 window.openGallery = (type, target) => {
     document.getElementById('globalSymbolBtn').classList.remove('pulse-attention');
     document.getElementById('galleryModal').classList.remove('hidden');
@@ -265,42 +277,34 @@ function loadGal(type, cat, target) {
     let files = (type === 'symbols' ? ASSETS_DB.symbols[cat] : ASSETS_DB.graphics[cat]) || [];
     
     files.forEach(f => {
-        const item = document.createElement('div'); 
-        item.className = 'gallery-item';
-        
+        const item = document.createElement('div'); item.className = 'gallery-item';
         const img = document.createElement('img');
         
-        // Формируем пути
         const folder = (type === 'symbols') ? 'symbols' : 'graphics';
         const previewName = f.replace('.png', '_icon.png');
         const previewUrl = `assets/${folder}/${previewName}`;
         const printUrl = `assets/${folder}/${f}`;
         
-        // 1. ПРОВЕРКА ПРЕВЬЮ
         img.src = previewUrl;
         img.onerror = () => {
-            item.classList.add('broken-file'); // Красная рамка
+            item.classList.add('broken-file');
             item.title = "Ошибка: Нет файла иконки";
         };
 
-        // 2. ПРОВЕРКА ПЕЧАТНОГО ФАЙЛА (В ФОНЕ)
-        // Создаем невидимую картинку, чтобы проверить, загрузится ли оригинал
         const checkPrint = new Image();
         checkPrint.src = printUrl;
         checkPrint.onerror = () => {
-            item.classList.add('broken-file'); // Красная рамка
+            item.classList.add('broken-file');
             item.title = "Ошибка: Нет файла для печати";
         };
 
         item.appendChild(img);
         
-        // Логика клика (Только если не сломано)
         item.onclick = () => {
             if (item.classList.contains('broken-file')) {
-                alert("Этот файл поврежден или отсутствует на сервере.");
+                alert("Файл отсутствует.");
                 return;
             }
-
             CoverEngine.loadSimpleImage(printUrl, (final) => {
                 final = final || previewUrl;
                 document.getElementById('galleryModal').classList.add('hidden');
@@ -314,7 +318,6 @@ function loadGal(type, cat, target) {
                 }
             });
         };
-        
         grid.appendChild(item);
     });
 }
