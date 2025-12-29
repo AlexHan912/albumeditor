@@ -1,10 +1,7 @@
 /* cover-engine.js - Logic for Rendering & Cropping */
 
 const CONFIG = {
-    dpi: 300, 
-    cmToInch: 2.54, 
-    spineWidthCm: 1.5, 
-    renderScale: 3.0,
+    dpi: 300, cmToInch: 2.54, spineWidthCm: 1.5, renderScale: 3.0,
     globalOpacity: 1.0, 
     typo: { baseTitle: 1.2, baseDetails: 0.5, baseCopy: 0.35 },
     scales: [0.7, 0.9, 1.1, 1.3]
@@ -15,8 +12,6 @@ const CoverEngine = {
     
     init: function(canvasId) {
         this.canvas = new fabric.Canvas(canvasId, { backgroundColor: '#fff', selection: false, enableRetinaScaling: false });
-        
-        // Слушаем клики
         this.canvas.on('mouse:down', (e) => {
             if(e.target) {
                 if(e.target.isMain || e.target.isPlaceholder) {
@@ -58,21 +53,12 @@ const CoverEngine = {
         if(!this.canvas) return;
         this.canvas.clear(); 
         this.canvas.setBackgroundColor(state.coverColor);
-        
         const h = this.canvas.height;
         const bookSize = parseFloat(state.bookSize);
         const x1 = bookSize * state.ppi; 
         const x2 = (bookSize + 1.5) * state.ppi;
         
-        const c = { 
-            h: h, 
-            spineX: x1 + ((x2 - x1) / 2), 
-            frontCenter: x2 + (bookSize * state.ppi / 2), 
-            backCenter: (bookSize * state.ppi) / 2, 
-            bottomBase: h - (1.5 * state.ppi), 
-            centerY: h / 2, 
-            gap: 2.0 * state.ppi 
-        };
+        const c = { h: h, spineX: x1 + ((x2 - x1) / 2), frontCenter: x2 + (bookSize * state.ppi / 2), backCenter: (bookSize * state.ppi) / 2, bottomBase: h - (1.5 * state.ppi), centerY: h / 2, gap: 2.0 * state.ppi };
 
         this._drawGuides(x1, x2, h, state);
         this._renderSpine(c, state);
@@ -121,17 +107,11 @@ const CoverEngine = {
         const y = c.centerY; 
         const gap = c.gap;
 
-        // --- MAGAZINE LAYOUT ---
         if (layout === 'magazine') {
             const coverW = state.bookSize * state.ppi; 
             const coverH = c.h; 
-
-            if(state.images.main) {
-                this._placeClippedImage(state.images.main, x, y, coverW, coverH, 'rect', true, state);
-            } else {
-                this._renderImageSlot(x, y, state, { w: coverW, h: coverH });
-            }
-            
+            if(state.images.main) this._placeClippedImage(state.images.main, x, y, coverW, coverH, 'rect', true, state);
+            else this._renderImageSlot(x, y, state, { w: coverW, h: coverH });
             this._renderTextBlock(x, 2.0 * state.ppi, false, true, state);
         } 
         else if (layout === 'icon') {
@@ -187,18 +167,7 @@ const CoverEngine = {
         const baseSize = compact ? 0.8 : CONFIG.typo.baseTitle; 
         const finalSize = baseSize * state.ppi * state.text.scale;
         
-        // ИЗМЕНЕНО: Принудительный шрифт Tenor Sans для всего обычного текста
-        const tObj = new fabric.Text(renderTxt, { 
-            fontFamily: 'Tenor Sans', 
-            fontSize: finalSize, 
-            textAlign: 'center', 
-            lineHeight: 1.3, 
-            fill: state.text.color, 
-            opacity: opacity, 
-            selectable: false, 
-            originX: 'center', 
-            originY: 'center' 
-        });
+        const tObj = new fabric.Text(renderTxt, { fontFamily: 'Tenor Sans', fontSize: finalSize, textAlign: 'center', lineHeight: 1.3, fill: state.text.color, opacity: opacity, selectable: false, originX: 'center', originY: 'center' });
         const group = new fabric.Group([tObj], { originX: 'center', originY: 'center' });
         
         if(state.text.date) { 
@@ -217,35 +186,13 @@ const CoverEngine = {
         if(isMag) {
             let l1 = String(state.text.lines[0].text || "");
             let l2 = String(state.text.lines[1].text || "");
-            
             if(state.text.lines[0].upper) l1 = l1.toUpperCase();
             if(state.text.lines[1].upper) l2 = l2.toUpperCase();
-
             let txtParts = [l1, l2].filter(t => t.length > 0);
             let txt = txtParts.length > 0 ? txtParts.join("\n") : "THE VISUAL DIARY";
             
-            const shadow = new fabric.Shadow({
-                color: 'rgba(0,0,0,0.15)', 
-                blur: 4, 
-                offsetX: 0, 
-                offsetY: 0
-            });
-
-            // ИЗМЕНЕНО: Шрифт для журнала теперь тоже Tenor Sans
-            this.canvas.add(new fabric.Text(txt, { 
-                fontFamily: 'Tenor Sans', 
-                fontSize: 2.5 * state.ppi * state.text.scale, 
-                textAlign: 'center', 
-                lineHeight: 1.0, 
-                originX: 'center', 
-                originY: 'top', 
-                left: x, 
-                top: y, 
-                fill: state.text.color, 
-                selectable: false,
-                evented: false, 
-                shadow: shadow 
-            }));
+            const shadow = new fabric.Shadow({ color: 'rgba(0,0,0,0.2)', blur: 5, offsetX: 0, offsetY: 0 });
+            this.canvas.add(new fabric.Text(txt, { fontFamily: 'Tenor Sans', fontSize: 2.5 * state.ppi * state.text.scale, textAlign: 'center', lineHeight: 1.0, originX: 'center', originY: 'top', left: x, top: y, fill: state.text.color, selectable: false, evented: false, shadow: shadow }));
             return;
         }
         const group = this._createTextBlockObj(compact, state); 
@@ -260,61 +207,26 @@ const CoverEngine = {
         this._placeImage(iconUrl, x, y, forcedSize || (2.0/1.6)*state.ppi*state.text.scale, { color: state.text.color, opacity: isGhost ? 0.3 : CONFIG.globalOpacity });
     },
 
-    // --- УНИФИЦИРОВАННЫЙ СЛОТ (ПЛЮС В КРУГЕ) ---
     _renderImageSlot: function(x, y, state, customSize = null) {
         let w, h;
-        if (customSize) {
-            w = customSize.w;
-            h = customSize.h;
-        } else {
-            const zoom = state.text.scale || 1.0;
-            w = state.slotSize.w * state.ppi * zoom; 
-            h = state.slotSize.h * state.ppi * zoom;
-        }
+        if (customSize) { w = customSize.w; h = customSize.h; } 
+        else { const zoom = state.text.scale || 1.0; w = state.slotSize.w * state.ppi * zoom; h = state.slotSize.h * state.ppi * zoom; }
         
         let shape;
-        const commonOpts = { 
-            fill: 'transparent', 
-            stroke: '#aaaaaa', 
-            strokeWidth: 1.5, 
-            strokeDashArray: [10, 10], 
-            left: x, top: y, 
-            originX: 'center', originY: 'center', 
-            selectable: false, 
-            evented: true, 
-            hoverCursor: 'pointer', 
-            isPlaceholder: true 
-        };
+        const commonOpts = { fill: 'transparent', stroke: '#aaaaaa', strokeWidth: 1.5, strokeDashArray: [10, 10], left: x, top: y, originX: 'center', originY: 'center', selectable: false, evented: true, hoverCursor: 'pointer', isPlaceholder: true };
         
         if(state.maskType === 'circle') shape = new fabric.Circle({ radius: w/2, ...commonOpts });
         else shape = new fabric.Rect({ width: w, height: h, ...commonOpts });
-        
         this.canvas.add(shape);
 
-        // --- УНИВЕРСАЛЬНЫЙ "ПЛЮС В КРУГЕ" ---
-        // Фиксированный размер: круг диаметром 1.5 см
         const centerIconSize = 1.5 * state.ppi; 
-        
-        // 1. Круг
-        const btnCircle = new fabric.Circle({
-            radius: centerIconSize / 2,
-            fill: 'transparent',
-            stroke: '#aaaaaa',
-            strokeWidth: 1.5,
-            originX: 'center', originY: 'center',
-            left: x, top: y,
-            selectable: false, evented: false
-        });
+        const btnCircle = new fabric.Circle({ radius: centerIconSize / 2, fill: 'transparent', stroke: '#aaaaaa', strokeWidth: 1.5, originX: 'center', originY: 'center', left: x, top: y, selectable: false, evented: false });
         this.canvas.add(btnCircle);
 
-        // 2. Плюс (внутри круга)
-        // Размер плюса чуть меньше круга
         const plusLen = centerIconSize * 0.5; 
         const plusThick = 1.5 * (state.ppi / 30); 
-        
         const vLine = new fabric.Rect({ width: plusThick, height: plusLen, fill: '#aaaaaa', originX: 'center', originY: 'center', left: x, top: y, selectable: false, evented: false });
         const hLine = new fabric.Rect({ width: plusLen, height: plusThick, fill: '#aaaaaa', originX: 'center', originY: 'center', left: x, top: y, selectable: false, evented: false });
-        
         this.canvas.add(vLine);
         this.canvas.add(hLine);
     },
@@ -332,12 +244,7 @@ const CoverEngine = {
                 const finalScaleX = (targetW_px / img.width) * userZoom;
                 const finalScaleY = (targetH_px / img.height) * userZoom;
 
-                img.set({ 
-                    left: x, top: y, originX: 'center', originY: 'center', 
-                    scaleX: finalScaleX, scaleY: finalScaleY, 
-                    opacity: CONFIG.globalOpacity, 
-                    selectable: false, evented: true, hoverCursor: 'pointer', isMain: true 
-                });
+                img.set({ left: x, top: y, originX: 'center', originY: 'center', scaleX: finalScaleX, scaleY: finalScaleY, opacity: CONFIG.globalOpacity, selectable: false, evented: true, hoverCursor: 'pointer', isMain: true });
                 const filter = new fabric.Image.filters.BlendColor({ color: state.text.color, mode: 'tint', alpha: 1 }); 
                 img.filters.push(filter); img.applyFilters();
                 this.canvas.add(img);
@@ -364,26 +271,12 @@ const CoverEngine = {
             if(isBack) {
                 const coverW = w; 
                 const scale = Math.max(coverW / img.width, h / img.height);
-                img.set({ 
-                    scaleX: scale, scaleY: scale, 
-                    left: x, top: h/2, 
-                    originX: 'center', originY: 'center', 
-                    selectable: false, 
-                    evented: true, hoverCursor: 'pointer', isMain: true // Кликабельно!
-                });
+                img.set({ scaleX: scale, scaleY: scale, left: x, top: h/2, originX: 'center', originY: 'center', selectable: false, evented: true, hoverCursor: 'pointer', isMain: true });
                 img.clipPath = new fabric.Rect({ width: coverW/scale, height: h/scale, left: -coverW/2/scale, top: -h/2/scale });
                 this.canvas.add(img); 
                 this.canvas.sendToBack(img);
             } else {
-                img.set({ 
-                    scaleX: info.scale * scaleFactor, 
-                    scaleY: info.scale * scaleFactor, 
-                    left: x + (info.left * scaleFactor), 
-                    top: y + (info.top * scaleFactor), 
-                    originX: 'center', 
-                    originY: 'center', 
-                    selectable: false, evented: true, hoverCursor: 'pointer', isMain: true
-                });
+                img.set({ scaleX: info.scale * scaleFactor, scaleY: info.scale * scaleFactor, left: x + (info.left * scaleFactor), top: y + (info.top * scaleFactor), originX: 'center', originY: 'center', selectable: false, evented: true, hoverCursor: 'pointer', isMain: true });
                 let clip;
                 if(maskType === 'circle') clip = new fabric.Circle({ radius: (w * (1/(info.scale * scaleFactor))) / 2, left: -(info.left * scaleFactor) / (info.scale * scaleFactor), top: -(info.top * scaleFactor) / (info.scale * scaleFactor), originX: 'center', originY: 'center' });
                 else clip = new fabric.Rect({ width: w * (1/(info.scale * scaleFactor)), height: h * (1/(info.scale * scaleFactor)), left: -(info.left * scaleFactor) / (info.scale * scaleFactor), top: -(info.top * scaleFactor) / (info.scale * scaleFactor), originX: 'center', originY: 'center' });
@@ -399,11 +292,10 @@ const CoverEngine = {
         const data = this.canvas.toDataURL({ format: 'png', multiplier: mult, quality: 1 });
         this.canvas.getObjects('line').forEach(o => o.opacity = 0.3);
         const a = document.createElement('a'); a.download = `malevich_cover_${state.bookSize}.png`; a.href = data; a.click();
-    },
-
-    /* --- CROPPER TOOL --- */
+    }
 };
 
+/* --- CROPPER TOOL (ZOOM LIMIT FIXED) --- */
 const CropperTool = {
     canvas: null,
     tempImgObject: null,
@@ -425,23 +317,35 @@ const CropperTool = {
         this.init();
         this.maskType = maskType;
         
+        // 1. Сначала вычисляем размеры слота (оверлея)
+        this.drawOverlay(slotW, slotH);
+        
         fabric.Image.fromURL(url, (img) => {
             if(!img) return;
             this.tempImgObject = img;
             
-            const scale = Math.min(500 / img.width, 500 / img.height) * 0.8;
+            // 2. Логика Object-fit: Cover
+            // Картинка должна быть не меньше, чем слот
+            const minScaleX = this.activeSlot.w / img.width;
+            const minScaleY = this.activeSlot.h / img.height;
+            const minCoverScale = Math.max(minScaleX, minScaleY); // Берем максимальный, чтобы покрыть всё
             
+            // 3. Ставим картинку по центру с этим масштабом
             img.set({ 
                 left: 250, top: 250, originX: 'center', originY: 'center', 
-                scaleX: scale, scaleY: scale, hasControls: false, hasBorders: false 
+                scaleX: minCoverScale, scaleY: minCoverScale, 
+                hasControls: false, hasBorders: false 
             });
             
             this.canvas.add(img);
-            this.drawOverlay(slotW, slotH);
-            this.canvas.sendToBack(img);
+            this.canvas.sendToBack(img); // Под рамку
             
+            // 4. Ограничиваем слайдер
             const slider = document.getElementById('zoomSlider');
-            slider.min = scale * 0.5; slider.max = scale * 4; slider.value = scale;
+            slider.min = minCoverScale; // Нельзя сделать меньше слота!
+            slider.max = minCoverScale * 4; // Можно увеличить в 4 раза
+            slider.step = minCoverScale * 0.05;
+            slider.value = minCoverScale;
             
             slider.oninput = () => { 
                 img.scale(parseFloat(slider.value)); 
@@ -453,22 +357,24 @@ const CropperTool = {
     },
 
     drawOverlay: function(slotW, slotH) {
+        // Удаляем старые рамки
         this.canvas.getObjects().forEach(o => { 
             if(o !== this.tempImgObject) this.canvas.remove(o); 
         });
-        if(this.tempImgObject) this.canvas.sendToBack(this.tempImgObject);
-
+        
+        // Вычисляем пропорции слота
         let aspect = slotW / slotH;
         let pW, pH;
-        const maxSize = 400; 
+        const maxSize = 400; // Макс. размер внутри 500px окна
         
         if(this.maskType === 'circle') { pW = maxSize; pH = maxSize; }
         else if(aspect >= 1) { pW = maxSize; pH = maxSize / aspect; } 
         else { pH = maxSize; pW = maxSize * aspect; }
         
+        // Сохраняем размеры слота для расчета зума
         this.activeSlot = { w: pW, h: pH };
-        const cx = 250, cy = 250;
         
+        const cx = 250, cy = 250;
         let pathStr = `M 0 0 H 500 V 500 H 0 Z`; 
         
         if(this.maskType === 'circle') {
@@ -481,7 +387,6 @@ const CropperTool = {
         }
         
         this.canvas.add(new fabric.Path(pathStr, { fill: 'rgba(0,0,0,0.7)', selectable: false, evented: false, fillRule: 'evenodd' }));
-        this.canvas.requestRenderAll();
     },
 
     apply: function() {
