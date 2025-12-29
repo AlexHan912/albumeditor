@@ -49,27 +49,19 @@ function finishInit() {
 }
 
 // --- IMAGE OPTIMIZER ---
-// Сжимает большие фото перед загрузкой в Canvas
 function processAndResizeImage(file, callback) {
     const reader = new FileReader();
     reader.onload = (event) => {
         const img = new Image();
         img.onload = () => {
-            // Максимальный размер (достаточно для качественного превью)
             const MAX_SIZE = 2500; 
             let width = img.width;
             let height = img.height;
 
             if (width > height) {
-                if (width > MAX_SIZE) {
-                    height *= MAX_SIZE / width;
-                    width = MAX_SIZE;
-                }
+                if (width > MAX_SIZE) { height *= MAX_SIZE / width; width = MAX_SIZE; }
             } else {
-                if (height > MAX_SIZE) {
-                    width *= MAX_SIZE / height;
-                    height = MAX_SIZE;
-                }
+                if (height > MAX_SIZE) { width *= MAX_SIZE / height; height = MAX_SIZE; }
             }
 
             const canvas = document.createElement('canvas');
@@ -77,8 +69,6 @@ function processAndResizeImage(file, callback) {
             canvas.height = height;
             const ctx = canvas.getContext('2d');
             ctx.drawImage(img, 0, 0, width, height);
-            
-            // Возвращаем оптимизированный DataURL (JPEG 0.9 quality)
             callback(canvas.toDataURL('image/jpeg', 0.9));
         };
         img.src = event.target.result;
@@ -120,9 +110,12 @@ window.setLayout = (l, btn) => {
         state.images.main = null; 
     }
     
-    if(l === 'magazine') state.text.font = 'Bodoni Moda';
-    
-    if(l === 'graphic') { 
+    if(l === 'magazine') {
+        state.text.font = 'Bodoni Moda';
+        state.maskType = 'rect';
+        // Для журнала размер слота не важен здесь, он будет вычислен как "full cover" в engine
+    }
+    else if(l === 'graphic') { 
         state.maskType = 'rect'; 
         state.slotSize = { w: 12, h: 12 }; 
     }
@@ -212,7 +205,6 @@ function initListeners() {
 
     document.getElementById('iconLoader').onchange = (e) => { 
         if(e.target.files[0]) {
-            // Иконки тоже оптимизируем, хотя они обычно маленькие
             processAndResizeImage(e.target.files[0], (resizedUrl) => {
                 state.images.icon = resizedUrl; 
                 updateSymbolUI(); refresh(); 
@@ -223,16 +215,13 @@ function initListeners() {
     
     document.getElementById('imageLoader').onchange = (e) => {
         if(e.target.files[0]) {
-            // Оптимизируем загруженное фото
             processAndResizeImage(e.target.files[0], (resizedUrl) => {
                 document.getElementById('galleryModal').classList.add('hidden'); 
                 
                 if(state.layout === 'graphic') {
-                    // Для графики загружаем как есть (натуральный размер)
                     state.images.main = { src: resizedUrl, natural: true };
                     refresh();
                 } else {
-                    // Для фото - запускаем Кропер с оптимизированным изображением
                     document.getElementById('cropperModal').classList.remove('hidden');
                     CropperTool.start(resizedUrl, state.slotSize.w, state.slotSize.h, state.maskType);
                 }
