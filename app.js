@@ -87,6 +87,16 @@ function updateSymbolUI() {
     }
 }
 
+// Управление видом Кропера (Скрываем кнопки для Журнала)
+function updateCropperUI() {
+    const controls = document.querySelector('.crop-controls');
+    if (state.layout === 'magazine') {
+        controls.style.display = 'none'; // Скрываем выбор пропорций
+    } else {
+        controls.style.display = 'flex'; // Показываем для остальных
+    }
+}
+
 // --- GLOBAL ACTIONS ---
 window.toggleCase = (i) => { state.text.lines[i-1].upper = !state.text.lines[i-1].upper; document.getElementById(`btnTt${i}`).classList.toggle('active'); refresh(); };
 window.showRow = (i) => document.getElementById(`row${i}`).classList.remove('hidden');
@@ -113,7 +123,8 @@ window.setLayout = (l, btn) => {
     if(l === 'magazine') {
         state.text.font = 'Bodoni Moda';
         state.maskType = 'rect';
-        // Для журнала размер слота не важен здесь, он будет вычислен как "full cover" в engine
+        // Для журнала размер 1:1 (обложка квадратная)
+        state.slotSize = { w: state.bookSize, h: state.bookSize }; 
     }
     else if(l === 'graphic') { 
         state.maskType = 'rect'; 
@@ -134,8 +145,16 @@ window.handleCanvasClick = (objType) => {
 };
 
 window.setBookSize = (s, btn) => {
-    state.bookSize = s; document.querySelectorAll('.format-card').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active'); refresh();
+    state.bookSize = s; 
+    document.querySelectorAll('.format-card').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active'); 
+    
+    // Если мы в режиме журнала, обновляем размер слота под новый размер книги
+    if (state.layout === 'magazine') {
+        state.slotSize = { w: s, h: s };
+    }
+    
+    refresh();
 };
 
 window.updateScaleFromSlider = (v) => { 
@@ -222,8 +241,19 @@ function initListeners() {
                     state.images.main = { src: resizedUrl, natural: true };
                     refresh();
                 } else {
+                    // Открываем модалку
                     document.getElementById('cropperModal').classList.remove('hidden');
-                    CropperTool.start(resizedUrl, state.slotSize.w, state.slotSize.h, state.maskType);
+                    
+                    // Обновляем UI кропера (скрываем кнопки если журнал)
+                    updateCropperUI();
+                    
+                    // Если журнал - принудительно 1:1, иначе берем настройки из state
+                    if (state.layout === 'magazine') {
+                        // Для журнала всегда 1:1 (обложка)
+                        CropperTool.start(resizedUrl, 1, 1, 'rect'); 
+                    } else {
+                        CropperTool.start(resizedUrl, state.slotSize.w, state.slotSize.h, state.maskType);
+                    }
                 }
             });
         }
