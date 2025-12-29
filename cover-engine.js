@@ -1,12 +1,8 @@
 /* cover-engine.js - Logic for Rendering & Cropping */
 
 const CONFIG = {
-    dpi: 300, 
-    cmToInch: 2.54, 
-    spineWidthCm: 1.5, 
-    renderScale: 3.0,
-    globalOpacity: 0.85, 
-    typo: { baseTitle: 1.2, baseDetails: 0.5, baseCopy: 0.35 },
+    dpi: 300, cmToInch: 2.54, spineWidthCm: 1.5, renderScale: 3.0,
+    globalOpacity: 0.85, typo: { baseTitle: 1.2, baseDetails: 0.5, baseCopy: 0.35 },
     scales: [0.7, 0.9, 1.1, 1.3]
 };
 
@@ -15,8 +11,6 @@ const CoverEngine = {
     
     init: function(canvasId) {
         this.canvas = new fabric.Canvas(canvasId, { backgroundColor: '#fff', selection: false, enableRetinaScaling: false });
-        
-        // Handle clicks
         this.canvas.on('mouse:down', (e) => {
             if(e.target) {
                 if(e.target.isMain || e.target.isPlaceholder) {
@@ -35,21 +29,17 @@ const CoverEngine = {
 
     updateDimensions: function(container, state) {
         if(!container || container.clientWidth === 0) return;
-        
         const margin = 20; 
         const bookSize = parseFloat(state.bookSize);
         const maxBookW = bookSize*2 + CONFIG.spineWidthCm; 
         const maxBookH = bookSize;
         const basePPI = Math.max(5, Math.min((container.clientWidth - margin*2) / maxBookW, (container.clientHeight - margin*2) / maxBookH));
-        
         state.ppi = basePPI * CONFIG.renderScale;
-        
         const curW = bookSize*2 + CONFIG.spineWidthCm; 
         const curH = bookSize;
         
         this.canvas.setWidth(curW * state.ppi); 
         this.canvas.setHeight(curH * state.ppi);
-        
         this.canvas.wrapperEl.style.width = `${curW * basePPI}px`; 
         this.canvas.wrapperEl.style.height = `${curH * basePPI}px`;
         this.canvas.lowerCanvasEl.style.width = '100%'; this.canvas.upperCanvasEl.style.width = '100%';
@@ -62,21 +52,12 @@ const CoverEngine = {
         if(!this.canvas) return;
         this.canvas.clear(); 
         this.canvas.setBackgroundColor(state.coverColor);
-        
         const h = this.canvas.height;
         const bookSize = parseFloat(state.bookSize);
         const x1 = bookSize * state.ppi; 
         const x2 = (bookSize + 1.5) * state.ppi;
         
-        const c = { 
-            h: h, 
-            spineX: x1 + ((x2 - x1) / 2), 
-            frontCenter: x2 + (bookSize * state.ppi / 2), 
-            backCenter: (bookSize * state.ppi) / 2, 
-            bottomBase: h - (1.5 * state.ppi), 
-            centerY: h / 2, 
-            gap: 2.0 * state.ppi 
-        };
+        const c = { h: h, spineX: x1 + ((x2 - x1) / 2), frontCenter: x2 + (bookSize * state.ppi / 2), backCenter: (bookSize * state.ppi) / 2, bottomBase: h - (1.5 * state.ppi), centerY: h / 2, gap: 2.0 * state.ppi };
 
         this._drawGuides(x1, x2, h, state);
         this._renderSpine(c, state);
@@ -125,8 +106,19 @@ const CoverEngine = {
         const y = c.centerY; 
         const gap = c.gap;
 
+        // --- MAGAZINE LAYOUT ---
         if (layout === 'magazine') {
-            if(state.images.main) this._placeClippedImage(state.images.main, x, y, state.bookSize*state.ppi, c.h, 'rect', true, state);
+            const coverW = state.bookSize * state.ppi; // Полная ширина обложки
+            const coverH = c.h; // Полная высота (канвас)
+
+            if(state.images.main) {
+                // Фото на всю обложку (Full Bleed)
+                this._placeClippedImage(state.images.main, x, y, coverW, coverH, 'rect', true, state);
+            } else {
+                // Плейсхолдер на всю обложку с плюсиком
+                this._renderImageSlot(x, y, state, { w: coverW, h: coverH });
+            }
+            // Текст (Название журнала)
             this._renderTextBlock(x, 2.0 * state.ppi, false, true, state);
         } 
         else if (layout === 'icon') {
@@ -145,37 +137,23 @@ const CoverEngine = {
         } 
         else if (layout === 'graphic' || layout === 'photo_text') {
             let imgY = c.centerY; 
-            
-            // --- GRAPHIC LAYOUT ---
             if(layout === 'graphic') {
                 const style = getComputedStyle(document.documentElement);
                 const offsetCm = parseFloat(style.getPropertyValue('--graphic-offset-y-cm')) || 2;
                 imgY = c.centerY - (offsetCm * state.ppi);
-                
                 if(state.images.main) this._renderNaturalImage(x, imgY, state);
                 else this._renderImageSlot(x, imgY, state);
             } 
-            // --- PHOTO + TEXT LAYOUT ---
             else {
-                // 1. Move photo UP (2cm from center)
                 imgY = c.centerY - (2.0 * state.ppi); 
-                
-                // Photo slot dimensions (6x6 for photo layout)
-                const w = state.slotSize.w * state.ppi;
-                const h = state.slotSize.h * state.ppi;
-
                 if(state.images.main) {
+                    const w = state.slotSize.w * state.ppi;
+                    const h = state.slotSize.h * state.ppi;
                     this._placeClippedImage(state.images.main, x, imgY, w, h, state.maskType, false, state);
                 } else {
                     this._renderImageSlot(x, imgY, state);
                 }
-
-                // 2. Move text DOWN relative to the photo bottom
-                // Photo bottom edge is at: imgY + (h/2)
-                // Add spacing: 1.5 cm gap
-                const textY = imgY + (h / 2) + (1.5 * state.ppi);
-                
-                // Render text block top-aligned to this Y position
+                const textY = imgY + (state.slotSize.h * state.ppi / 2) + (1.5 * state.ppi);
                 this._renderTextBlock(x, textY, true, false, state, 'top'); 
             }
         }
@@ -190,7 +168,6 @@ const CoverEngine = {
         const rawLines = state.text.lines.map(l => l.text); 
         const processedLines = rawLines.map((txt, i) => { return state.text.lines[i].upper ? txt.toUpperCase() : txt; });
         const hasText = rawLines.some(t => t.length > 0);
-        
         let renderTxt = hasText ? processedLines.filter(Boolean).join("\n") : "THE VISUAL DIARY\n\n\n";
         let opacity = hasText ? CONFIG.globalOpacity : 0.3;
         const baseSize = compact ? 0.8 : CONFIG.typo.baseTitle; 
@@ -199,23 +176,12 @@ const CoverEngine = {
         const tObj = new fabric.Text(renderTxt, { fontFamily: state.text.font, fontSize: finalSize, textAlign: 'center', lineHeight: 1.3, fill: state.text.color, opacity: opacity, selectable: false, originX: 'center', originY: 'center' });
         const group = new fabric.Group([tObj], { originX: 'center', originY: 'center' });
         
-        // MODIFIED: Only render date if it exists
         if(state.text.date) { 
             const dateStr = state.text.date; 
             const dateOp = CONFIG.globalOpacity; 
             const dateSize = CONFIG.typo.baseDetails * state.ppi * state.text.scale;
-            // Gap between text and date
             const gap = (compact ? 1.0 : 2.0) * state.ppi;
-            
-            const dObj = new fabric.Text(dateStr, { 
-                fontFamily: state.text.font, 
-                fontSize: dateSize, 
-                fill: state.text.color, 
-                opacity: dateOp, 
-                originX: 'center', 
-                originY: 'top', 
-                top: (tObj.height / 2) + gap 
-            });
+            const dObj = new fabric.Text(dateStr, { fontFamily: state.text.font, fontSize: dateSize, fill: state.text.color, opacity: dateOp, originX: 'center', originY: 'top', top: (tObj.height / 2) + gap });
             group.addWithUpdate(dObj);
         }
         return group;
@@ -224,14 +190,13 @@ const CoverEngine = {
     _renderTextBlock: function(x, y, compact, isMag, state, verticalOrigin = 'center') {
         if(state.layout === 'graphic') return;
         if(isMag) {
+            // ВАЖНО: Если текста нет - ничего не выводим.
             let txt = [state.text.lines[0].text, state.text.lines[1].text].filter(Boolean).join("\n");
-            if(!txt) txt = "MAGAZINE";
+            if(!txt) return; 
             this.canvas.add(new fabric.Text(txt, { fontFamily: 'Bodoni Moda', fontSize: 2.5 * state.ppi * state.text.scale, textAlign: 'center', lineHeight: 1.0, originX: 'center', originY: 'top', left: x, top: y, fill: state.text.color, selectable: false }));
             return;
         }
         const group = this._createTextBlockObj(compact, state); 
-        
-        // Support custom vertical origin (e.g. for Photo+Text to align top)
         group.set({ left: x, top: y, originY: verticalOrigin }); 
         this.canvas.add(group);
     },
@@ -243,10 +208,19 @@ const CoverEngine = {
         this._placeImage(iconUrl, x, y, forcedSize || (2.0/1.6)*state.ppi*state.text.scale, { color: state.text.color, opacity: isGhost ? 0.3 : CONFIG.globalOpacity });
     },
 
-    _renderImageSlot: function(x, y, state) {
-        const zoom = state.text.scale || 1.0;
-        const w = state.slotSize.w * state.ppi * zoom; 
-        const h = state.slotSize.h * state.ppi * zoom;
+    // --- ПЛЕЙСХОЛДЕР С ПЛЮСОМ ---
+    _renderImageSlot: function(x, y, state, customSize = null) {
+        let w, h;
+        if (customSize) {
+            // Если размер передан явно (для журнала)
+            w = customSize.w;
+            h = customSize.h;
+        } else {
+            // Стандартное поведение (с зумом)
+            const zoom = state.text.scale || 1.0;
+            w = state.slotSize.w * state.ppi * zoom; 
+            h = state.slotSize.h * state.ppi * zoom;
+        }
         
         let shape;
         const commonOpts = { fill: 'transparent', stroke: '#aaaaaa', strokeWidth: 1.5, strokeDashArray: [10, 10], left: x, top: y, originX: 'center', originY: 'center', selectable: false, evented: true, hoverCursor: 'pointer', isPlaceholder: true };
@@ -256,7 +230,7 @@ const CoverEngine = {
         
         this.canvas.add(shape);
 
-        // Geometric Plus
+        // Геометрический Плюс
         const plusLen = Math.min(w, h) * 0.25; 
         const plusThick = 2 * (state.ppi / 30); 
         const vLine = new fabric.Rect({ width: plusThick, height: plusLen, fill: '#aaaaaa', originX: 'center', originY: 'center', left: 0, top: 0 });
@@ -334,13 +308,10 @@ const CoverEngine = {
         const data = this.canvas.toDataURL({ format: 'png', multiplier: mult, quality: 1 });
         this.canvas.getObjects('line').forEach(o => o.opacity = 0.3);
         const a = document.createElement('a'); a.download = `malevich_cover_${state.bookSize}.png`; a.href = data; a.click();
-    },
-
-    /* --- CROPPER TOOL (FIXED LAYER ORDER) --- */
-    /* ... The CropperTool object is technically separate from CoverEngine but usually kept in the same file. */
+    }
 };
 
-// --- CROPPER TOOL GLOBAL (Kept from previous version, included for completeness if replacing whole file) ---
+/* --- CROPPER TOOL --- */
 const CropperTool = {
     canvas: null,
     tempImgObject: null,
