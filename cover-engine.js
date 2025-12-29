@@ -191,10 +191,29 @@ const CoverEngine = {
         if(state.layout === 'graphic') return;
         if(isMag) {
             let txt = [state.text.lines[0].text, state.text.lines[1].text].filter(Boolean).join("\n");
-            // ИЗМЕНЕНО: Если текста нет - используем дефолтный
             if(!txt) txt = "THE VISUAL DIARY";
             
-            this.canvas.add(new fabric.Text(txt, { fontFamily: 'Bodoni Moda', fontSize: 2.5 * state.ppi * state.text.scale, textAlign: 'center', lineHeight: 1.0, originX: 'center', originY: 'top', left: x, top: y, fill: state.text.color, selectable: false }));
+            // --- ДОБАВЛЕНА ТЕНЬ ---
+            const shadow = new fabric.Shadow({
+                color: 'rgba(0,0,0,0.6)', // Полупрозрачная черная тень
+                blur: 15,                 // Размытие для эффекта "отрыва" от фона
+                offsetX: 0,
+                offsetY: 0
+            });
+
+            this.canvas.add(new fabric.Text(txt, { 
+                fontFamily: 'Bodoni Moda', 
+                fontSize: 2.5 * state.ppi * state.text.scale, 
+                textAlign: 'center', 
+                lineHeight: 1.0, 
+                originX: 'center', 
+                originY: 'top', 
+                left: x, 
+                top: y, 
+                fill: state.text.color, 
+                selectable: false,
+                shadow: shadow // Применяем тень
+            }));
             return;
         }
         const group = this._createTextBlockObj(compact, state); 
@@ -209,7 +228,7 @@ const CoverEngine = {
         this._placeImage(iconUrl, x, y, forcedSize || (2.0/1.6)*state.ppi*state.text.scale, { color: state.text.color, opacity: isGhost ? 0.3 : CONFIG.globalOpacity });
     },
 
-    // --- ПЛЕЙСХОЛДЕР С ПЛЮСОМ (ФИКСИРОВАННЫЙ РАЗМЕР) ---
+    // --- ПЛЕЙСХОЛДЕР С ПЛЮСОМ ---
     _renderImageSlot: function(x, y, state, customSize = null) {
         let w, h;
         if (customSize) {
@@ -230,7 +249,6 @@ const CoverEngine = {
         this.canvas.add(shape);
 
         // --- ГЕОМЕТРИЧЕСКИЙ ПЛЮС (ФИКСИРОВАННЫЙ РАЗМЕР: 3 см) ---
-        // 3.0 - размер в см
         const plusLen = 3.0 * state.ppi; 
         const plusThick = 2 * (state.ppi / 30); 
         
@@ -309,12 +327,10 @@ const CoverEngine = {
         const data = this.canvas.toDataURL({ format: 'png', multiplier: mult, quality: 1 });
         this.canvas.getObjects('line').forEach(o => o.opacity = 0.3);
         const a = document.createElement('a'); a.download = `malevich_cover_${state.bookSize}.png`; a.href = data; a.click();
-    },
-
-    /* --- CROPPER TOOL --- */
-    /* Теперь это полноценный рабочий инструмент */
+    }
 };
 
+/* --- CROPPER TOOL --- */
 const CropperTool = {
     canvas: null,
     tempImgObject: null,
