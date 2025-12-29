@@ -108,14 +108,14 @@ const CoverEngine = {
 
         // --- MAGAZINE LAYOUT ---
         if (layout === 'magazine') {
-            const coverW = state.bookSize * state.ppi; // Полная ширина обложки
-            const coverH = c.h; // Полная высота (канвас)
+            const coverW = state.bookSize * state.ppi; 
+            const coverH = c.h; 
 
             if(state.images.main) {
-                // Фото на всю обложку (Full Bleed)
+                // Фото на всю обложку
                 this._placeClippedImage(state.images.main, x, y, coverW, coverH, 'rect', true, state);
             } else {
-                // Плейсхолдер на всю обложку с плюсиком
+                // Плейсхолдер на всю обложку
                 this._renderImageSlot(x, y, state, { w: coverW, h: coverH });
             }
             // Текст (Название журнала)
@@ -190,9 +190,10 @@ const CoverEngine = {
     _renderTextBlock: function(x, y, compact, isMag, state, verticalOrigin = 'center') {
         if(state.layout === 'graphic') return;
         if(isMag) {
-            // ВАЖНО: Если текста нет - ничего не выводим.
             let txt = [state.text.lines[0].text, state.text.lines[1].text].filter(Boolean).join("\n");
-            if(!txt) return; 
+            // ИЗМЕНЕНО: Если текста нет - используем дефолтный
+            if(!txt) txt = "THE VISUAL DIARY";
+            
             this.canvas.add(new fabric.Text(txt, { fontFamily: 'Bodoni Moda', fontSize: 2.5 * state.ppi * state.text.scale, textAlign: 'center', lineHeight: 1.0, originX: 'center', originY: 'top', left: x, top: y, fill: state.text.color, selectable: false }));
             return;
         }
@@ -208,15 +209,13 @@ const CoverEngine = {
         this._placeImage(iconUrl, x, y, forcedSize || (2.0/1.6)*state.ppi*state.text.scale, { color: state.text.color, opacity: isGhost ? 0.3 : CONFIG.globalOpacity });
     },
 
-    // --- ПЛЕЙСХОЛДЕР С ПЛЮСОМ ---
+    // --- ПЛЕЙСХОЛДЕР С ПЛЮСОМ (ФИКСИРОВАННЫЙ РАЗМЕР) ---
     _renderImageSlot: function(x, y, state, customSize = null) {
         let w, h;
         if (customSize) {
-            // Если размер передан явно (для журнала)
             w = customSize.w;
             h = customSize.h;
         } else {
-            // Стандартное поведение (с зумом)
             const zoom = state.text.scale || 1.0;
             w = state.slotSize.w * state.ppi * zoom; 
             h = state.slotSize.h * state.ppi * zoom;
@@ -230,9 +229,11 @@ const CoverEngine = {
         
         this.canvas.add(shape);
 
-        // Геометрический Плюс
-        const plusLen = Math.min(w, h) * 0.25; 
+        // --- ГЕОМЕТРИЧЕСКИЙ ПЛЮС (ФИКСИРОВАННЫЙ РАЗМЕР: 3 см) ---
+        // 3.0 - размер в см
+        const plusLen = 3.0 * state.ppi; 
         const plusThick = 2 * (state.ppi / 30); 
+        
         const vLine = new fabric.Rect({ width: plusThick, height: plusLen, fill: '#aaaaaa', originX: 'center', originY: 'center', left: 0, top: 0 });
         const hLine = new fabric.Rect({ width: plusLen, height: plusThick, fill: '#aaaaaa', originX: 'center', originY: 'center', left: 0, top: 0 });
         const plusGroup = new fabric.Group([vLine, hLine], { left: x, top: y, originX: 'center', originY: 'center', selectable: false, evented: false });
@@ -308,10 +309,12 @@ const CoverEngine = {
         const data = this.canvas.toDataURL({ format: 'png', multiplier: mult, quality: 1 });
         this.canvas.getObjects('line').forEach(o => o.opacity = 0.3);
         const a = document.createElement('a'); a.download = `malevich_cover_${state.bookSize}.png`; a.href = data; a.click();
-    }
+    },
+
+    /* --- CROPPER TOOL --- */
+    /* Теперь это полноценный рабочий инструмент */
 };
 
-/* --- CROPPER TOOL --- */
 const CropperTool = {
     canvas: null,
     tempImgObject: null,
