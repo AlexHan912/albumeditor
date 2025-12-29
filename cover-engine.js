@@ -16,10 +16,17 @@ const CoverEngine = {
     init: function(canvasId) {
         this.canvas = new fabric.Canvas(canvasId, { backgroundColor: '#fff', selection: false, enableRetinaScaling: false });
         
+        // ОБРАБОТЧИК КЛИКОВ
         this.canvas.on('mouse:down', (e) => {
             if(e.target) {
+                // 1. Клик по ГРАФИКЕ (Фото или Плейсхолдер)
                 if(e.target.isMain || e.target.isPlaceholder) {
                     if(window.handleCanvasClick) window.handleCanvasClick(e.target.isMain ? 'mainImage' : 'placeholder');
+                }
+                // 2. Клик по СИМВОЛУ (Обложка или Корешок)
+                else if (e.target.isIcon) {
+                    // Вызываем галерею символов (глобальную)
+                    if(window.openGallery) window.openGallery('symbols', 'global');
                 }
             }
         });
@@ -34,17 +41,35 @@ const CoverEngine = {
 
     updateDimensions: function(container, state) {
         if(!container || container.clientWidth === 0) return;
-        const margin = 20; 
-        const bookSize = parseFloat(state.bookSize);
-        const maxBookW = bookSize*2 + CONFIG.spineWidthCm; 
-        const maxBookH = bookSize;
-        const basePPI = Math.max(5, Math.min((container.clientWidth - margin*2) / maxBookW, (container.clientHeight - margin*2) / maxBookH));
-        state.ppi = basePPI * CONFIG.renderScale;
-        const curW = bookSize*2 + CONFIG.spineWidthCm; 
-        const curH = bookSize;
         
+        const margin = 20; 
+        
+        // --- ИСПРАВЛЕНИЕ МАСШТАБИРОВАНИЯ ---
+        // Чтобы книга 20х20 выглядела меньше, чем 30х30, мы считаем PPI 
+        // исходя из МАКСИМАЛЬНОГО размера (30 см), а не текущего.
+        const MAX_REF_SIZE = 30; 
+        
+        // Размеры "виртуального стола" (максимально возможная книга)
+        const maxRefW = MAX_REF_SIZE * 2 + CONFIG.spineWidthCm; 
+        const maxRefH = MAX_REF_SIZE;
+        
+        // Вычисляем PPI, чтобы максимальная книга влезала в контейнер
+        const basePPI = Math.max(5, Math.min(
+            (container.clientWidth - margin*2) / maxRefW, 
+            (container.clientHeight - margin*2) / maxRefH
+        ));
+        
+        state.ppi = basePPI * CONFIG.renderScale;
+        
+        // А теперь применяем этот PPI к ТЕКУЩЕМУ размеру книги
+        const curBookSize = parseFloat(state.bookSize);
+        const curW = curBookSize * 2 + CONFIG.spineWidthCm; 
+        const curH = curBookSize;
+        
+        // Устанавливаем размер канваса (физический и CSS)
         this.canvas.setWidth(curW * state.ppi); 
         this.canvas.setHeight(curH * state.ppi);
+        
         this.canvas.wrapperEl.style.width = `${curW * basePPI}px`; 
         this.canvas.wrapperEl.style.height = `${curH * basePPI}px`;
         this.canvas.lowerCanvasEl.style.width = '100%'; this.canvas.upperCanvasEl.style.width = '100%';
@@ -60,6 +85,7 @@ const CoverEngine = {
         
         const h = this.canvas.height;
         const bookSize = parseFloat(state.bookSize);
+        
         const x1 = bookSize * state.ppi; 
         const x2 = (bookSize + 1.5) * state.ppi;
         
@@ -87,7 +113,13 @@ const CoverEngine = {
 
     _renderSpine: function(c, state) {
         if(state.spine.symbol && state.images.icon) {
-            this._placeImage(state.images.icon, c.spineX, c.bottomBase, 1.0 * state.ppi, { originY: 'bottom', color: state.text.color });
+            // Добавили isIcon: true для кликабельности
+            this._placeImage(state.images.icon, c.spineX, c.bottomBase, 1.0 * state.ppi, { 
+                originY: 'bottom', 
+                color: state.text.color,
+                isIcon: true,
+                hoverCursor: 'pointer' 
+            });
         }
         let parts = [];
         const raw = state.text.lines.map(l => l.text);
@@ -223,7 +255,14 @@ const CoverEngine = {
         let iconUrl = state.images.icon; 
         let isGhost = false;
         if(!iconUrl) { iconUrl = 'assets/symbols/love_heart_icon.png'; isGhost = true; }
-        this._placeImage(iconUrl, x, y, forcedSize || (2.0/1.6)*state.ppi*state.text.scale, { color: state.text.color, opacity: isGhost ? 0.3 : CONFIG.globalOpacity });
+        
+        // Добавили isIcon: true
+        this._placeImage(iconUrl, x, y, forcedSize || (2.0/1.6)*state.ppi*state.text.scale, { 
+            color: state.text.color, 
+            opacity: isGhost ? 0.3 : CONFIG.globalOpacity,
+            isIcon: true,
+            hoverCursor: 'pointer'
+        });
     },
 
     _renderImageSlot: function(x, y, state, customSize = null) {
@@ -250,35 +289,19 @@ const CoverEngine = {
         this.canvas.add(hLine);
     },
     
-    // --- УЛУЧШЕННЫЙ РЕНДЕР ГРАФИКИ (FIT TO SLOT) ---
     _renderNaturalImage: function(x, y, state) {
         if(state.images.main && state.images.main.src) {
             fabric.Image.fromURL(state.images.main.src, (img) => {
                 if(!img) return;
-                
-                // 1. Вычисляем целевой размер слота на экране (12x12 см)
                 const slotW_px = state.slotSize.w * state.ppi;
                 const slotH_px = state.slotSize.h * state.ppi;
-                
-                // 2. Вычисляем масштаб, чтобы картинка ВПИСАЛАСЬ в слот (Contain)
-                // То есть она не будет больше слота ни по ширине, ни по высоте.
                 const scaleX = slotW_px / img.width;
                 const scaleY = slotH_px / img.height;
                 const baseScale = Math.min(scaleX, scaleY);
-                
-                // 3. Учитываем пользовательский зум (ползунок S-XL)
                 const userZoom = state.text.scale || 1.0;
                 const finalScale = baseScale * userZoom;
 
-                img.set({ 
-                    left: x, top: y, 
-                    originX: 'center', originY: 'center', 
-                    scaleX: finalScale, scaleY: finalScale, 
-                    opacity: CONFIG.globalOpacity, 
-                    selectable: false, 
-                    evented: true, hoverCursor: 'pointer', isMain: true 
-                });
-                
+                img.set({ left: x, top: y, originX: 'center', originY: 'center', scaleX: finalScale, scaleY: finalScale, opacity: CONFIG.globalOpacity, selectable: false, evented: true, hoverCursor: 'pointer', isMain: true });
                 const filter = new fabric.Image.filters.BlendColor({ color: state.text.color, mode: 'tint', alpha: 1 }); 
                 img.filters.push(filter); img.applyFilters();
                 this.canvas.add(img);
