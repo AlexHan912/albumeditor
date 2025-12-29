@@ -19,7 +19,6 @@ const CoverEngine = {
         // Слушаем клики
         this.canvas.on('mouse:down', (e) => {
             if(e.target) {
-                // Обрабатываем клик и по картинке, и по пустому плейсхолдеру
                 if(e.target.isMain || e.target.isPlaceholder) {
                     if(window.handleCanvasClick) window.handleCanvasClick(e.target.isMain ? 'mainImage' : 'placeholder');
                 }
@@ -128,14 +127,11 @@ const CoverEngine = {
             const coverH = c.h; 
 
             if(state.images.main) {
-                // Фото на всю обложку
                 this._placeClippedImage(state.images.main, x, y, coverW, coverH, 'rect', true, state);
             } else {
-                // Плейсхолдер на всю обложку (передаем размеры явно)
                 this._renderImageSlot(x, y, state, { w: coverW, h: coverH });
             }
             
-            // Текст журнала (отступ 2см сверху)
             this._renderTextBlock(x, 2.0 * state.ppi, false, true, state);
         } 
         else if (layout === 'icon') {
@@ -191,7 +187,18 @@ const CoverEngine = {
         const baseSize = compact ? 0.8 : CONFIG.typo.baseTitle; 
         const finalSize = baseSize * state.ppi * state.text.scale;
         
-        const tObj = new fabric.Text(renderTxt, { fontFamily: state.text.font, fontSize: finalSize, textAlign: 'center', lineHeight: 1.3, fill: state.text.color, opacity: opacity, selectable: false, originX: 'center', originY: 'center' });
+        // ИЗМЕНЕНО: Принудительный шрифт Tenor Sans для всего обычного текста
+        const tObj = new fabric.Text(renderTxt, { 
+            fontFamily: 'Tenor Sans', 
+            fontSize: finalSize, 
+            textAlign: 'center', 
+            lineHeight: 1.3, 
+            fill: state.text.color, 
+            opacity: opacity, 
+            selectable: false, 
+            originX: 'center', 
+            originY: 'center' 
+        });
         const group = new fabric.Group([tObj], { originX: 'center', originY: 'center' });
         
         if(state.text.date) { 
@@ -199,7 +206,7 @@ const CoverEngine = {
             const dateOp = CONFIG.globalOpacity; 
             const dateSize = CONFIG.typo.baseDetails * state.ppi * state.text.scale;
             const gap = (compact ? 1.0 : 2.0) * state.ppi;
-            const dObj = new fabric.Text(dateStr, { fontFamily: state.text.font, fontSize: dateSize, fill: state.text.color, opacity: dateOp, originX: 'center', originY: 'top', top: (tObj.height / 2) + gap });
+            const dObj = new fabric.Text(dateStr, { fontFamily: 'Tenor Sans', fontSize: dateSize, fill: state.text.color, opacity: dateOp, originX: 'center', originY: 'top', top: (tObj.height / 2) + gap });
             group.addWithUpdate(dObj);
         }
         return group;
@@ -208,28 +215,25 @@ const CoverEngine = {
     _renderTextBlock: function(x, y, compact, isMag, state, verticalOrigin = 'center') {
         if(state.layout === 'graphic') return;
         if(isMag) {
-            // ЛОГИКА ЖУРНАЛА
             let l1 = String(state.text.lines[0].text || "");
             let l2 = String(state.text.lines[1].text || "");
             
-            // Применяем UpperCase если активно
             if(state.text.lines[0].upper) l1 = l1.toUpperCase();
             if(state.text.lines[1].upper) l2 = l2.toUpperCase();
 
-            // Собираем текст или берем заглушку
             let txtParts = [l1, l2].filter(t => t.length > 0);
             let txt = txtParts.length > 0 ? txtParts.join("\n") : "THE VISUAL DIARY";
             
-            // Тень (едва заметная)
             const shadow = new fabric.Shadow({
-                color: 'rgba(0,0,0,0.15)', // Очень легкая тень
+                color: 'rgba(0,0,0,0.15)', 
                 blur: 4, 
                 offsetX: 0, 
                 offsetY: 0
             });
 
+            // ИЗМЕНЕНО: Шрифт для журнала теперь тоже Tenor Sans
             this.canvas.add(new fabric.Text(txt, { 
-                fontFamily: 'Bodoni Moda', 
+                fontFamily: 'Tenor Sans', 
                 fontSize: 2.5 * state.ppi * state.text.scale, 
                 textAlign: 'center', 
                 lineHeight: 1.0, 
@@ -239,13 +243,11 @@ const CoverEngine = {
                 top: y, 
                 fill: state.text.color, 
                 selectable: false,
-                evented: false, // ВАЖНО: Клик проходит сквозь текст к фото!
+                evented: false, 
                 shadow: shadow 
             }));
             return;
         }
-        
-        // Обычный текст
         const group = this._createTextBlockObj(compact, state); 
         group.set({ left: x, top: y, originY: verticalOrigin }); 
         this.canvas.add(group);
@@ -258,6 +260,7 @@ const CoverEngine = {
         this._placeImage(iconUrl, x, y, forcedSize || (2.0/1.6)*state.ppi*state.text.scale, { color: state.text.color, opacity: isGhost ? 0.3 : CONFIG.globalOpacity });
     },
 
+    // --- УНИФИЦИРОВАННЫЙ СЛОТ (ПЛЮС В КРУГЕ) ---
     _renderImageSlot: function(x, y, state, customSize = null) {
         let w, h;
         if (customSize) {
@@ -288,28 +291,29 @@ const CoverEngine = {
         
         this.canvas.add(shape);
 
-        // ГЕОМЕТРИЧЕСКИЙ ПЛЮС (РИСУЕМ НАПРЯМУЮ, БЕЗ ГРУПП)
-        // Фиксированный размер 3 см
-        const plusLen = 3.0 * state.ppi; 
-        const plusThick = 2 * (state.ppi / 30); 
+        // --- УНИВЕРСАЛЬНЫЙ "ПЛЮС В КРУГЕ" ---
+        // Фиксированный размер: круг диаметром 1.5 см
+        const centerIconSize = 1.5 * state.ppi; 
         
-        // Вертикальная палка
-        const vLine = new fabric.Rect({ 
-            width: plusThick, height: plusLen, 
-            fill: '#aaaaaa', 
-            originX: 'center', originY: 'center', 
-            left: x, top: y, // Прямые координаты (центр)
-            selectable: false, evented: false // Клик сквозь плюс
+        // 1. Круг
+        const btnCircle = new fabric.Circle({
+            radius: centerIconSize / 2,
+            fill: 'transparent',
+            stroke: '#aaaaaa',
+            strokeWidth: 1.5,
+            originX: 'center', originY: 'center',
+            left: x, top: y,
+            selectable: false, evented: false
         });
+        this.canvas.add(btnCircle);
+
+        // 2. Плюс (внутри круга)
+        // Размер плюса чуть меньше круга
+        const plusLen = centerIconSize * 0.5; 
+        const plusThick = 1.5 * (state.ppi / 30); 
         
-        // Горизонтальная палка
-        const hLine = new fabric.Rect({ 
-            width: plusLen, height: plusThick, 
-            fill: '#aaaaaa', 
-            originX: 'center', originY: 'center', 
-            left: x, top: y, 
-            selectable: false, evented: false 
-        });
+        const vLine = new fabric.Rect({ width: plusThick, height: plusLen, fill: '#aaaaaa', originX: 'center', originY: 'center', left: x, top: y, selectable: false, evented: false });
+        const hLine = new fabric.Rect({ width: plusLen, height: plusThick, fill: '#aaaaaa', originX: 'center', originY: 'center', left: x, top: y, selectable: false, evented: false });
         
         this.canvas.add(vLine);
         this.canvas.add(hLine);
@@ -376,7 +380,8 @@ const CoverEngine = {
                     scaleY: info.scale * scaleFactor, 
                     left: x + (info.left * scaleFactor), 
                     top: y + (info.top * scaleFactor), 
-                    originX: 'center', originY: 'center', 
+                    originX: 'center', 
+                    originY: 'center', 
                     selectable: false, evented: true, hoverCursor: 'pointer', isMain: true
                 });
                 let clip;
