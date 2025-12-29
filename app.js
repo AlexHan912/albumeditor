@@ -19,7 +19,6 @@ window.onload = () => {
 window.addEventListener('resize', () => setTimeout(refresh, 100));
 
 function refresh() {
-    // Больше не передаем updateTriggerPosition, так как плюс рисуется внутри CoverEngine
     CoverEngine.updateDimensions(document.getElementById('workspace'), state);
 }
 
@@ -47,6 +46,44 @@ function finishInit() {
     const defCard = document.querySelector('.layout-card[title="Текст+Символ"]') || document.querySelector('.layout-card');
     setLayout('text_icon', defCard); 
     refresh();
+}
+
+// --- IMAGE OPTIMIZER ---
+// Сжимает большие фото перед загрузкой в Canvas
+function processAndResizeImage(file, callback) {
+    const reader = new FileReader();
+    reader.onload = (event) => {
+        const img = new Image();
+        img.onload = () => {
+            // Максимальный размер (достаточно для качественного превью)
+            const MAX_SIZE = 2500; 
+            let width = img.width;
+            let height = img.height;
+
+            if (width > height) {
+                if (width > MAX_SIZE) {
+                    height *= MAX_SIZE / width;
+                    width = MAX_SIZE;
+                }
+            } else {
+                if (height > MAX_SIZE) {
+                    width *= MAX_SIZE / height;
+                    height = MAX_SIZE;
+                }
+            }
+
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+            
+            // Возвращаем оптимизированный DataURL (JPEG 0.9 quality)
+            callback(canvas.toDataURL('image/jpeg', 0.9));
+        };
+        img.src = event.target.result;
+    };
+    reader.readAsDataURL(file);
 }
 
 // --- UI HELPERS ---
@@ -86,22 +123,17 @@ window.setLayout = (l, btn) => {
     if(l === 'magazine') state.text.font = 'Bodoni Moda';
     
     if(l === 'graphic') { 
-        // ИСПРАВЛЕНО: Квадратная маска для графики
         state.maskType = 'rect'; 
-        // Базовый размер 12x12
         state.slotSize = { w: 12, h: 12 }; 
     }
     else { 
-        // Для фото (стандарт)
         state.maskType = 'rect'; 
         state.slotSize = { w: 6, h: 6 }; 
     }
     refresh();
 };
 
-// Обработчик клика (вызывается из cover-engine.js)
 window.handleCanvasClick = (objType) => {
-    // Если кликнули по картинке ИЛИ по пустому плейсхолдеру
     if (objType === 'mainImage' || objType === 'placeholder') {
         if (state.layout === 'graphic') openGallery('graphics', 'main');
         else if (state.layout === 'photo_text' || state.layout === 'magazine') document.getElementById('imageLoader').click();
@@ -179,28 +211,33 @@ function initListeners() {
     document.getElementById('saveBtn').onclick = () => CoverEngine.download(state);
 
     document.getElementById('iconLoader').onchange = (e) => { 
-        const r = new FileReader(); 
-        r.onload = (ev) => { 
-            state.images.icon = ev.target.result; 
-            updateSymbolUI(); refresh(); 
-            document.getElementById('galleryModal').classList.add('hidden'); 
-        };
-        if(e.target.files[0]) r.readAsDataURL(e.target.files[0]);
+        if(e.target.files[0]) {
+            // Иконки тоже оптимизируем, хотя они обычно маленькие
+            processAndResizeImage(e.target.files[0], (resizedUrl) => {
+                state.images.icon = resizedUrl; 
+                updateSymbolUI(); refresh(); 
+                document.getElementById('galleryModal').classList.add('hidden'); 
+            });
+        }
     };
     
     document.getElementById('imageLoader').onchange = (e) => {
-        const r = new FileReader();
-        r.onload = (ev) => { 
-            document.getElementById('galleryModal').classList.add('hidden'); 
-            if(state.layout === 'graphic') {
-                state.images.main = { src: ev.target.result, natural: true };
-                refresh();
-            } else {
-                document.getElementById('cropperModal').classList.remove('hidden');
-                CropperTool.start(ev.target.result, state.slotSize.w, state.slotSize.h, state.maskType);
-            }
-        };
-        if(e.target.files[0]) r.readAsDataURL(e.target.files[0]);
+        if(e.target.files[0]) {
+            // Оптимизируем загруженное фото
+            processAndResizeImage(e.target.files[0], (resizedUrl) => {
+                document.getElementById('galleryModal').classList.add('hidden'); 
+                
+                if(state.layout === 'graphic') {
+                    // Для графики загружаем как есть (натуральный размер)
+                    state.images.main = { src: resizedUrl, natural: true };
+                    refresh();
+                } else {
+                    // Для фото - запускаем Кропер с оптимизированным изображением
+                    document.getElementById('cropperModal').classList.remove('hidden');
+                    CropperTool.start(resizedUrl, state.slotSize.w, state.slotSize.h, state.maskType);
+                }
+            });
+        }
         e.target.value = '';
     };
 
