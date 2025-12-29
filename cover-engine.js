@@ -5,7 +5,7 @@ const CONFIG = {
     cmToInch: 2.54, 
     spineWidthCm: 1.5, 
     renderScale: 3.0,
-    globalOpacity: 1.0, // ИЗМЕНЕНО: Было 0.85. Теперь 1.0 (полная непрозрачность)
+    globalOpacity: 1.0, 
     typo: { baseTitle: 1.2, baseDetails: 0.5, baseCopy: 0.35 },
     scales: [0.7, 0.9, 1.1, 1.3]
 };
@@ -19,6 +19,7 @@ const CoverEngine = {
         // Слушаем клики
         this.canvas.on('mouse:down', (e) => {
             if(e.target) {
+                // Обрабатываем клик и по картинке, и по пустому плейсхолдеру
                 if(e.target.isMain || e.target.isPlaceholder) {
                     if(window.handleCanvasClick) window.handleCanvasClick(e.target.isMain ? 'mainImage' : 'placeholder');
                 }
@@ -121,8 +122,20 @@ const CoverEngine = {
         const y = c.centerY; 
         const gap = c.gap;
 
+        // --- MAGAZINE LAYOUT ---
         if (layout === 'magazine') {
-            if(state.images.main) this._placeClippedImage(state.images.main, x, y, state.bookSize*state.ppi, c.h, 'rect', true, state);
+            const coverW = state.bookSize * state.ppi; 
+            const coverH = c.h; 
+
+            if(state.images.main) {
+                // Фото на всю обложку
+                this._placeClippedImage(state.images.main, x, y, coverW, coverH, 'rect', true, state);
+            } else {
+                // Плейсхолдер на всю обложку (передаем размеры явно)
+                this._renderImageSlot(x, y, state, { w: coverW, h: coverH });
+            }
+            
+            // Текст журнала (отступ 2см сверху)
             this._renderTextBlock(x, 2.0 * state.ppi, false, true, state);
         } 
         else if (layout === 'icon') {
@@ -141,12 +154,10 @@ const CoverEngine = {
         } 
         else if (layout === 'graphic' || layout === 'photo_text') {
             let imgY = c.centerY; 
-            
             if(layout === 'graphic') {
                 const style = getComputedStyle(document.documentElement);
                 const offsetCm = parseFloat(style.getPropertyValue('--graphic-offset-y-cm')) || 2;
                 imgY = c.centerY - (offsetCm * state.ppi);
-                
                 if(state.images.main) this._renderNaturalImage(x, imgY, state);
                 else this._renderImageSlot(x, imgY, state);
             } 
@@ -197,22 +208,23 @@ const CoverEngine = {
     _renderTextBlock: function(x, y, compact, isMag, state, verticalOrigin = 'center') {
         if(state.layout === 'graphic') return;
         if(isMag) {
-            // ИЗМЕНЕНО: Обработка регистра (Upper/Lower) для журнала
-            let l1 = state.text.lines[0].text;
-            let l2 = state.text.lines[1].text;
+            // ЛОГИКА ЖУРНАЛА
+            let l1 = String(state.text.lines[0].text || "");
+            let l2 = String(state.text.lines[1].text || "");
             
-            // Применяем UpperCase, если нажата кнопка Tt
-            if(state.text.lines[0].upper && l1) l1 = l1.toUpperCase();
-            if(state.text.lines[1].upper && l2) l2 = l2.toUpperCase();
+            // Применяем UpperCase если активно
+            if(state.text.lines[0].upper) l1 = l1.toUpperCase();
+            if(state.text.lines[1].upper) l2 = l2.toUpperCase();
 
-            let txtParts = [l1, l2].filter(Boolean);
+            // Собираем текст или берем заглушку
+            let txtParts = [l1, l2].filter(t => t.length > 0);
             let txt = txtParts.length > 0 ? txtParts.join("\n") : "THE VISUAL DIARY";
             
-            // ИЗМЕНЕНО: Тень более деликатная
+            // Тень (едва заметная)
             const shadow = new fabric.Shadow({
-                color: 'rgba(0,0,0,0.2)', // Было 0.6
-                blur: 5,                  // Было 15
-                offsetX: 0,
+                color: 'rgba(0,0,0,0.15)', // Очень легкая тень
+                blur: 4, 
+                offsetX: 0, 
                 offsetY: 0
             });
 
@@ -227,10 +239,13 @@ const CoverEngine = {
                 top: y, 
                 fill: state.text.color, 
                 selectable: false,
+                evented: false, // ВАЖНО: Клик проходит сквозь текст к фото!
                 shadow: shadow 
             }));
             return;
         }
+        
+        // Обычный текст
         const group = this._createTextBlockObj(compact, state); 
         group.set({ left: x, top: y, originY: verticalOrigin }); 
         this.canvas.add(group);
@@ -255,20 +270,49 @@ const CoverEngine = {
         }
         
         let shape;
-        const commonOpts = { fill: 'transparent', stroke: '#aaaaaa', strokeWidth: 1.5, strokeDashArray: [10, 10], left: x, top: y, originX: 'center', originY: 'center', selectable: false, evented: true, hoverCursor: 'pointer', isPlaceholder: true };
+        const commonOpts = { 
+            fill: 'transparent', 
+            stroke: '#aaaaaa', 
+            strokeWidth: 1.5, 
+            strokeDashArray: [10, 10], 
+            left: x, top: y, 
+            originX: 'center', originY: 'center', 
+            selectable: false, 
+            evented: true, 
+            hoverCursor: 'pointer', 
+            isPlaceholder: true 
+        };
         
         if(state.maskType === 'circle') shape = new fabric.Circle({ radius: w/2, ...commonOpts });
         else shape = new fabric.Rect({ width: w, height: h, ...commonOpts });
         
         this.canvas.add(shape);
 
-        // Геометрический Плюс
+        // ГЕОМЕТРИЧЕСКИЙ ПЛЮС (РИСУЕМ НАПРЯМУЮ, БЕЗ ГРУПП)
+        // Фиксированный размер 3 см
         const plusLen = 3.0 * state.ppi; 
         const plusThick = 2 * (state.ppi / 30); 
-        const vLine = new fabric.Rect({ width: plusThick, height: plusLen, fill: '#aaaaaa', originX: 'center', originY: 'center', left: 0, top: 0 });
-        const hLine = new fabric.Rect({ width: plusLen, height: plusThick, fill: '#aaaaaa', originX: 'center', originY: 'center', left: 0, top: 0 });
-        const plusGroup = new fabric.Group([vLine, hLine], { left: x, top: y, originX: 'center', originY: 'center', selectable: false, evented: false });
-        this.canvas.add(plusGroup);
+        
+        // Вертикальная палка
+        const vLine = new fabric.Rect({ 
+            width: plusThick, height: plusLen, 
+            fill: '#aaaaaa', 
+            originX: 'center', originY: 'center', 
+            left: x, top: y, // Прямые координаты (центр)
+            selectable: false, evented: false // Клик сквозь плюс
+        });
+        
+        // Горизонтальная палка
+        const hLine = new fabric.Rect({ 
+            width: plusLen, height: plusThick, 
+            fill: '#aaaaaa', 
+            originX: 'center', originY: 'center', 
+            left: x, top: y, 
+            selectable: false, evented: false 
+        });
+        
+        this.canvas.add(vLine);
+        this.canvas.add(hLine);
     },
     
     _renderNaturalImage: function(x, y, state) {
@@ -284,7 +328,12 @@ const CoverEngine = {
                 const finalScaleX = (targetW_px / img.width) * userZoom;
                 const finalScaleY = (targetH_px / img.height) * userZoom;
 
-                img.set({ left: x, top: y, originX: 'center', originY: 'center', scaleX: finalScaleX, scaleY: finalScaleY, opacity: CONFIG.globalOpacity, selectable: false, evented: true, hoverCursor: 'pointer', isMain: true });
+                img.set({ 
+                    left: x, top: y, originX: 'center', originY: 'center', 
+                    scaleX: finalScaleX, scaleY: finalScaleY, 
+                    opacity: CONFIG.globalOpacity, 
+                    selectable: false, evented: true, hoverCursor: 'pointer', isMain: true 
+                });
                 const filter = new fabric.Image.filters.BlendColor({ color: state.text.color, mode: 'tint', alpha: 1 }); 
                 img.filters.push(filter); img.applyFilters();
                 this.canvas.add(img);
@@ -312,17 +361,11 @@ const CoverEngine = {
                 const coverW = w; 
                 const scale = Math.max(coverW / img.width, h / img.height);
                 img.set({ 
-                    scaleX: scale, 
-                    scaleY: scale, 
-                    left: x, 
-                    top: h/2, 
-                    originX: 'center', 
-                    originY: 'center', 
-                    selectable: false,
-                    // ИЗМЕНЕНО: Добавлены свойства для кликабельности фона
-                    evented: true, 
-                    hoverCursor: 'pointer',
-                    isMain: true
+                    scaleX: scale, scaleY: scale, 
+                    left: x, top: h/2, 
+                    originX: 'center', originY: 'center', 
+                    selectable: false, 
+                    evented: true, hoverCursor: 'pointer', isMain: true // Кликабельно!
                 });
                 img.clipPath = new fabric.Rect({ width: coverW/scale, height: h/scale, left: -coverW/2/scale, top: -h/2/scale });
                 this.canvas.add(img); 
@@ -333,8 +376,7 @@ const CoverEngine = {
                     scaleY: info.scale * scaleFactor, 
                     left: x + (info.left * scaleFactor), 
                     top: y + (info.top * scaleFactor), 
-                    originX: 'center', 
-                    originY: 'center', 
+                    originX: 'center', originY: 'center', 
                     selectable: false, evented: true, hoverCursor: 'pointer', isMain: true
                 });
                 let clip;
