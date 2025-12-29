@@ -1,8 +1,12 @@
 /* cover-engine.js - Logic for Rendering & Cropping */
 
 const CONFIG = {
-    dpi: 300, cmToInch: 2.54, spineWidthCm: 1.5, renderScale: 3.0,
-    globalOpacity: 0.85, typo: { baseTitle: 1.2, baseDetails: 0.5, baseCopy: 0.35 },
+    dpi: 300, 
+    cmToInch: 2.54, 
+    spineWidthCm: 1.5, 
+    renderScale: 3.0,
+    globalOpacity: 1.0, // ИЗМЕНЕНО: Было 0.85. Теперь 1.0 (полная непрозрачность)
+    typo: { baseTitle: 1.2, baseDetails: 0.5, baseCopy: 0.35 },
     scales: [0.7, 0.9, 1.1, 1.3]
 };
 
@@ -11,6 +15,8 @@ const CoverEngine = {
     
     init: function(canvasId) {
         this.canvas = new fabric.Canvas(canvasId, { backgroundColor: '#fff', selection: false, enableRetinaScaling: false });
+        
+        // Слушаем клики
         this.canvas.on('mouse:down', (e) => {
             if(e.target) {
                 if(e.target.isMain || e.target.isPlaceholder) {
@@ -52,12 +58,21 @@ const CoverEngine = {
         if(!this.canvas) return;
         this.canvas.clear(); 
         this.canvas.setBackgroundColor(state.coverColor);
+        
         const h = this.canvas.height;
         const bookSize = parseFloat(state.bookSize);
         const x1 = bookSize * state.ppi; 
         const x2 = (bookSize + 1.5) * state.ppi;
         
-        const c = { h: h, spineX: x1 + ((x2 - x1) / 2), frontCenter: x2 + (bookSize * state.ppi / 2), backCenter: (bookSize * state.ppi) / 2, bottomBase: h - (1.5 * state.ppi), centerY: h / 2, gap: 2.0 * state.ppi };
+        const c = { 
+            h: h, 
+            spineX: x1 + ((x2 - x1) / 2), 
+            frontCenter: x2 + (bookSize * state.ppi / 2), 
+            backCenter: (bookSize * state.ppi) / 2, 
+            bottomBase: h - (1.5 * state.ppi), 
+            centerY: h / 2, 
+            gap: 2.0 * state.ppi 
+        };
 
         this._drawGuides(x1, x2, h, state);
         this._renderSpine(c, state);
@@ -106,19 +121,8 @@ const CoverEngine = {
         const y = c.centerY; 
         const gap = c.gap;
 
-        // --- MAGAZINE LAYOUT ---
         if (layout === 'magazine') {
-            const coverW = state.bookSize * state.ppi; 
-            const coverH = c.h; 
-
-            if(state.images.main) {
-                // Фото на всю обложку
-                this._placeClippedImage(state.images.main, x, y, coverW, coverH, 'rect', true, state);
-            } else {
-                // Плейсхолдер на всю обложку
-                this._renderImageSlot(x, y, state, { w: coverW, h: coverH });
-            }
-            // Текст (Название журнала)
+            if(state.images.main) this._placeClippedImage(state.images.main, x, y, state.bookSize*state.ppi, c.h, 'rect', true, state);
             this._renderTextBlock(x, 2.0 * state.ppi, false, true, state);
         } 
         else if (layout === 'icon') {
@@ -137,10 +141,12 @@ const CoverEngine = {
         } 
         else if (layout === 'graphic' || layout === 'photo_text') {
             let imgY = c.centerY; 
+            
             if(layout === 'graphic') {
                 const style = getComputedStyle(document.documentElement);
                 const offsetCm = parseFloat(style.getPropertyValue('--graphic-offset-y-cm')) || 2;
                 imgY = c.centerY - (offsetCm * state.ppi);
+                
                 if(state.images.main) this._renderNaturalImage(x, imgY, state);
                 else this._renderImageSlot(x, imgY, state);
             } 
@@ -168,6 +174,7 @@ const CoverEngine = {
         const rawLines = state.text.lines.map(l => l.text); 
         const processedLines = rawLines.map((txt, i) => { return state.text.lines[i].upper ? txt.toUpperCase() : txt; });
         const hasText = rawLines.some(t => t.length > 0);
+        
         let renderTxt = hasText ? processedLines.filter(Boolean).join("\n") : "THE VISUAL DIARY\n\n\n";
         let opacity = hasText ? CONFIG.globalOpacity : 0.3;
         const baseSize = compact ? 0.8 : CONFIG.typo.baseTitle; 
@@ -190,13 +197,21 @@ const CoverEngine = {
     _renderTextBlock: function(x, y, compact, isMag, state, verticalOrigin = 'center') {
         if(state.layout === 'graphic') return;
         if(isMag) {
-            let txt = [state.text.lines[0].text, state.text.lines[1].text].filter(Boolean).join("\n");
-            if(!txt) txt = "THE VISUAL DIARY";
+            // ИЗМЕНЕНО: Обработка регистра (Upper/Lower) для журнала
+            let l1 = state.text.lines[0].text;
+            let l2 = state.text.lines[1].text;
             
-            // --- ДОБАВЛЕНА ТЕНЬ ---
+            // Применяем UpperCase, если нажата кнопка Tt
+            if(state.text.lines[0].upper && l1) l1 = l1.toUpperCase();
+            if(state.text.lines[1].upper && l2) l2 = l2.toUpperCase();
+
+            let txtParts = [l1, l2].filter(Boolean);
+            let txt = txtParts.length > 0 ? txtParts.join("\n") : "THE VISUAL DIARY";
+            
+            // ИЗМЕНЕНО: Тень более деликатная
             const shadow = new fabric.Shadow({
-                color: 'rgba(0,0,0,0.6)', // Полупрозрачная черная тень
-                blur: 15,                 // Размытие для эффекта "отрыва" от фона
+                color: 'rgba(0,0,0,0.2)', // Было 0.6
+                blur: 5,                  // Было 15
                 offsetX: 0,
                 offsetY: 0
             });
@@ -212,7 +227,7 @@ const CoverEngine = {
                 top: y, 
                 fill: state.text.color, 
                 selectable: false,
-                shadow: shadow // Применяем тень
+                shadow: shadow 
             }));
             return;
         }
@@ -228,7 +243,6 @@ const CoverEngine = {
         this._placeImage(iconUrl, x, y, forcedSize || (2.0/1.6)*state.ppi*state.text.scale, { color: state.text.color, opacity: isGhost ? 0.3 : CONFIG.globalOpacity });
     },
 
-    // --- ПЛЕЙСХОЛДЕР С ПЛЮСОМ ---
     _renderImageSlot: function(x, y, state, customSize = null) {
         let w, h;
         if (customSize) {
@@ -248,10 +262,9 @@ const CoverEngine = {
         
         this.canvas.add(shape);
 
-        // --- ГЕОМЕТРИЧЕСКИЙ ПЛЮС (ФИКСИРОВАННЫЙ РАЗМЕР: 3 см) ---
+        // Геометрический Плюс
         const plusLen = 3.0 * state.ppi; 
         const plusThick = 2 * (state.ppi / 30); 
-        
         const vLine = new fabric.Rect({ width: plusThick, height: plusLen, fill: '#aaaaaa', originX: 'center', originY: 'center', left: 0, top: 0 });
         const hLine = new fabric.Rect({ width: plusLen, height: plusThick, fill: '#aaaaaa', originX: 'center', originY: 'center', left: 0, top: 0 });
         const plusGroup = new fabric.Group([vLine, hLine], { left: x, top: y, originX: 'center', originY: 'center', selectable: false, evented: false });
@@ -298,7 +311,19 @@ const CoverEngine = {
             if(isBack) {
                 const coverW = w; 
                 const scale = Math.max(coverW / img.width, h / img.height);
-                img.set({ scaleX: scale, scaleY: scale, left: x, top: h/2, originX: 'center', originY: 'center', selectable: false });
+                img.set({ 
+                    scaleX: scale, 
+                    scaleY: scale, 
+                    left: x, 
+                    top: h/2, 
+                    originX: 'center', 
+                    originY: 'center', 
+                    selectable: false,
+                    // ИЗМЕНЕНО: Добавлены свойства для кликабельности фона
+                    evented: true, 
+                    hoverCursor: 'pointer',
+                    isMain: true
+                });
                 img.clipPath = new fabric.Rect({ width: coverW/scale, height: h/scale, left: -coverW/2/scale, top: -h/2/scale });
                 this.canvas.add(img); 
                 this.canvas.sendToBack(img);
@@ -327,10 +352,11 @@ const CoverEngine = {
         const data = this.canvas.toDataURL({ format: 'png', multiplier: mult, quality: 1 });
         this.canvas.getObjects('line').forEach(o => o.opacity = 0.3);
         const a = document.createElement('a'); a.download = `malevich_cover_${state.bookSize}.png`; a.href = data; a.click();
-    }
+    },
+
+    /* --- CROPPER TOOL --- */
 };
 
-/* --- CROPPER TOOL --- */
 const CropperTool = {
     canvas: null,
     tempImgObject: null,
