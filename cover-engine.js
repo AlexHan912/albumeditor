@@ -11,8 +11,6 @@ const CoverEngine = {
     
     init: function(canvasId) {
         this.canvas = new fabric.Canvas(canvasId, { backgroundColor: '#fff', selection: false, enableRetinaScaling: false });
-        
-        // Слушаем клики
         this.canvas.on('mouse:down', (e) => {
             if(e.target) {
                 if(e.target.isMain || e.target.isPlaceholder) {
@@ -31,21 +29,17 @@ const CoverEngine = {
 
     updateDimensions: function(container, state) {
         if(!container || container.clientWidth === 0) return;
-        
         const margin = 20; 
         const bookSize = parseFloat(state.bookSize);
         const maxBookW = bookSize*2 + CONFIG.spineWidthCm; 
         const maxBookH = bookSize;
         const basePPI = Math.max(5, Math.min((container.clientWidth - margin*2) / maxBookW, (container.clientHeight - margin*2) / maxBookH));
-        
         state.ppi = basePPI * CONFIG.renderScale;
-        
         const curW = bookSize*2 + CONFIG.spineWidthCm; 
         const curH = bookSize;
         
         this.canvas.setWidth(curW * state.ppi); 
         this.canvas.setHeight(curH * state.ppi);
-        
         this.canvas.wrapperEl.style.width = `${curW * basePPI}px`; 
         this.canvas.wrapperEl.style.height = `${curH * basePPI}px`;
         this.canvas.lowerCanvasEl.style.width = '100%'; this.canvas.upperCanvasEl.style.width = '100%';
@@ -58,21 +52,12 @@ const CoverEngine = {
         if(!this.canvas) return;
         this.canvas.clear(); 
         this.canvas.setBackgroundColor(state.coverColor);
-        
         const h = this.canvas.height;
         const bookSize = parseFloat(state.bookSize);
         const x1 = bookSize * state.ppi; 
         const x2 = (bookSize + 1.5) * state.ppi;
         
-        const c = { 
-            h: h, 
-            spineX: x1 + ((x2 - x1) / 2), 
-            frontCenter: x2 + (bookSize * state.ppi / 2), 
-            backCenter: (bookSize * state.ppi) / 2, 
-            bottomBase: h - (1.5 * state.ppi), 
-            centerY: h / 2, 
-            gap: 2.0 * state.ppi 
-        };
+        const c = { h: h, spineX: x1 + ((x2 - x1) / 2), frontCenter: x2 + (bookSize * state.ppi / 2), backCenter: (bookSize * state.ppi) / 2, bottomBase: h - (1.5 * state.ppi), centerY: h / 2, gap: 2.0 * state.ppi };
 
         this._drawGuides(x1, x2, h, state);
         this._renderSpine(c, state);
@@ -117,9 +102,7 @@ const CoverEngine = {
 
     _renderFrontCover: function(c, state) {
         const layout = state.layout; 
-        const x = c.frontCenter; 
-        const y = c.centerY; 
-        const gap = c.gap;
+        const x = c.frontCenter; const y = c.centerY; const gap = c.gap;
 
         if (layout === 'magazine') {
             if(state.images.main) this._placeClippedImage(state.images.main, x, y, state.bookSize*state.ppi, c.h, 'rect', true, state);
@@ -142,36 +125,23 @@ const CoverEngine = {
         else if (layout === 'graphic' || layout === 'photo_text') {
             let imgY = c.centerY; 
             
-            // --- РЕЖИМ ГРАФИКА ---
             if(layout === 'graphic') {
                 const style = getComputedStyle(document.documentElement);
                 const offsetCm = parseFloat(style.getPropertyValue('--graphic-offset-y-cm')) || 2;
                 imgY = c.centerY - (offsetCm * state.ppi);
                 
-                if(state.images.main) {
-                    this._renderNaturalImage(x, imgY, state);
-                } else {
-                    this._renderImageSlot(x, imgY, state);
-                }
+                if(state.images.main) this._renderNaturalImage(x, imgY, state);
+                else this._renderImageSlot(x, imgY, state);
             } 
-            // --- РЕЖИМ ФОТО + ТЕКСТ (ИСПРАВЛЕНО НАЛОЖЕНИЕ) ---
             else {
-                // 1. Поднимаем фото выше (на 2см от центра)
                 imgY = c.centerY - (2.0 * state.ppi); 
-                
-                // Рендер фото или плейсхолдера
                 if(state.images.main) {
-                    // Используем обычный кроппер для фото
-                    // Для фото размер слота 6х6 (из app.js)
                     const w = state.slotSize.w * state.ppi;
                     const h = state.slotSize.h * state.ppi;
                     this._placeClippedImage(state.images.main, x, imgY, w, h, state.maskType, false, state);
                 } else {
                     this._renderImageSlot(x, imgY, state);
                 }
-
-                // 2. Опускаем текст ниже (на 3см от центра)
-                // Итоговый зазор между центрами = 5см. Между краями будет около 2см.
                 const textY = c.centerY + (3.0 * state.ppi);
                 this._renderTextBlock(x, textY, true, false, state); 
             }
@@ -187,7 +157,6 @@ const CoverEngine = {
         const rawLines = state.text.lines.map(l => l.text); 
         const processedLines = rawLines.map((txt, i) => { return state.text.lines[i].upper ? txt.toUpperCase() : txt; });
         const hasText = rawLines.some(t => t.length > 0);
-        
         let renderTxt = hasText ? processedLines.filter(Boolean).join("\n") : "THE VISUAL DIARY\n\n\n";
         let opacity = hasText ? CONFIG.globalOpacity : 0.3;
         const baseSize = compact ? 0.8 : CONFIG.typo.baseTitle; 
@@ -222,50 +191,27 @@ const CoverEngine = {
     _renderIcon: function(x, y, forcedSize, state) {
         let iconUrl = state.images.icon; 
         let isGhost = false;
-        if(!iconUrl) { 
-            iconUrl = 'assets/symbols/love_heart_icon.png'; 
-            isGhost = true; 
-        }
+        if(!iconUrl) { iconUrl = 'assets/symbols/love_heart_icon.png'; isGhost = true; }
         this._placeImage(iconUrl, x, y, forcedSize || (2.0/1.6)*state.ppi*state.text.scale, { color: state.text.color, opacity: isGhost ? 0.3 : CONFIG.globalOpacity });
     },
 
-    // --- ОТРИСОВКА ПЛЕЙСХОЛДЕРА С КРАСИВЫМ ПЛЮСОМ ---
     _renderImageSlot: function(x, y, state) {
         const zoom = state.text.scale || 1.0;
         const w = state.slotSize.w * state.ppi * zoom; 
         const h = state.slotSize.h * state.ppi * zoom;
         
         let shape;
-        const commonOpts = { 
-            fill: 'transparent', stroke: '#aaaaaa', strokeWidth: 1.5, strokeDashArray: [10, 10], 
-            left: x, top: y, originX: 'center', originY: 'center', 
-            selectable: false, evented: true, hoverCursor: 'pointer', isPlaceholder: true 
-        };
+        const commonOpts = { fill: 'transparent', stroke: '#aaaaaa', strokeWidth: 1.5, strokeDashArray: [10, 10], left: x, top: y, originX: 'center', originY: 'center', selectable: false, evented: true, hoverCursor: 'pointer', isPlaceholder: true };
         
         if(state.maskType === 'circle') shape = new fabric.Circle({ radius: w/2, ...commonOpts });
         else shape = new fabric.Rect({ width: w, height: h, ...commonOpts });
-        
         this.canvas.add(shape);
 
-        // --- ГЕОМЕТРИЧЕСКИЙ ПЛЮС (Вместо шрифта) ---
-        const plusLen = Math.min(w, h) * 0.25; // Размер плюса
-        const plusThick = 2 * (state.ppi / 30); // Толщина линий (адаптивная)
-
-        const vLine = new fabric.Rect({ 
-            width: plusThick, height: plusLen, fill: '#aaaaaa', 
-            originX: 'center', originY: 'center', left: 0, top: 0 
-        });
-        
-        const hLine = new fabric.Rect({ 
-            width: plusLen, height: plusThick, fill: '#aaaaaa', 
-            originX: 'center', originY: 'center', left: 0, top: 0 
-        });
-
-        const plusGroup = new fabric.Group([vLine, hLine], {
-            left: x, top: y, originX: 'center', originY: 'center',
-            selectable: false, evented: false // Клик проходит сквозь плюс на рамку
-        });
-        
+        const plusLen = Math.min(w, h) * 0.25; 
+        const plusThick = 2 * (state.ppi / 30); 
+        const vLine = new fabric.Rect({ width: plusThick, height: plusLen, fill: '#aaaaaa', originX: 'center', originY: 'center', left: 0, top: 0 });
+        const hLine = new fabric.Rect({ width: plusLen, height: plusThick, fill: '#aaaaaa', originX: 'center', originY: 'center', left: 0, top: 0 });
+        const plusGroup = new fabric.Group([vLine, hLine], { left: x, top: y, originX: 'center', originY: 'center', selectable: false, evented: false });
         this.canvas.add(plusGroup);
     },
     
@@ -273,27 +219,18 @@ const CoverEngine = {
         if(state.images.main && state.images.main.src) {
             fabric.Image.fromURL(state.images.main.src, (img) => {
                 if(!img) return;
-                
                 const pxPerCm_Real = 300 / 2.54; 
                 const realW_cm = img.width / pxPerCm_Real;
                 const realH_cm = img.height / pxPerCm_Real;
-                
                 const targetW_px = realW_cm * state.ppi;
                 const targetH_px = realH_cm * state.ppi;
-                
                 const userZoom = state.text.scale || 1.0;
                 const finalScaleX = (targetW_px / img.width) * userZoom;
                 const finalScaleY = (targetH_px / img.height) * userZoom;
 
-                img.set({
-                    left: x, top: y, originX: 'center', originY: 'center', 
-                    scaleX: finalScaleX, scaleY: finalScaleY, opacity: CONFIG.globalOpacity,
-                    selectable: false, evented: true, hoverCursor: 'pointer', isMain: true
-                });
-
+                img.set({ left: x, top: y, originX: 'center', originY: 'center', scaleX: finalScaleX, scaleY: finalScaleY, opacity: CONFIG.globalOpacity, selectable: false, evented: true, hoverCursor: 'pointer', isMain: true });
                 const filter = new fabric.Image.filters.BlendColor({ color: state.text.color, mode: 'tint', alpha: 1 }); 
                 img.filters.push(filter); img.applyFilters();
-                
                 this.canvas.add(img);
             });
         }
@@ -347,5 +284,137 @@ const CoverEngine = {
         const data = this.canvas.toDataURL({ format: 'png', multiplier: mult, quality: 1 });
         this.canvas.getObjects('line').forEach(o => o.opacity = 0.3);
         const a = document.createElement('a'); a.download = `malevich_cover_${state.bookSize}.png`; a.href = data; a.click();
+    },
+
+    /* --- CROPPER TOOL (REPAIRED) --- */
+    /* Теперь это полноценный рабочий инструмент, а не просто объект */
+};
+
+// --- CROPPER TOOL GLOBAL ---
+const CropperTool = {
+    canvas: null,
+    tempImgObject: null,
+    activeSlot: { w: 0, h: 0 },
+    maskType: 'rect',
+    
+    init: function() {
+        if(!this.canvas) {
+            this.canvas = new fabric.Canvas('cropCanvas', { width: 500, height: 500, backgroundColor: '#111', selection: false });
+        }
+        this.canvas.clear(); 
+        this.canvas.setBackgroundColor('#111', this.canvas.renderAll.bind(this.canvas));
+    },
+
+    start: function(url, slotW, slotH, maskType) {
+        this.init();
+        this.maskType = maskType;
+        
+        fabric.Image.fromURL(url, (img) => {
+            if(!img) return;
+            this.tempImgObject = img;
+            
+            // Масштабируем картинку, чтобы она влезла в окно редактора
+            // 500px - это размер канваса кропера
+            const scale = Math.min(500 / img.width, 500 / img.height) * 0.8;
+            
+            img.set({ 
+                left: 250, 
+                top: 250, 
+                originX: 'center', 
+                originY: 'center', 
+                scaleX: scale, 
+                scaleY: scale, 
+                hasControls: false, 
+                hasBorders: false 
+            });
+            
+            this.canvas.add(img);
+            this.drawOverlay(slotW, slotH);
+            
+            const slider = document.getElementById('zoomSlider');
+            slider.min = scale * 0.5; 
+            slider.max = scale * 4; 
+            slider.value = scale;
+            
+            slider.oninput = () => { 
+                img.scale(parseFloat(slider.value)); 
+                this.canvas.requestRenderAll(); 
+            };
+            
+            this.canvas.requestRenderAll();
+        });
+    },
+
+    drawOverlay: function(slotW, slotH) {
+        // Удаляем все, кроме картинки
+        this.canvas.getObjects().forEach(o => { 
+            if(o !== this.tempImgObject) this.canvas.remove(o); 
+        });
+        
+        // Расчет пропорций маски
+        let aspect = slotW / slotH;
+        let pW, pH;
+        const maxSize = 400; // Максимальный размер рамки внутри 500px канваса
+        
+        if(this.maskType === 'circle') { 
+            pW = maxSize; pH = maxSize; 
+        } else if(aspect >= 1) { 
+            pW = maxSize; pH = maxSize / aspect; 
+        } else { 
+            pH = maxSize; pW = maxSize * aspect; 
+        }
+        
+        this.activeSlot = { w: pW, h: pH };
+        const cx = 250, cy = 250;
+        
+        // Рисуем затемнение (Path) с вырезом
+        let pathStr = `M 0 0 H 500 V 500 H 0 Z`; // Весь холст
+        
+        if(this.maskType === 'circle') {
+            const r = pW/2;
+            // Вырезаем круг (рисуем дуги в обратную сторону)
+            pathStr += ` M ${cx} ${cy-r} A ${r} ${r} 0 1 0 ${cx} ${cy+r} A ${r} ${r} 0 1 0 ${cx} ${cy-r} Z`;
+            
+            // Белый контур
+            this.canvas.add(new fabric.Circle({ 
+                radius: r, left: cx, top: cy, originX:'center', originY:'center', 
+                fill: 'transparent', stroke: '#fff', strokeWidth: 1, selectable: false, evented: false 
+            }));
+        } else {
+            // Вырезаем прямоугольник
+            pathStr += ` M ${cx-pW/2} ${cy-pH/2} H ${cx+pW/2} V ${cy+pH/2} H ${cx-pW/2} Z`;
+            
+            // Белый контур
+            this.canvas.add(new fabric.Rect({ 
+                left: cx, top: cy, width: pW, height: pH, 
+                fill: 'transparent', stroke: '#fff', strokeWidth: 1, originX: 'center', originY: 'center', 
+                selectable: false, evented: false 
+            }));
+        }
+        
+        // Добавляем затемнение поверх картинки (но под контуром)
+        this.canvas.add(new fabric.Path(pathStr, { 
+            fill: 'rgba(0,0,0,0.7)', selectable: false, evented: false, fillRule: 'evenodd' 
+        }));
+        
+        this.canvas.requestRenderAll();
+    },
+
+    apply: function() {
+        if(!this.tempImgObject) return null;
+        
+        // Вычисляем смещение картинки относительно центра рамки (250, 250)
+        const offX = this.tempImgObject.left - 250; 
+        const offY = this.tempImgObject.top - 250;
+        
+        return { 
+            src: this.tempImgObject.getSrc(), 
+            cropInfo: { 
+                left: offX, 
+                top: offY, 
+                scale: this.tempImgObject.scaleX, 
+                slotPixelSize: this.activeSlot.w 
+            } 
+        };
     }
 };
