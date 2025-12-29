@@ -26,7 +26,6 @@ function refresh() {
 function loadDefaultAssets() {
     setTimeout(() => { document.getElementById('app-loader').style.opacity = '0'; setTimeout(() => document.getElementById('app-loader').style.display='none', 800); }, 1500);
     
-    // Дефолтный символ
     const defaultPath = 'assets/symbols/love_heart.png';
     const defaultPreview = 'assets/symbols/love_heart_icon.png';
 
@@ -54,15 +53,17 @@ function finishInit() {
 function updateTriggerPosition(tx, ty, scale) {
     const t = document.getElementById('photoTrigger');
     
-    // Логика: Триггер ("+") показываем, если выбран макет с графикой/фото, НО самой картинки нет
+    // Показывать плюсик только если:
+    // 1. Выбран режим с картинкой (Graphic, Photo, Magazine)
+    // 2. Картинка еще НЕ загружена (!state.images.main)
     const needsTrigger = (state.layout === 'graphic' || state.layout === 'photo_text' || state.layout === 'magazine') && !state.images.main;
     
-    if(needsTrigger) {
+    if(needsTrigger && tx !== undefined && ty !== undefined) {
         t.classList.remove('hidden');
-        // Переводим координаты Canvas в координаты CSS
+        // Конвертация координат Canvas -> CSS
         const cssX = tx / scale; 
         const cssY = ty / scale;
-        // Центрируем div 50x50
+        
         t.style.left = `calc(${cssX}px - 25px)`; 
         t.style.top = `calc(${cssY}px - 25px)`;
     } else { 
@@ -101,7 +102,6 @@ window.setLayout = (l, btn) => {
     document.querySelectorAll('.layout-card').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     
-    // Если сменили режим - сбрасываем главную картинку, чтобы появился Плюсик
     if (!isSameMode) {
         state.images.main = null; 
     }
@@ -109,12 +109,10 @@ window.setLayout = (l, btn) => {
     if(l === 'magazine') state.text.font = 'Bodoni Moda';
     
     if(l === 'graphic') { 
-        state.maskType = 'circle'; // Для пунктира
-        // Размер слота ставим 12x12 условно для пунктира, реальный размер будет от файла
+        // ИЗМЕНЕНО: Теперь квадрат (rect), а не круг
+        state.maskType = 'rect'; 
+        // Базовый размер слота 12x12 см (будет масштабироваться бегунком)
         state.slotSize = { w: 12, h: 12 }; 
-        
-        // ВАЖНО: Мы НЕ открываем галерею автоматически.
-        // Пользователь увидит плюсик и нажмет сам.
     }
     else { 
         state.maskType = 'rect'; 
@@ -123,7 +121,6 @@ window.setLayout = (l, btn) => {
     refresh();
 };
 
-// Обработка клика по уже загруженной картинке (для замены)
 window.handleCanvasClick = (objType) => {
     if (objType === 'mainImage') {
         if (state.layout === 'graphic') openGallery('graphics', 'main');
