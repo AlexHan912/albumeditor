@@ -12,7 +12,7 @@ const CoverEngine = {
     init: function(canvasId) {
         this.canvas = new fabric.Canvas(canvasId, { backgroundColor: '#fff', selection: false, enableRetinaScaling: false });
         
-        // Слушаем клики (для замены графики по клику на саму картинку)
+        // Слушаем клики по объектам
         this.canvas.on('mouse:down', (e) => {
             if(e.target && e.target.isMain) {
                 if(window.handleCanvasClick) window.handleCanvasClick('mainImage');
@@ -164,7 +164,7 @@ const CoverEngine = {
                 if(state.images.main) {
                     this._renderNaturalImage(x, imgY, state);
                 } else {
-                    // Если нет - рисуем пунктир
+                    // Если нет - рисуем пунктирный плейсхолдер
                     this._renderImageSlot(x, imgY, state);
                 }
             } 
@@ -229,9 +229,10 @@ const CoverEngine = {
 
     // Рисование Пунктирного Плейсхолдера
     _renderImageSlot: function(x, y, state) {
-        // Размер слота (для графики он задается в app.js как 12, для фото 6)
-        const w = state.slotSize.w * state.ppi; 
-        const h = state.slotSize.h * state.ppi;
+        // ИЗМЕНЕНО: Применяем зум к пунктирному контейнеру
+        const zoom = state.text.scale || 1.0;
+        const w = state.slotSize.w * state.ppi * zoom; 
+        const h = state.slotSize.h * state.ppi * zoom;
         
         let shape;
         const opts = { 
@@ -246,7 +247,7 @@ const CoverEngine = {
     },
     
     // --- УПРОЩЕННЫЙ РЕНДЕР ГРАФИКИ ---
-    // Строго физический размер. 
+    // Строго физический размер.
     _renderNaturalImage: function(x, y, state) {
         if(state.images.main && state.images.main.src) {
             fabric.Image.fromURL(state.images.main.src, (img) => {
