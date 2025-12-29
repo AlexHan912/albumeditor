@@ -1,7 +1,10 @@
 /* cover-engine.js - Logic for Rendering & Cropping */
 
 const CONFIG = {
-    dpi: 300, cmToInch: 2.54, spineWidthCm: 1.5, renderScale: 3.0,
+    dpi: 300, 
+    cmToInch: 2.54, 
+    spineWidthCm: 1.5, 
+    renderScale: 3.0,
     globalOpacity: 1.0, 
     typo: { baseTitle: 1.2, baseDetails: 0.5, baseCopy: 0.35 },
     scales: [0.7, 0.9, 1.1, 1.3]
@@ -161,7 +164,6 @@ const CoverEngine = {
         const rawLines = state.text.lines.map(l => l.text); 
         const processedLines = rawLines.map((txt, i) => { return state.text.lines[i].upper ? txt.toUpperCase() : txt; });
         const hasText = rawLines.some(t => t.length > 0);
-        
         let renderTxt = hasText ? processedLines.filter(Boolean).join("\n") : "THE VISUAL DIARY\n\n\n";
         let opacity = hasText ? CONFIG.globalOpacity : 0.3;
         const baseSize = compact ? 0.8 : CONFIG.typo.baseTitle; 
@@ -191,7 +193,7 @@ const CoverEngine = {
             let txtParts = [l1, l2].filter(t => t.length > 0);
             let txt = txtParts.length > 0 ? txtParts.join("\n") : "THE VISUAL DIARY";
             
-            const shadow = new fabric.Shadow({ color: 'rgba(0,0,0,0.2)', blur: 5, offsetX: 0, offsetY: 0 });
+            const shadow = new fabric.Shadow({ color: 'rgba(0,0,0,0.15)', blur: 4, offsetX: 0, offsetY: 0 });
             this.canvas.add(new fabric.Text(txt, { fontFamily: 'Tenor Sans', fontSize: 2.5 * state.ppi * state.text.scale, textAlign: 'center', lineHeight: 1.0, originX: 'center', originY: 'top', left: x, top: y, fill: state.text.color, selectable: false, evented: false, shadow: shadow }));
             return;
         }
@@ -276,7 +278,15 @@ const CoverEngine = {
                 this.canvas.add(img); 
                 this.canvas.sendToBack(img);
             } else {
-                img.set({ scaleX: info.scale * scaleFactor, scaleY: info.scale * scaleFactor, left: x + (info.left * scaleFactor), top: y + (info.top * scaleFactor), originX: 'center', originY: 'center', selectable: false, evented: true, hoverCursor: 'pointer', isMain: true });
+                img.set({ 
+                    scaleX: info.scale * scaleFactor, 
+                    scaleY: info.scale * scaleFactor, 
+                    left: x + (info.left * scaleFactor), 
+                    top: y + (info.top * scaleFactor), 
+                    originX: 'center', 
+                    originY: 'center', 
+                    selectable: false, evented: true, hoverCursor: 'pointer', isMain: true
+                });
                 let clip;
                 if(maskType === 'circle') clip = new fabric.Circle({ radius: (w * (1/(info.scale * scaleFactor))) / 2, left: -(info.left * scaleFactor) / (info.scale * scaleFactor), top: -(info.top * scaleFactor) / (info.scale * scaleFactor), originX: 'center', originY: 'center' });
                 else clip = new fabric.Rect({ width: w * (1/(info.scale * scaleFactor)), height: h * (1/(info.scale * scaleFactor)), left: -(info.left * scaleFactor) / (info.scale * scaleFactor), top: -(info.top * scaleFactor) / (info.scale * scaleFactor), originX: 'center', originY: 'center' });
@@ -295,7 +305,7 @@ const CoverEngine = {
     }
 };
 
-/* --- CROPPER TOOL (ZOOM LIMIT FIXED) --- */
+/* --- CROPPER TOOL (BOUNDARY FIXED) --- */
 const CropperTool = {
     canvas: null,
     tempImgObject: null,
@@ -308,29 +318,90 @@ const CropperTool = {
                 width: 500, height: 500, backgroundColor: '#111', selection: false,
                 preserveObjectStacking: true 
             });
+            
+            // ДОБАВЛЕНО: Слушаем перемещение, чтобы картинка не вылетала
+            this.canvas.on('object:moving', (e) => {
+                if(e.target === this.tempImgObject) {
+                    this.constrainImage(e.target);
+                }
+            });
         }
         this.canvas.clear(); 
         this.canvas.setBackgroundColor('#111', this.canvas.renderAll.bind(this.canvas));
+    },
+
+    // --- НОВАЯ ФУНКЦИЯ ОГРАНИЧЕНИЯ ---
+    constrainImage: function(img) {
+        const cropW = this.activeSlot.w;
+        const cropH = this.activeSlot.h;
+        const cx = 250, cy = 250; // Центр канваса
+        
+        // Границы рамки (в координатах канваса)
+        const frameLeft = cx - cropW/2;
+        const frameTop = cy - cropH/2;
+        const frameRight = cx + cropW/2;
+        const frameBottom = cy + cropH/2;
+        
+        // Размеры картинки (с учетом зума)
+        const imgW = img.width * img.scaleX;
+        const imgH = img.height * img.scaleY;
+        
+        // Текущие координаты картинки (центр)
+        // Fabric.js: originX/Y = center
+        // Левый верхний угол картинки = img.left - imgW/2
+        
+        // Правило: Край картинки не должен быть ВНУТРИ рамки
+        // Левый край картинки <= Левый край рамки
+        // Правый край картинки >= Правый край рамки
+        
+        // Расчет допустимых диапазонов для ЦЕНТРА картинки
+        
+        // Максимально вправо: левый край картинки совпадает с левым краем рамки
+        // center.x - imgW/2 <= frameLeft  =>  center.x <= frameLeft + imgW/2
+        const maxLeft = frameLeft + imgW/2;
+        
+        // Максимально влево: правый край картинки совпадает с правым краем рамки
+        // center.x + imgW/2 >= frameRight =>  center.x >= frameRight - imgW/2
+        const minLeft = frameRight - imgW/2;
+        
+        // Аналогично для Y
+        const maxTop = frameTop + imgH/2;
+        const minTop = frameBottom - imgH/2;
+        
+        // Применяем ограничения
+        // Примечание: если картинка меньше рамки (баг зума), эти условия могут схлопнуться,
+        // но мы гарантируем minScale, так что imgW >= cropW
+        
+        if (imgW >= cropW) {
+            img.left = Math.min(Math.max(img.left, minLeft), maxLeft);
+        } else {
+            img.left = cx; // Если вдруг меньше, центрируем
+        }
+        
+        if (imgH >= cropH) {
+            img.top = Math.min(Math.max(img.top, minTop), maxTop);
+        } else {
+            img.top = cy;
+        }
     },
 
     start: function(url, slotW, slotH, maskType) {
         this.init();
         this.maskType = maskType;
         
-        // 1. Сначала вычисляем размеры слота (оверлея)
+        // 1. Сначала рисуем маску, чтобы знать размеры слота
         this.drawOverlay(slotW, slotH);
         
         fabric.Image.fromURL(url, (img) => {
             if(!img) return;
             this.tempImgObject = img;
             
-            // 2. Логика Object-fit: Cover
-            // Картинка должна быть не меньше, чем слот
+            // 2. Считаем минимальный зум (Cover)
             const minScaleX = this.activeSlot.w / img.width;
             const minScaleY = this.activeSlot.h / img.height;
-            const minCoverScale = Math.max(minScaleX, minScaleY); // Берем максимальный, чтобы покрыть всё
+            const minCoverScale = Math.max(minScaleX, minScaleY);
             
-            // 3. Ставим картинку по центру с этим масштабом
+            // 3. Ставим по центру
             img.set({ 
                 left: 250, top: 250, originX: 'center', originY: 'center', 
                 scaleX: minCoverScale, scaleY: minCoverScale, 
@@ -338,17 +409,19 @@ const CropperTool = {
             });
             
             this.canvas.add(img);
-            this.canvas.sendToBack(img); // Под рамку
+            this.canvas.sendToBack(img);
             
-            // 4. Ограничиваем слайдер
+            // 4. Настраиваем слайдер
             const slider = document.getElementById('zoomSlider');
-            slider.min = minCoverScale; // Нельзя сделать меньше слота!
-            slider.max = minCoverScale * 4; // Можно увеличить в 4 раза
-            slider.step = minCoverScale * 0.05;
+            slider.min = minCoverScale;
+            slider.max = minCoverScale * 4;
+            slider.step = minCoverScale * 0.01;
             slider.value = minCoverScale;
             
             slider.oninput = () => { 
                 img.scale(parseFloat(slider.value)); 
+                // После зума тоже проверяем границы, чтобы не уехали углы
+                this.constrainImage(img); 
                 this.canvas.requestRenderAll(); 
             };
             
@@ -357,24 +430,46 @@ const CropperTool = {
     },
 
     drawOverlay: function(slotW, slotH) {
-        // Удаляем старые рамки
         this.canvas.getObjects().forEach(o => { 
             if(o !== this.tempImgObject) this.canvas.remove(o); 
         });
         
-        // Вычисляем пропорции слота
         let aspect = slotW / slotH;
         let pW, pH;
-        const maxSize = 400; // Макс. размер внутри 500px окна
+        const maxSize = 400; 
         
         if(this.maskType === 'circle') { pW = maxSize; pH = maxSize; }
         else if(aspect >= 1) { pW = maxSize; pH = maxSize / aspect; } 
         else { pH = maxSize; pW = maxSize * aspect; }
         
-        // Сохраняем размеры слота для расчета зума
         this.activeSlot = { w: pW, h: pH };
-        
         const cx = 250, cy = 250;
+        
+        // ЕСЛИ УЖЕ ЕСТЬ КАРТИНКА - ПРОВЕРЯЕМ ЕЁ МАСШТАБ И ПОЗИЦИЮ ПОД НОВУЮ РАМКУ
+        if(this.tempImgObject) {
+            this.canvas.sendToBack(this.tempImgObject);
+            
+            const minScaleX = pW / this.tempImgObject.width;
+            const minScaleY = pH / this.tempImgObject.height;
+            const newMinScale = Math.max(minScaleX, minScaleY);
+            
+            // Если текущий зум меньше нового минимума - увеличиваем
+            if(this.tempImgObject.scaleX < newMinScale) {
+                this.tempImgObject.scale(newMinScale);
+            }
+            
+            // Обновляем слайдер
+            const slider = document.getElementById('zoomSlider');
+            slider.min = newMinScale;
+            slider.max = newMinScale * 4;
+            slider.step = newMinScale * 0.01;
+            if(parseFloat(slider.value) < newMinScale) slider.value = newMinScale;
+            
+            // Центрируем или ограничиваем (проще центрировать при смене маски, чтобы не думать)
+            this.tempImgObject.set({ left: 250, top: 250 });
+            this.constrainImage(this.tempImgObject); // На всякий случай
+        }
+        
         let pathStr = `M 0 0 H 500 V 500 H 0 Z`; 
         
         if(this.maskType === 'circle') {
@@ -387,6 +482,7 @@ const CropperTool = {
         }
         
         this.canvas.add(new fabric.Path(pathStr, { fill: 'rgba(0,0,0,0.7)', selectable: false, evented: false, fillRule: 'evenodd' }));
+        this.canvas.requestRenderAll();
     },
 
     apply: function() {
