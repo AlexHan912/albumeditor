@@ -12,10 +12,16 @@ const CoverEngine = {
     init: function(canvasId) {
         this.canvas = new fabric.Canvas(canvasId, { backgroundColor: '#fff', selection: false, enableRetinaScaling: false });
         
-        // Слушаем клики по объектам
+        // Слушаем клики по объектам (картинка или пустой контейнер)
         this.canvas.on('mouse:down', (e) => {
-            if(e.target && e.target.isMain) {
-                if(window.handleCanvasClick) window.handleCanvasClick('mainImage');
+            if(e.target) {
+                if(e.target.isMain) {
+                    // Клик по загруженной картинке
+                    if(window.handleCanvasClick) window.handleCanvasClick('mainImage');
+                } else if (e.target.isPlaceholder) {
+                    // Клик по пустому пунктиру
+                    if(window.handleCanvasClick) window.handleCanvasClick('placeholder');
+                }
             }
         });
     },
@@ -164,7 +170,7 @@ const CoverEngine = {
                 if(state.images.main) {
                     this._renderNaturalImage(x, imgY, state);
                 } else {
-                    // Если нет - рисуем пунктирный плейсхолдер
+                    // Если нет - рисуем интерактивный пунктир
                     this._renderImageSlot(x, imgY, state);
                 }
             } 
@@ -227,9 +233,9 @@ const CoverEngine = {
         this._placeImage(iconUrl, x, y, forcedSize || (2.0/1.6)*state.ppi*state.text.scale, { color: state.text.color, opacity: isGhost ? 0.3 : CONFIG.globalOpacity });
     },
 
-    // Рисование Пунктирного Плейсхолдера
+    // Рисование Пунктирного Плейсхолдера (Интерактивного)
     _renderImageSlot: function(x, y, state) {
-        // ИЗМЕНЕНО: Применяем зум к пунктирному контейнеру
+        // Применяем зум к пунктирному контейнеру
         const zoom = state.text.scale || 1.0;
         const w = state.slotSize.w * state.ppi * zoom; 
         const h = state.slotSize.h * state.ppi * zoom;
@@ -237,7 +243,9 @@ const CoverEngine = {
         let shape;
         const opts = { 
             fill: 'transparent', stroke: '#ddd', strokeWidth: 2, strokeDashArray: [20,20], 
-            left: x, top: y, originX: 'center', originY: 'center', selectable: false 
+            left: x, top: y, originX: 'center', originY: 'center', 
+            // ВАЖНО: Делаем его кликабельным
+            selectable: false, evented: true, hoverCursor: 'pointer', isPlaceholder: true 
         };
         
         if(state.maskType === 'circle') shape = new fabric.Circle({ radius: w/2, ...opts });
@@ -246,29 +254,20 @@ const CoverEngine = {
         this.canvas.add(shape);
     },
     
-    // --- УПРОЩЕННЫЙ РЕНДЕР ГРАФИКИ ---
-    // Строго физический размер.
     _renderNaturalImage: function(x, y, state) {
         if(state.images.main && state.images.main.src) {
             fabric.Image.fromURL(state.images.main.src, (img) => {
                 if(!img) return;
                 
-                // 1. Физика: сколько пикселей экрана в 1 см реальной картинки (при 300dpi)
-                // 300 dpi = 118.11 px/cm
                 const pxPerCm_Real = 300 / 2.54; 
-                
-                // 2. Реальный размер картинки в см
                 const realW_cm = img.width / pxPerCm_Real;
                 const realH_cm = img.height / pxPerCm_Real;
                 
-                // 3. Переводим в пиксели экрана (канваса)
                 const targetW_px = realW_cm * state.ppi;
                 const targetH_px = realH_cm * state.ppi;
                 
-                // 4. Пользовательский зум
                 const userZoom = state.text.scale || 1.0;
                 
-                // 5. Итоговый масштаб
                 const finalScaleX = (targetW_px / img.width) * userZoom;
                 const finalScaleY = (targetH_px / img.height) * userZoom;
 
