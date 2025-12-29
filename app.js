@@ -48,20 +48,21 @@ function finishInit() {
     refresh();
 }
 
-// --- IMAGE OPTIMIZER ---
-function processAndResizeImage(file, callback) {
+// --- IMAGE OPTIMIZER (UPDATED) ---
+// Теперь принимает макс. размер и тип файла (чтобы сохранить прозрачность для PNG)
+function processAndResizeImage(file, maxSize, outputType, callback) {
     const reader = new FileReader();
     reader.onload = (event) => {
         const img = new Image();
         img.onload = () => {
-            const MAX_SIZE = 2500; 
             let width = img.width;
             let height = img.height;
 
+            // Если картинка больше лимита - уменьшаем
             if (width > height) {
-                if (width > MAX_SIZE) { height *= MAX_SIZE / width; width = MAX_SIZE; }
+                if (width > maxSize) { height *= maxSize / width; width = maxSize; }
             } else {
-                if (height > MAX_SIZE) { width *= MAX_SIZE / height; height = MAX_SIZE; }
+                if (height > maxSize) { width *= maxSize / height; height = maxSize; }
             }
 
             const canvas = document.createElement('canvas');
@@ -69,7 +70,10 @@ function processAndResizeImage(file, callback) {
             canvas.height = height;
             const ctx = canvas.getContext('2d');
             ctx.drawImage(img, 0, 0, width, height);
-            callback(canvas.toDataURL('image/jpeg', 0.9));
+            
+            // Возвращаем в нужном формате (PNG для прозрачности, JPEG для фото)
+            // quality 0.9 игнорируется для PNG, но важен для JPEG
+            callback(canvas.toDataURL(outputType, 0.9));
         };
         img.src = event.target.result;
     };
@@ -87,7 +91,6 @@ function updateSymbolUI() {
     }
 }
 
-// Управление видом Кропера
 function updateCropperUI() {
     const controls = document.querySelector('.crop-controls');
     if (state.layout === 'magazine') {
@@ -119,9 +122,6 @@ window.setLayout = (l, btn) => {
     if (!isSameMode) {
         state.images.main = null; 
     }
-    
-    // ИЗМЕНЕНО: Убрано переключение на Bodoni. Теперь всегда Tenor Sans (по умолчанию из state)
-    // state.text.font больше не меняем здесь
     
     if(l === 'magazine') {
         state.maskType = 'rect';
@@ -223,7 +223,8 @@ function initListeners() {
 
     document.getElementById('iconLoader').onchange = (e) => { 
         if(e.target.files[0]) {
-            processAndResizeImage(e.target.files[0], (resizedUrl) => {
+            // Иконки: всегда PNG, размер небольшой
+            processAndResizeImage(e.target.files[0], 500, 'image/png', (resizedUrl) => {
                 state.images.icon = resizedUrl; 
                 updateSymbolUI(); refresh(); 
                 document.getElementById('galleryModal').classList.add('hidden'); 
@@ -233,7 +234,19 @@ function initListeners() {
     
     document.getElementById('imageLoader').onchange = (e) => {
         if(e.target.files[0]) {
-            processAndResizeImage(e.target.files[0], (resizedUrl) => {
+            // ОПРЕДЕЛЯЕМ ПАРАМЕТРЫ СЖАТИЯ
+            let limit = 2500;
+            let type = 'image/jpeg';
+            
+            // Если это ГРАФИКА:
+            // 1. Лимит 1417 (это 12см при 300dpi)
+            // 2. Тип PNG (чтобы не потерять прозрачность)
+            if (state.layout === 'graphic') {
+                limit = 1417;
+                type = 'image/png';
+            }
+
+            processAndResizeImage(e.target.files[0], limit, type, (resizedUrl) => {
                 document.getElementById('galleryModal').classList.add('hidden'); 
                 
                 if(state.layout === 'graphic') {
