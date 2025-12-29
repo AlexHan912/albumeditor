@@ -12,14 +12,14 @@ const CoverEngine = {
     init: function(canvasId) {
         this.canvas = new fabric.Canvas(canvasId, { backgroundColor: '#fff', selection: false, enableRetinaScaling: false });
         
-        // Слушаем клики по объектам (картинка или пустой контейнер)
+        // Слушаем клики по объектам (картинка или плейсхолдер)
         this.canvas.on('mouse:down', (e) => {
             if(e.target) {
                 if(e.target.isMain) {
-                    // Клик по загруженной картинке
                     if(window.handleCanvasClick) window.handleCanvasClick('mainImage');
-                } else if (e.target.isPlaceholder) {
-                    // Клик по пустому пунктиру
+                } 
+                // Клик по плюсику или рамке
+                else if (e.target.isPlaceholder) {
                     if(window.handleCanvasClick) window.handleCanvasClick('placeholder');
                 }
             }
@@ -29,7 +29,7 @@ const CoverEngine = {
     loadSimpleImage: function(path, callback) {
         const img = new Image();
         img.onload = () => callback(path);
-        img.onerror = () => { callback(null); };
+        img.onerror = () => callback(null);
         img.src = path;
     },
 
@@ -82,21 +82,6 @@ const CoverEngine = {
         this._renderSpine(c, state);
         this._renderBackCover(c, state);
         this._renderFrontCover(c, state);
-        
-        // Координаты для Плюсика (HTML)
-        let trigY = c.centerY;
-        if(state.layout === 'graphic') {
-            const style = getComputedStyle(document.documentElement);
-            const offsetCm = parseFloat(style.getPropertyValue('--graphic-offset-y-cm')) || 2;
-            trigY = c.centerY - (offsetCm * state.ppi);
-        }
-        else if(state.layout === 'photo_text') trigY = c.centerY - c.gap/2;
-        
-        return { 
-            triggerX: c.frontCenter, 
-            triggerY: trigY,
-            scale: CONFIG.renderScale 
-        };
     },
 
     _drawGuides: function(x1, x2, h, state) {
@@ -233,18 +218,20 @@ const CoverEngine = {
         this._placeImage(iconUrl, x, y, forcedSize || (2.0/1.6)*state.ppi*state.text.scale, { color: state.text.color, opacity: isGhost ? 0.3 : CONFIG.globalOpacity });
     },
 
-    // Рисование Пунктирного Плейсхолдера (Интерактивного)
+    // --- ОТРИСОВКА ПЛЕЙСХОЛДЕРА С ПЛЮСОМ ---
     _renderImageSlot: function(x, y, state) {
-        // Применяем зум к пунктирному контейнеру
+        // Учитываем зум (бегунок S-XL) для размера рамки
         const zoom = state.text.scale || 1.0;
         const w = state.slotSize.w * state.ppi * zoom; 
         const h = state.slotSize.h * state.ppi * zoom;
         
         let shape;
         const opts = { 
-            fill: 'transparent', stroke: '#ddd', strokeWidth: 2, strokeDashArray: [20,20], 
+            fill: 'transparent', 
+            stroke: '#aaaaaa', 
+            strokeWidth: 2, 
+            strokeDashArray: [15, 15], 
             left: x, top: y, originX: 'center', originY: 'center', 
-            // ВАЖНО: Делаем его кликабельным
             selectable: false, evented: true, hoverCursor: 'pointer', isPlaceholder: true 
         };
         
@@ -252,6 +239,22 @@ const CoverEngine = {
         else shape = new fabric.Rect({ width: w, height: h, ...opts });
         
         this.canvas.add(shape);
+
+        // ДОБАВЛЯЕМ СИМВОЛ "ПЛЮС" В ЦЕНТР
+        const plusSize = Math.min(w, h) * 0.4;
+        const plus = new fabric.Text('+', {
+            fontFamily: 'Courier New', 
+            fontSize: plusSize,
+            fill: '#aaaaaa',
+            originX: 'center',
+            originY: 'center',
+            left: x,
+            top: y + (plusSize * 0.08), // Небольшая коррекция вертикали для шрифта
+            selectable: false,
+            evented: false // Клик проходит сквозь текст на рамку (shape)
+        });
+        
+        this.canvas.add(plus);
     },
     
     _renderNaturalImage: function(x, y, state) {
