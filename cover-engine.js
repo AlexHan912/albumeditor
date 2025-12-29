@@ -250,20 +250,35 @@ const CoverEngine = {
         this.canvas.add(hLine);
     },
     
+    // --- УЛУЧШЕННЫЙ РЕНДЕР ГРАФИКИ (FIT TO SLOT) ---
     _renderNaturalImage: function(x, y, state) {
         if(state.images.main && state.images.main.src) {
             fabric.Image.fromURL(state.images.main.src, (img) => {
                 if(!img) return;
-                const pxPerCm_Real = 300 / 2.54; 
-                const realW_cm = img.width / pxPerCm_Real;
-                const realH_cm = img.height / pxPerCm_Real;
-                const targetW_px = realW_cm * state.ppi;
-                const targetH_px = realH_cm * state.ppi;
+                
+                // 1. Вычисляем целевой размер слота на экране (12x12 см)
+                const slotW_px = state.slotSize.w * state.ppi;
+                const slotH_px = state.slotSize.h * state.ppi;
+                
+                // 2. Вычисляем масштаб, чтобы картинка ВПИСАЛАСЬ в слот (Contain)
+                // То есть она не будет больше слота ни по ширине, ни по высоте.
+                const scaleX = slotW_px / img.width;
+                const scaleY = slotH_px / img.height;
+                const baseScale = Math.min(scaleX, scaleY);
+                
+                // 3. Учитываем пользовательский зум (ползунок S-XL)
                 const userZoom = state.text.scale || 1.0;
-                const finalScaleX = (targetW_px / img.width) * userZoom;
-                const finalScaleY = (targetH_px / img.height) * userZoom;
+                const finalScale = baseScale * userZoom;
 
-                img.set({ left: x, top: y, originX: 'center', originY: 'center', scaleX: finalScaleX, scaleY: finalScaleY, opacity: CONFIG.globalOpacity, selectable: false, evented: true, hoverCursor: 'pointer', isMain: true });
+                img.set({ 
+                    left: x, top: y, 
+                    originX: 'center', originY: 'center', 
+                    scaleX: finalScale, scaleY: finalScale, 
+                    opacity: CONFIG.globalOpacity, 
+                    selectable: false, 
+                    evented: true, hoverCursor: 'pointer', isMain: true 
+                });
+                
                 const filter = new fabric.Image.filters.BlendColor({ color: state.text.color, mode: 'tint', alpha: 1 }); 
                 img.filters.push(filter); img.applyFilters();
                 this.canvas.add(img);
@@ -367,7 +382,7 @@ const CropperTool = {
 
     start: function(url, slotW, slotH, maskType) {
         this.init();
-        this.tempImgObject = null; // ИЗМЕНЕНО: Сброс предыдущей картинки!
+        this.tempImgObject = null;
         this.maskType = maskType;
         
         this.drawOverlay(slotW, slotH);
@@ -421,7 +436,6 @@ const CropperTool = {
         this.activeSlot = { w: pW, h: pH };
         const cx = 250, cy = 250;
         
-        // Пересчет позиции существующей картинки при смене рамки
         if(this.tempImgObject) {
             this.canvas.sendToBack(this.tempImgObject);
             const minScaleX = pW / this.tempImgObject.width;
