@@ -1,12 +1,8 @@
 /* cover-engine.js - Logic for Rendering & Cropping */
 
 const CONFIG = {
-    dpi: 300, 
-    cmToInch: 2.54, 
-    spineWidthCm: 1.5, 
-    renderScale: 3.0,
-    globalOpacity: 0.85, 
-    typo: { baseTitle: 1.2, baseDetails: 0.5, baseCopy: 0.35 },
+    dpi: 300, cmToInch: 2.54, spineWidthCm: 1.5, renderScale: 3.0,
+    globalOpacity: 0.85, typo: { baseTitle: 1.2, baseDetails: 0.5, baseCopy: 0.35 },
     scales: [0.7, 0.9, 1.1, 1.3]
 };
 
@@ -16,7 +12,7 @@ const CoverEngine = {
     init: function(canvasId) {
         this.canvas = new fabric.Canvas(canvasId, { backgroundColor: '#fff', selection: false, enableRetinaScaling: false });
         
-        // Обработка клика для замены графики
+        // Слушаем клики (для замены графики по клику на саму картинку)
         this.canvas.on('mouse:down', (e) => {
             if(e.target && e.target.isMain) {
                 if(window.handleCanvasClick) window.handleCanvasClick('mainImage');
@@ -27,10 +23,7 @@ const CoverEngine = {
     loadSimpleImage: function(path, callback) {
         const img = new Image();
         img.onload = () => callback(path);
-        img.onerror = () => {
-            console.warn('Failed to load image:', path);
-            callback(null);
-        };
+        img.onerror = () => { callback(null); };
         img.src = path;
     },
 
@@ -39,12 +32,10 @@ const CoverEngine = {
         
         const margin = 20; 
         const bookSize = parseFloat(state.bookSize);
-        
         const maxBookW = bookSize*2 + CONFIG.spineWidthCm; 
         const maxBookH = bookSize;
-        
-        // Расчет PPI экрана, чтобы книга влезла в контейнер
         const basePPI = Math.max(5, Math.min((container.clientWidth - margin*2) / maxBookW, (container.clientHeight - margin*2) / maxBookH));
+        
         state.ppi = basePPI * CONFIG.renderScale;
         
         const curW = bookSize*2 + CONFIG.spineWidthCm; 
@@ -53,7 +44,6 @@ const CoverEngine = {
         this.canvas.setWidth(curW * state.ppi); 
         this.canvas.setHeight(curH * state.ppi);
         
-        // CSS масштабирование самого канваса
         this.canvas.wrapperEl.style.width = `${curW * basePPI}px`; 
         this.canvas.wrapperEl.style.height = `${curH * basePPI}px`;
         this.canvas.lowerCanvasEl.style.width = '100%'; this.canvas.upperCanvasEl.style.width = '100%';
@@ -69,8 +59,6 @@ const CoverEngine = {
         
         const h = this.canvas.height;
         const bookSize = parseFloat(state.bookSize);
-        
-        // Координаты направляющих
         const x1 = bookSize * state.ppi; 
         const x2 = (bookSize + 1.5) * state.ppi;
         
@@ -89,16 +77,14 @@ const CoverEngine = {
         this._renderBackCover(c, state);
         this._renderFrontCover(c, state);
         
-        // Возвращаем координаты для UI "плюсика"
+        // Координаты для Плюсика (HTML)
         let trigY = c.centerY;
         if(state.layout === 'graphic') {
             const style = getComputedStyle(document.documentElement);
             const offsetCm = parseFloat(style.getPropertyValue('--graphic-offset-y-cm')) || 2;
             trigY = c.centerY - (offsetCm * state.ppi);
         }
-        else if(state.layout === 'photo_text') {
-            trigY = c.centerY - c.gap/2;
-        }
+        else if(state.layout === 'photo_text') trigY = c.centerY - c.gap/2;
         
         return { 
             triggerX: c.frontCenter, 
@@ -174,7 +160,13 @@ const CoverEngine = {
                 const offsetCm = parseFloat(style.getPropertyValue('--graphic-offset-y-cm')) || 2;
                 imgY = c.centerY - (offsetCm * state.ppi);
                 
-                this._renderNaturalImage(x, imgY, state);
+                // Если картинка есть - рисуем её
+                if(state.images.main) {
+                    this._renderNaturalImage(x, imgY, state);
+                } else {
+                    // Если нет - рисуем пунктир
+                    this._renderImageSlot(x, imgY, state);
+                }
             } 
             else {
                 if(layout === 'photo_text') imgY = c.centerY - gap/2;
@@ -235,77 +227,57 @@ const CoverEngine = {
         this._placeImage(iconUrl, x, y, forcedSize || (2.0/1.6)*state.ppi*state.text.scale, { color: state.text.color, opacity: isGhost ? 0.3 : CONFIG.globalOpacity });
     },
 
+    // Рисование Пунктирного Плейсхолдера
     _renderImageSlot: function(x, y, state) {
+        // Размер слота (для графики он задается в app.js как 12, для фото 6)
         const w = state.slotSize.w * state.ppi; 
         const h = state.slotSize.h * state.ppi;
-        if(state.images.main && !state.images.main.natural) { 
-            this._placeClippedImage(state.images.main, x, y, w, h, state.maskType, false, state); 
-        } else {
-            let shape;
-            const opts = { fill: 'transparent', stroke: '#ddd', strokeWidth: 2, strokeDashArray: [20,20], left: x, top: y, originX: 'center', originY: 'center', selectable: false };
-            if(state.maskType === 'circle') shape = new fabric.Circle({ radius: w/2, ...opts });
-            else shape = new fabric.Rect({ width: w, height: h, ...opts });
-            this.canvas.add(shape);
-        }
+        
+        let shape;
+        const opts = { 
+            fill: 'transparent', stroke: '#ddd', strokeWidth: 2, strokeDashArray: [20,20], 
+            left: x, top: y, originX: 'center', originY: 'center', selectable: false 
+        };
+        
+        if(state.maskType === 'circle') shape = new fabric.Circle({ radius: w/2, ...opts });
+        else shape = new fabric.Rect({ width: w, height: h, ...opts });
+        
+        this.canvas.add(shape);
     },
     
-    // --- ПОЛНОСТЬЮ ПЕРЕПИСАННЫЙ МЕТОД РЕНДЕРА ГРАФИКИ ---
-    // Строгая логика: никаких попыток "угадать" превью. Только математика.
+    // --- УПРОЩЕННЫЙ РЕНДЕР ГРАФИКИ ---
+    // Строго физический размер. 
     _renderNaturalImage: function(x, y, state) {
         if(state.images.main && state.images.main.src) {
             fabric.Image.fromURL(state.images.main.src, (img) => {
                 if(!img) return;
                 
-                // 1. Читаем лимит из CSS
-                const style = getComputedStyle(document.documentElement);
-                const maxCm = parseFloat(style.getPropertyValue('--graphic-max-size-cm')) || 12;
+                // 1. Физика: сколько пикселей экрана в 1 см реальной картинки (при 300dpi)
+                // 300 dpi = 118.11 px/cm
+                const pxPerCm_Real = 300 / 2.54; 
                 
-                // 2. Считаем реальный физический размер в см (исходя из 300 DPI)
-                // 300 DPI = 118.11 px/cm
-                const DPI = 300;
-                const pxPerCm_Real = DPI / 2.54; // ~118.11
-                
+                // 2. Реальный размер картинки в см
                 const realW_cm = img.width / pxPerCm_Real;
                 const realH_cm = img.height / pxPerCm_Real;
                 
-                const maxSide_cm = Math.max(realW_cm, realH_cm);
-
-                // 3. Вычисляем целевой размер в см
-                // Правило: Если картинка больше лимита (12см) -> уменьшаем.
-                // Если меньше -> оставляем как есть (2х2 останется 2х2).
+                // 3. Переводим в пиксели экрана (канваса)
+                const targetW_px = realW_cm * state.ppi;
+                const targetH_px = realH_cm * state.ppi;
                 
-                let scaleFactor = 1.0;
-                
-                if (maxSide_cm > maxCm) {
-                    scaleFactor = maxCm / maxSide_cm;
-                }
-                
-                // Целевой размер в сантиметрах
-                const targetW_cm = realW_cm * scaleFactor;
-                const targetH_cm = realH_cm * scaleFactor;
-
-                // 4. Переводим сантиметры в пиксели Канваса (Экранные)
-                // state.ppi = сколько пикселей экрана в 1 см
-                const targetW_px = targetW_cm * state.ppi;
-                const targetH_px = targetH_cm * state.ppi;
-                
-                // Учитываем пользовательский зум (слайдер)
+                // 4. Пользовательский зум
                 const userZoom = state.text.scale || 1.0;
                 
-                // Финальный масштаб для Fabric (отношение желаемого размера к исходному размеру картинки)
+                // 5. Итоговый масштаб
                 const finalScaleX = (targetW_px / img.width) * userZoom;
                 const finalScaleY = (targetH_px / img.height) * userZoom;
 
-                // 5. Применяем параметры
                 img.set({
-                    originX: 'center', 
-                    originY: 'center',
                     left: x, 
                     top: y, 
-                    
+                    originX: 'center', 
+                    originY: 'center', 
                     scaleX: finalScaleX,
                     scaleY: finalScaleY,
-                    
                     opacity: CONFIG.globalOpacity,
                     selectable: false, 
                     evented: true, 
@@ -313,24 +285,12 @@ const CoverEngine = {
                     isMain: true
                 });
 
-                // Красим
                 const filter = new fabric.Image.filters.BlendColor({ color: state.text.color, mode: 'tint', alpha: 1 }); 
                 img.filters.push(filter); 
                 img.applyFilters();
                 
                 this.canvas.add(img);
             });
-        } else {
-            // Placeholder (круг)
-            const style = getComputedStyle(document.documentElement);
-            const maxCm = parseFloat(style.getPropertyValue('--graphic-max-size-cm')) || 12;
-            const sizePx = maxCm * state.ppi; 
-            
-            const shape = new fabric.Circle({ 
-                radius: sizePx/2, fill: 'transparent', stroke: '#ddd', strokeWidth: 2, 
-                strokeDashArray: [20,20], left: x, top: y, originX: 'center', originY: 'center', selectable: false 
-            });
-            this.canvas.add(shape);
         }
     },
 
