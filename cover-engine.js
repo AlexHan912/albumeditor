@@ -16,7 +16,7 @@ const CoverEngine = {
     init: function(canvasId) {
         this.canvas = new fabric.Canvas(canvasId, { backgroundColor: '#fff', selection: false, enableRetinaScaling: false });
         
-        // Обработка кликов
+        // Handle clicks
         this.canvas.on('mouse:down', (e) => {
             if(e.target) {
                 if(e.target.isMain || e.target.isPlaceholder) {
@@ -146,6 +146,7 @@ const CoverEngine = {
         else if (layout === 'graphic' || layout === 'photo_text') {
             let imgY = c.centerY; 
             
+            // --- GRAPHIC LAYOUT ---
             if(layout === 'graphic') {
                 const style = getComputedStyle(document.documentElement);
                 const offsetCm = parseFloat(style.getPropertyValue('--graphic-offset-y-cm')) || 2;
@@ -154,18 +155,28 @@ const CoverEngine = {
                 if(state.images.main) this._renderNaturalImage(x, imgY, state);
                 else this._renderImageSlot(x, imgY, state);
             } 
+            // --- PHOTO + TEXT LAYOUT ---
             else {
-                // PHOTO + TEXT: Разносим элементы
+                // 1. Move photo UP (2cm from center)
                 imgY = c.centerY - (2.0 * state.ppi); 
+                
+                // Photo slot dimensions (6x6 for photo layout)
+                const w = state.slotSize.w * state.ppi;
+                const h = state.slotSize.h * state.ppi;
+
                 if(state.images.main) {
-                    const w = state.slotSize.w * state.ppi;
-                    const h = state.slotSize.h * state.ppi;
                     this._placeClippedImage(state.images.main, x, imgY, w, h, state.maskType, false, state);
                 } else {
                     this._renderImageSlot(x, imgY, state);
                 }
-                const textY = c.centerY + (3.0 * state.ppi);
-                this._renderTextBlock(x, textY, true, false, state); 
+
+                // 2. Move text DOWN relative to the photo bottom
+                // Photo bottom edge is at: imgY + (h/2)
+                // Add spacing: 1.5 cm gap
+                const textY = imgY + (h / 2) + (1.5 * state.ppi);
+                
+                // Render text block top-aligned to this Y position
+                this._renderTextBlock(x, textY, true, false, state, 'top'); 
             }
         }
         else if (layout === 'text') { 
@@ -179,6 +190,7 @@ const CoverEngine = {
         const rawLines = state.text.lines.map(l => l.text); 
         const processedLines = rawLines.map((txt, i) => { return state.text.lines[i].upper ? txt.toUpperCase() : txt; });
         const hasText = rawLines.some(t => t.length > 0);
+        
         let renderTxt = hasText ? processedLines.filter(Boolean).join("\n") : "THE VISUAL DIARY\n\n\n";
         let opacity = hasText ? CONFIG.globalOpacity : 0.3;
         const baseSize = compact ? 0.8 : CONFIG.typo.baseTitle; 
@@ -187,17 +199,29 @@ const CoverEngine = {
         const tObj = new fabric.Text(renderTxt, { fontFamily: state.text.font, fontSize: finalSize, textAlign: 'center', lineHeight: 1.3, fill: state.text.color, opacity: opacity, selectable: false, originX: 'center', originY: 'center' });
         const group = new fabric.Group([tObj], { originX: 'center', originY: 'center' });
         
-        if(state.text.date || !hasText) { 
-            const dateStr = state.text.date ? state.text.date : "2025"; 
-            const dateOp = state.text.date ? CONFIG.globalOpacity : 0.3; 
+        // MODIFIED: Only render date if it exists
+        if(state.text.date) { 
+            const dateStr = state.text.date; 
+            const dateOp = CONFIG.globalOpacity; 
             const dateSize = CONFIG.typo.baseDetails * state.ppi * state.text.scale;
-            const dObj = new fabric.Text(dateStr, { fontFamily: state.text.font, fontSize: dateSize, fill: state.text.color, opacity: dateOp, originX: 'center', originY: 'top', top: tObj.height/2 + (compact ? 1.0 : 2.0)*state.ppi });
+            // Gap between text and date
+            const gap = (compact ? 1.0 : 2.0) * state.ppi;
+            
+            const dObj = new fabric.Text(dateStr, { 
+                fontFamily: state.text.font, 
+                fontSize: dateSize, 
+                fill: state.text.color, 
+                opacity: dateOp, 
+                originX: 'center', 
+                originY: 'top', 
+                top: (tObj.height / 2) + gap 
+            });
             group.addWithUpdate(dObj);
         }
         return group;
     },
 
-    _renderTextBlock: function(x, y, compact, isMag, state) {
+    _renderTextBlock: function(x, y, compact, isMag, state, verticalOrigin = 'center') {
         if(state.layout === 'graphic') return;
         if(isMag) {
             let txt = [state.text.lines[0].text, state.text.lines[1].text].filter(Boolean).join("\n");
@@ -206,7 +230,9 @@ const CoverEngine = {
             return;
         }
         const group = this._createTextBlockObj(compact, state); 
-        group.set({ left: x, top: y }); 
+        
+        // Support custom vertical origin (e.g. for Photo+Text to align top)
+        group.set({ left: x, top: y, originY: verticalOrigin }); 
         this.canvas.add(group);
     },
 
@@ -230,7 +256,7 @@ const CoverEngine = {
         
         this.canvas.add(shape);
 
-        // Геометрический Плюс
+        // Geometric Plus
         const plusLen = Math.min(w, h) * 0.25; 
         const plusThick = 2 * (state.ppi / 30); 
         const vLine = new fabric.Rect({ width: plusThick, height: plusLen, fill: '#aaaaaa', originX: 'center', originY: 'center', left: 0, top: 0 });
@@ -308,10 +334,13 @@ const CoverEngine = {
         const data = this.canvas.toDataURL({ format: 'png', multiplier: mult, quality: 1 });
         this.canvas.getObjects('line').forEach(o => o.opacity = 0.3);
         const a = document.createElement('a'); a.download = `malevich_cover_${state.bookSize}.png`; a.href = data; a.click();
-    }
+    },
+
+    /* --- CROPPER TOOL (FIXED LAYER ORDER) --- */
+    /* ... The CropperTool object is technically separate from CoverEngine but usually kept in the same file. */
 };
 
-/* --- CROPPER TOOL (FIXED LAYER ORDER) --- */
+// --- CROPPER TOOL GLOBAL (Kept from previous version, included for completeness if replacing whole file) ---
 const CropperTool = {
     canvas: null,
     tempImgObject: null,
@@ -322,7 +351,7 @@ const CropperTool = {
         if(!this.canvas) {
             this.canvas = new fabric.Canvas('cropCanvas', { 
                 width: 500, height: 500, backgroundColor: '#111', selection: false,
-                preserveObjectStacking: true // ВАЖНО: Предотвращает перекрытие рамки картинкой при драге
+                preserveObjectStacking: true 
             });
         }
         this.canvas.clear(); 
@@ -345,7 +374,6 @@ const CropperTool = {
             });
             
             this.canvas.add(img);
-            // Сразу добавляем оверлей и отправляем фото назад
             this.drawOverlay(slotW, slotH);
             this.canvas.sendToBack(img);
             
@@ -362,12 +390,9 @@ const CropperTool = {
     },
 
     drawOverlay: function(slotW, slotH) {
-        // Удаляем старые оверлеи (всё, что не картинка)
         this.canvas.getObjects().forEach(o => { 
             if(o !== this.tempImgObject) this.canvas.remove(o); 
         });
-        
-        // Гарантируем, что картинка внизу
         if(this.tempImgObject) this.canvas.sendToBack(this.tempImgObject);
 
         let aspect = slotW / slotH;
