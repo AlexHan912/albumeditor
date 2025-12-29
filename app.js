@@ -53,19 +53,21 @@ function finishInit() {
 function updateTriggerPosition(tx, ty, scale) {
     const t = document.getElementById('photoTrigger');
     
-    // Показывать плюсик только если:
-    // 1. Выбран режим с картинкой (Graphic, Photo, Magazine)
-    // 2. Картинка еще НЕ загружена (!state.images.main)
+    // Показывать ПЛЮС, если выбран спец. макет и НЕТ картинки
     const needsTrigger = (state.layout === 'graphic' || state.layout === 'photo_text' || state.layout === 'magazine') && !state.images.main;
     
     if(needsTrigger && tx !== undefined && ty !== undefined) {
         t.classList.remove('hidden');
-        // Конвертация координат Canvas -> CSS
+        // Позиционируем HTML элемент над Canvas
         const cssX = tx / scale; 
         const cssY = ty / scale;
         
         t.style.left = `calc(${cssX}px - 25px)`; 
         t.style.top = `calc(${cssY}px - 25px)`;
+        
+        // Настраиваем клик по плюсику
+        t.onclick = () => window.triggerAssetLoader();
+        
     } else { 
         t.classList.add('hidden'); 
     }
@@ -102,6 +104,7 @@ window.setLayout = (l, btn) => {
     document.querySelectorAll('.layout-card').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     
+    // Сбрасываем картинку при смене режима
     if (!isSameMode) {
         state.images.main = null; 
     }
@@ -109,22 +112,22 @@ window.setLayout = (l, btn) => {
     if(l === 'magazine') state.text.font = 'Bodoni Moda';
     
     if(l === 'graphic') { 
-        // ИЗМЕНЕНО: Теперь квадрат (rect), а не круг
+        // Графика: Квадрат 12х12 по умолчанию
         state.maskType = 'rect'; 
-        // Базовый размер слота 12x12 см (будет масштабироваться бегунком)
         state.slotSize = { w: 12, h: 12 }; 
     }
     else { 
+        // Фото: Квадрат 6х6 по умолчанию
         state.maskType = 'rect'; 
         state.slotSize = { w: 6, h: 6 }; 
     }
     refresh();
 };
 
+// Единый обработчик кликов с холста (и по картинке, и по пустому месту)
 window.handleCanvasClick = (objType) => {
-    if (objType === 'mainImage') {
-        if (state.layout === 'graphic') openGallery('graphics', 'main');
-        else if (state.layout === 'photo_text' || state.layout === 'magazine') document.getElementById('imageLoader').click();
+    if (objType === 'mainImage' || objType === 'placeholder') {
+        window.triggerAssetLoader();
     }
 };
 
