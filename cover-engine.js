@@ -131,7 +131,9 @@ const CoverEngine = {
             const coverH = c.h; 
 
             if(state.images.main) {
-                this._placeClippedImage(state.images.main, x, y, coverW, coverH, 'rect', true, state);
+                // ИСПРАВЛЕНО: 'false' вместо 'true' для параметра isBack.
+                // Это включает полноценный рендер с учетом кропа и поворота.
+                this._placeClippedImage(state.images.main, x, y, coverW, coverH, 'rect', false, state);
             } else {
                 this._renderImageSlot(x, y, state, { w: coverW, h: coverH });
             }
@@ -287,20 +289,15 @@ const CoverEngine = {
         });
     },
 
-    // --- ПЕРЕПИСАННЫЙ МЕТОД РЕНДЕРА С АБСОЛЮТНОЙ МАСКОЙ ---
-    // Это решает проблему с белыми полями при повороте и неверным масштабом
     _placeClippedImage: function(imgData, x, y, w, h, maskType, isBack, state) {
         if(!imgData || !imgData.src) return;
         
         fabric.Image.fromURL(imgData.src, (img) => {
             const info = imgData.cropInfo; 
-            // slotPixelSize - это ширина окна в кропере (например 400px).
-            // w - это ширина окна на обложке (например 3000px).
-            // scaleFactor переводит координаты из кропера в обложку.
             const scaleFactor = w / info.slotPixelSize;
             
             if(isBack) {
-                // Для задней обложки упрощенная логика (фон)
+                // Фон (задняя обложка)
                 const coverW = w; 
                 const scale = Math.max(coverW / img.width, h / img.height);
                 img.set({ scaleX: scale, scaleY: scale, left: x, top: h/2, originX: 'center', originY: 'center', selectable: false, evented: true, hoverCursor: 'pointer', isMain: true });
@@ -308,17 +305,17 @@ const CoverEngine = {
                 this.canvas.add(img); 
                 this.canvas.sendToBack(img);
             } else {
-                // ПЕРЕДНЯЯ ОБЛОЖКА (ИСПРАВЛЕНО)
+                // ОСНОВНОЙ РЕНДЕР (ДЛЯ ВСЕХ ТИПОВ: ЖУРНАЛ, ФОТО)
+                // Используем абсолютную маску, чтобы избежать проблем с поворотом
                 
-                // 1. Создаем Абсолютный ClipPath (неподвижное окно на обложке)
-                // Оно находится в координатах x, y и имеет размер w, h
+                // 1. Создаем неподвижную маску на канвасе
                 let clip;
                 const absoluteOpts = {
                     left: x,
                     top: y,
                     originX: 'center',
                     originY: 'center',
-                    absolutePositioned: true // ВАЖНО! Маска не зависит от трансформации картинки
+                    absolutePositioned: true
                 };
 
                 if(maskType === 'circle') {
@@ -327,13 +324,10 @@ const CoverEngine = {
                     clip = new fabric.Rect({ width: w, height: h, ...absoluteOpts });
                 }
 
-                // 2. Размещаем картинку
-                // info.left и info.top - это смещение центра картинки относительно центра кропера.
-                // Умножаем на scaleFactor, чтобы получить смещение на обложке.
+                // 2. Рассчитываем координаты и масштаб картинки
+                // info.left/top - это смещение от центра слота в кропере
                 const imgLeft = x + (info.left * scaleFactor);
                 const imgTop = y + (info.top * scaleFactor);
-                
-                // Масштаб картинки тоже умножаем
                 const totalScale = info.scale * scaleFactor;
 
                 img.set({ 
@@ -341,7 +335,7 @@ const CoverEngine = {
                     top: imgTop, 
                     scaleX: totalScale, 
                     scaleY: totalScale, 
-                    angle: info.angle || 0, // Угол из кропера
+                    angle: info.angle || 0,
                     originX: 'center', 
                     originY: 'center', 
                     selectable: false, 
