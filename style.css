@@ -58,8 +58,9 @@ input[type=range] {
     background: transparent;
     cursor: pointer;
     margin: 0 10px;
-    /* ПОДНИМАЕМ ЛИНИЮ ЧУТЬ ВЫШЕ, ЧТОБЫ ВРОВЕНЬ С ТЕКСТОМ */
-    margin-top: -2px;
+    
+    /* ГЛАВНОЕ ИЗМЕНЕНИЕ: Поднимаем весь элемент на 4px вверх */
+    transform: translateY(-4px); 
 }
 
 /* Линия (Track) */
@@ -79,8 +80,10 @@ input[type=range]::-webkit-slider-thumb {
     border-radius: 50%;
     background: #D4AF37; /* Золотой цвет */
     cursor: pointer;
-    /* Центрирование по вертикали: (2px track - 16px thumb) / 2 = -7px */
+    
+    /* Центрирование: (2px линия - 16px шар) / 2 = -7px */
     margin-top: -7px; 
+    
     box-shadow: 0 0 0 2px #1a1a1a; /* Обводка под цвет фона */
 }
 
