@@ -57,10 +57,10 @@ input[type=range] {
     width: 100px; /* Фиксированная ширина */
     background: transparent;
     cursor: pointer;
-    margin: 0 10px;
+    margin: 0 0px;
     
     /* ГЛАВНОЕ ИЗМЕНЕНИЕ: Поднимаем весь элемент на 4px вверх */
-    transform: translateY(-16px); 
+    transform: translateY(-14px); 
 }
 
 /* Линия (Track) */
