@@ -48,8 +48,7 @@ function finishInit() {
     refresh();
 }
 
-// --- IMAGE OPTIMIZER (UPDATED) ---
-// Теперь принимает макс. размер и тип файла (чтобы сохранить прозрачность для PNG)
+// --- IMAGE OPTIMIZER ---
 function processAndResizeImage(file, maxSize, outputType, callback) {
     const reader = new FileReader();
     reader.onload = (event) => {
@@ -58,7 +57,6 @@ function processAndResizeImage(file, maxSize, outputType, callback) {
             let width = img.width;
             let height = img.height;
 
-            // Если картинка больше лимита - уменьшаем
             if (width > height) {
                 if (width > maxSize) { height *= maxSize / width; width = maxSize; }
             } else {
@@ -71,8 +69,6 @@ function processAndResizeImage(file, maxSize, outputType, callback) {
             const ctx = canvas.getContext('2d');
             ctx.drawImage(img, 0, 0, width, height);
             
-            // Возвращаем в нужном формате (PNG для прозрачности, JPEG для фото)
-            // quality 0.9 игнорируется для PNG, но важен для JPEG
             callback(canvas.toDataURL(outputType, 0.9));
         };
         img.src = event.target.result;
@@ -223,7 +219,6 @@ function initListeners() {
 
     document.getElementById('iconLoader').onchange = (e) => { 
         if(e.target.files[0]) {
-            // Иконки: всегда PNG, размер небольшой
             processAndResizeImage(e.target.files[0], 500, 'image/png', (resizedUrl) => {
                 state.images.icon = resizedUrl; 
                 updateSymbolUI(); refresh(); 
@@ -234,13 +229,9 @@ function initListeners() {
     
     document.getElementById('imageLoader').onchange = (e) => {
         if(e.target.files[0]) {
-            // ОПРЕДЕЛЯЕМ ПАРАМЕТРЫ СЖАТИЯ
             let limit = 2500;
             let type = 'image/jpeg';
             
-            // Если это ГРАФИКА:
-            // 1. Лимит 1417 (это 12см при 300dpi)
-            // 2. Тип PNG (чтобы не потерять прозрачность)
             if (state.layout === 'graphic') {
                 limit = 1417;
                 type = 'image/png';
@@ -272,12 +263,22 @@ function initListeners() {
         CropperTool.maskType = state.maskType;
         CropperTool.drawOverlay(state.slotSize.w, state.slotSize.h);
     };
+    
     document.getElementById('applyCropBtn').onclick = () => {
         state.images.main = CropperTool.apply();
         refresh();
         document.getElementById('cropperModal').classList.add('hidden');
     };
+    
     document.getElementById('cancelCropBtn').onclick = () => document.getElementById('cropperModal').classList.add('hidden');
+    
+    // --- ДОБАВЛЕНА КНОПКА ПОВОРОТА ---
+    const rotBtn = document.getElementById('rotateBtn');
+    if(rotBtn) {
+        rotBtn.onclick = () => {
+            CropperTool.rotate();
+        };
+    }
 }
 
 // --- GALLERY ---
