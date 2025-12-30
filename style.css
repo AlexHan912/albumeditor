@@ -51,13 +51,15 @@ label { display: block; margin-bottom: 8px; font-size: 10px; font-weight: bold; 
 .scale-label { font-size: 10px; color: #777; cursor: pointer; font-weight: bold; } .scale-label:hover { color: #ccc; }
 .scale-track { flex-grow: 1; margin: 0 10px; height: 2px; background: #444; position: relative; }
 
-/* --- RANGE SLIDER (БЕГУНОК) --- */
+/* --- СТИЛИЗАЦИЯ БЕГУНКА (RANGE SLIDER) --- */
 input[type=range] {
     -webkit-appearance: none;
-    width: 100px; 
+    width: 100px; /* Фиксированная ширина */
     background: transparent;
     cursor: pointer;
-    margin: 0 0px;
+    margin: 0 10px;
+    /* ПОДНИМАЕМ ЛИНИЮ ЧУТЬ ВЫШЕ, ЧТОБЫ ВРОВЕНЬ С ТЕКСТОМ */
+    margin-top: -2px;
 }
 
 /* Линия (Track) */
@@ -66,30 +68,30 @@ input[type=range]::-webkit-slider-runnable-track {
     height: 2px;
     background: #555;
     border-radius: 2px;
+    border: none;
 }
 
 /* Кружок (Thumb) - Chrome/Safari/Edge */
 input[type=range]::-webkit-slider-thumb {
     -webkit-appearance: none;
-    height: 14px; 
-    width: 14px;  
+    height: 16px; /* Увеличили размер */
+    width: 16px;  /* Увеличили размер */
     border-radius: 50%;
-    background: #D4AF37; 
+    background: #D4AF37; /* Золотой цвет */
     cursor: pointer;
-    /* ПОДНЯЛИ ВЫШЕ: -7px */
+    /* Центрирование по вертикали: (2px track - 16px thumb) / 2 = -7px */
     margin-top: -7px; 
-    box-shadow: 0 0 0 2px #1a1a1a; 
+    box-shadow: 0 0 0 2px #1a1a1a; /* Обводка под цвет фона */
 }
 
 /* Кружок (Thumb) - Firefox */
 input[type=range]::-moz-range-thumb {
-    height: 14px;
-    width: 14px;
+    height: 16px;
+    width: 16px;
     border: none;
     border-radius: 50%;
     background: #D4AF37;
     cursor: pointer;
-    /* Firefox центрирует автоматически, margin-top не нужен */
 }
 
 /* Palette */
