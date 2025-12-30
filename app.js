@@ -1,12 +1,23 @@
 /* app.js - UI Controller & State Management */
 
+// 1. Устанавливаем дефолтный текст сразу в State
 let state = {
     bookSize: 30, layout: 'text_icon', ppi: 10, slotSize: { w: 6, h: 6 }, maskType: 'rect',
-    text: { lines: [ { text: "", upper: false }, { text: "", upper: false }, { text: "", upper: false } ], date: "", copyright: "", font: "Tenor Sans", color: "#1a1a1a", scale: 1.0 },
+    text: { 
+        lines: [ 
+            { text: "THE VISUAL DIARY", upper: true }, 
+            { text: "", upper: false }, 
+            { text: "", upper: false } 
+        ], 
+        date: "", copyright: "", font: "Tenor Sans", color: "#1a1a1a", scale: 1.0 
+    },
     coverColor: "#FFFFFF", images: { icon: null, main: null }, 
     spine: { symbol: true, title: true, date: true },
     qr: { enabled: false, url: "" }
 };
+
+// Флаг: менял ли пользователь текст руками?
+let userModifiedText = false;
 
 // --- BOOTSTRAP ---
 window.onload = () => {
@@ -14,6 +25,8 @@ window.onload = () => {
     loadDefaultAssets();
     initColors();
     initListeners();
+    // Заполняем инпуты начальным значением
+    document.getElementById('inputLine1').value = "THE VISUAL DIARY";
     setTimeout(refresh, 500);
 };
 window.addEventListener('resize', () => setTimeout(refresh, 100));
@@ -68,7 +81,6 @@ function processAndResizeImage(file, maxSize, outputType, callback) {
             canvas.height = height;
             const ctx = canvas.getContext('2d');
             ctx.drawImage(img, 0, 0, width, height);
-            
             callback(canvas.toDataURL(outputType, 0.9));
         };
         img.src = event.target.result;
@@ -205,6 +217,9 @@ function initListeners() {
     ['inputLine1','inputLine2','inputLine3','dateLine','copyrightInput'].forEach(id => {
         const el = document.getElementById(id);
         if(el) el.oninput = () => {
+            // Флаг: пользователь начал печатать
+            userModifiedText = true;
+            
             if(id === 'inputLine1') state.text.lines[0].text = el.value;
             if(id === 'inputLine2') state.text.lines[1].text = el.value;
             if(id === 'inputLine3') state.text.lines[2].text = el.value;
@@ -231,15 +246,20 @@ function initListeners() {
         if(e.target.files[0]) {
             let limit = 2500;
             let type = 'image/jpeg';
-            
-            if (state.layout === 'graphic') {
-                limit = 1417;
-                type = 'image/png';
-            }
+            if (state.layout === 'graphic') { limit = 1417; type = 'image/png'; }
 
             processAndResizeImage(e.target.files[0], limit, type, (resizedUrl) => {
                 document.getElementById('galleryModal').classList.add('hidden'); 
                 
+                // ЛОГИКА ОЧИСТКИ ТЕКСТА
+                // Если пользователь еще не менял текст и это одна из обложек с картинкой - очищаем заглушку
+                if (!userModifiedText && (state.layout === 'magazine' || state.layout === 'photo_text' || state.layout === 'graphic')) {
+                    state.text.lines[0].text = "";
+                    state.text.lines[1].text = "";
+                    document.getElementById('inputLine1').value = "";
+                    document.getElementById('inputLine2').value = "";
+                }
+
                 if(state.layout === 'graphic') {
                     state.images.main = { src: resizedUrl, natural: true };
                     refresh();
@@ -270,15 +290,10 @@ function initListeners() {
         document.getElementById('cropperModal').classList.add('hidden');
     };
     
-    document.getElementById('cancelCropBtn').onclick = () => document.getElementById('cropperModal').classList.add('hidden');
-    
-    // --- ДОБАВЛЕНА КНОПКА ПОВОРОТА ---
     const rotBtn = document.getElementById('rotateBtn');
-    if(rotBtn) {
-        rotBtn.onclick = () => {
-            CropperTool.rotate();
-        };
-    }
+    if(rotBtn) { rotBtn.onclick = () => CropperTool.rotate(); }
+
+    document.getElementById('cancelCropBtn').onclick = () => document.getElementById('cropperModal').classList.add('hidden');
 }
 
 // --- GALLERY ---
@@ -326,25 +341,25 @@ function loadGal(type, cat, target) {
         const printUrl = `assets/${folder}/${f}`;
         
         img.src = previewUrl;
-        img.onerror = () => {
-            item.classList.add('broken-file');
-            item.title = "Ошибка: Нет файла иконки";
-        };
+        img.onerror = () => { item.classList.add('broken-file'); item.title = "Ошибка: Нет файла иконки"; };
 
         const checkPrint = new Image();
         checkPrint.src = printUrl;
-        checkPrint.onerror = () => {
-            item.classList.add('broken-file');
-            item.title = "Ошибка: Нет файла для печати";
-        };
+        checkPrint.onerror = () => { item.classList.add('broken-file'); item.title = "Ошибка: Нет файла для печати"; };
 
         item.appendChild(img);
         
         item.onclick = () => {
-            if (item.classList.contains('broken-file')) {
-                alert("Файл отсутствует.");
-                return;
+            if (item.classList.contains('broken-file')) { alert("Файл отсутствует."); return; }
+            
+            // Если это графика (не символ), тоже применяем логику очистки текста
+            if(type === 'graphics' && !userModifiedText) {
+                state.text.lines[0].text = "";
+                state.text.lines[1].text = "";
+                document.getElementById('inputLine1').value = "";
+                document.getElementById('inputLine2').value = "";
             }
+
             CoverEngine.loadSimpleImage(printUrl, (final) => {
                 final = final || previewUrl;
                 document.getElementById('galleryModal').classList.add('hidden');
