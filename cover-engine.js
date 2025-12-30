@@ -131,8 +131,6 @@ const CoverEngine = {
             const coverH = c.h; 
 
             if(state.images.main) {
-                // ИСПРАВЛЕНО: 'false' вместо 'true' для параметра isBack.
-                // Это включает полноценный рендер с учетом кропа и поворота.
                 this._placeClippedImage(state.images.main, x, y, coverW, coverH, 'rect', false, state);
             } else {
                 this._renderImageSlot(x, y, state, { w: coverW, h: coverH });
@@ -187,8 +185,9 @@ const CoverEngine = {
         const processedLines = rawLines.map((txt, i) => { return state.text.lines[i].upper ? txt.toUpperCase() : txt; });
         const hasText = rawLines.some(t => t.length > 0);
         
-        let renderTxt = hasText ? processedLines.filter(Boolean).join("\n") : "THE VISUAL DIARY\n\n\n";
-        let opacity = hasText ? CONFIG.globalOpacity : 0.3;
+        // Убрали дефолт. Если текста нет - возвращаем пустую строку.
+        let renderTxt = hasText ? processedLines.filter(Boolean).join("\n") : "";
+        let opacity = CONFIG.globalOpacity;
         const baseSize = compact ? 0.8 : CONFIG.typo.baseTitle; 
         const finalSize = baseSize * state.ppi * state.text.scale;
         
@@ -211,12 +210,14 @@ const CoverEngine = {
         if(isMag) {
             let l1 = String(state.text.lines[0].text || "");
             let l2 = String(state.text.lines[1].text || "");
-            
             if(state.text.lines[0].upper) l1 = l1.toUpperCase();
             if(state.text.lines[1].upper) l2 = l2.toUpperCase();
-
+            
+            // Если текст пустой, ничего не рендерим
             let txtParts = [l1, l2].filter(t => t.length > 0);
-            let txt = txtParts.length > 0 ? txtParts.join("\n") : "THE VISUAL DIARY";
+            if (txtParts.length === 0) return;
+            
+            let txt = txtParts.join("\n");
             
             const shadow = new fabric.Shadow({ color: 'rgba(0,0,0,0.15)', blur: 4, offsetX: 0, offsetY: 0 });
             this.canvas.add(new fabric.Text(txt, { fontFamily: 'Tenor Sans', fontSize: 2.5 * state.ppi * state.text.scale, textAlign: 'center', lineHeight: 1.0, originX: 'center', originY: 'top', left: x, top: y, fill: state.text.color, selectable: false, evented: false, shadow: shadow }));
@@ -297,7 +298,6 @@ const CoverEngine = {
             const scaleFactor = w / info.slotPixelSize;
             
             if(isBack) {
-                // Фон (задняя обложка)
                 const coverW = w; 
                 const scale = Math.max(coverW / img.width, h / img.height);
                 img.set({ scaleX: scale, scaleY: scale, left: x, top: h/2, originX: 'center', originY: 'center', selectable: false, evented: true, hoverCursor: 'pointer', isMain: true });
@@ -305,10 +305,6 @@ const CoverEngine = {
                 this.canvas.add(img); 
                 this.canvas.sendToBack(img);
             } else {
-                // ОСНОВНОЙ РЕНДЕР (ДЛЯ ВСЕХ ТИПОВ: ЖУРНАЛ, ФОТО)
-                // Используем абсолютную маску, чтобы избежать проблем с поворотом
-                
-                // 1. Создаем неподвижную маску на канвасе
                 let clip;
                 const absoluteOpts = {
                     left: x,
@@ -324,8 +320,6 @@ const CoverEngine = {
                     clip = new fabric.Rect({ width: w, height: h, ...absoluteOpts });
                 }
 
-                // 2. Рассчитываем координаты и масштаб картинки
-                // info.left/top - это смещение от центра слота в кропере
                 const imgLeft = x + (info.left * scaleFactor);
                 const imgTop = y + (info.top * scaleFactor);
                 const totalScale = info.scale * scaleFactor;
@@ -342,10 +336,14 @@ const CoverEngine = {
                     evented: true, 
                     hoverCursor: 'pointer', 
                     isMain: true,
-                    clipPath: clip // Применяем абсолютную маску
+                    clipPath: clip 
                 });
                 
                 this.canvas.add(img);
+                
+                // ВАЖНОЕ ИСПРАВЛЕНИЕ: Если это Журнал, фото должно быть фоном (снизу)
+                // Если другие макеты (Фото+Текст), фото тоже под текстом, так что это безопасно
+                img.sendToBack(); 
             }
         });
     },
