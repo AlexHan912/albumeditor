@@ -7,7 +7,8 @@ const CONFIG = {
     renderScale: 3.0,
     globalOpacity: 1.0, 
     typo: { baseTitle: 1.2, baseDetails: 0.5, baseCopy: 0.35 },
-    scales: [0.7, 0.9, 1.1, 1.3]
+    // НОВАЯ ШКАЛА: 5 шагов. Центр (1.0) +/- 15%
+    scales: [0.7, 0.85, 1.0, 1.15, 1.3]
 };
 
 const CoverEngine = {
@@ -129,12 +130,8 @@ const CoverEngine = {
         if (layout === 'magazine') {
             const coverW = state.bookSize * state.ppi; 
             const coverH = c.h; 
-
-            if(state.images.main) {
-                this._placeClippedImage(state.images.main, x, y, coverW, coverH, 'rect', false, state);
-            } else {
-                this._renderImageSlot(x, y, state, { w: coverW, h: coverH });
-            }
+            if(state.images.main) this._placeClippedImage(state.images.main, x, y, coverW, coverH, 'rect', false, state);
+            else this._renderImageSlot(x, y, state, { w: coverW, h: coverH });
             this._renderTextBlock(x, 2.0 * state.ppi, false, true, state);
         } 
         else if (layout === 'icon') {
@@ -153,6 +150,8 @@ const CoverEngine = {
         } 
         else if (layout === 'graphic' || layout === 'photo_text') {
             let imgY = c.centerY; 
+            
+            // --- GRAPHIC ---
             if(layout === 'graphic') {
                 const style = getComputedStyle(document.documentElement);
                 const offsetCm = parseFloat(style.getPropertyValue('--graphic-offset-y-cm')) || 2;
@@ -160,16 +159,33 @@ const CoverEngine = {
                 if(state.images.main) this._renderNaturalImage(x, imgY, state);
                 else this._renderImageSlot(x, imgY, state);
             } 
+            // --- PHOTO + TEXT (МАСШТАБИРУЕМОЕ ФОТО) ---
             else {
+                // ИЗМЕНЕНО: Применяем зум к размеру фото
+                const zoom = state.text.scale || 1.0;
+                
+                // Базовый размер слота 6x6 см, умноженный на зум
+                const w = state.slotSize.w * state.ppi * zoom;
+                const h = state.slotSize.h * state.ppi * zoom;
+                
+                // Позиция фото: Центр смещен вверх на 2 см * зум? 
+                // Нет, лучше оставить центр фиксированным (2см от центра), а фото пусть растет вокруг него
+                // Или двигать? Давайте оставим центр фото на месте, оно просто будет расти.
                 imgY = c.centerY - (2.0 * state.ppi); 
+                
                 if(state.images.main) {
-                    const w = state.slotSize.w * state.ppi;
-                    const h = state.slotSize.h * state.ppi;
+                    // Рендерим фото с новым размером w/h
                     this._placeClippedImage(state.images.main, x, imgY, w, h, state.maskType, false, state);
                 } else {
-                    this._renderImageSlot(x, imgY, state);
+                    // Рендерим пустой слот (он сам возьмет зум внутри функции, но мы передадим размеры явно для надежности)
+                    this._renderImageSlot(x, imgY, state, {w: w, h: h});
                 }
-                const textY = imgY + (state.slotSize.h * state.ppi / 2) + (1.5 * state.ppi);
+                
+                // Текст тоже должен сдвигаться вниз, если фото растет
+                // Нижний край фото = imgY + h/2
+                // Отступ = 1.5 см * PPI (можно тоже зумить отступ, но фиксированный надежнее)
+                const textY = imgY + (h / 2) + (1.5 * state.ppi);
+                
                 this._renderTextBlock(x, textY, true, false, state, 'top'); 
             }
         }
@@ -185,9 +201,8 @@ const CoverEngine = {
         const processedLines = rawLines.map((txt, i) => { return state.text.lines[i].upper ? txt.toUpperCase() : txt; });
         const hasText = rawLines.some(t => t.length > 0);
         
-        // Убрали дефолт. Если текста нет - возвращаем пустую строку.
-        let renderTxt = hasText ? processedLines.filter(Boolean).join("\n") : "";
-        let opacity = CONFIG.globalOpacity;
+        let renderTxt = hasText ? processedLines.filter(Boolean).join("\n") : "THE VISUAL DIARY\n\n\n";
+        let opacity = hasText ? CONFIG.globalOpacity : 0.3;
         const baseSize = compact ? 0.8 : CONFIG.typo.baseTitle; 
         const finalSize = baseSize * state.ppi * state.text.scale;
         
@@ -212,11 +227,8 @@ const CoverEngine = {
             let l2 = String(state.text.lines[1].text || "");
             if(state.text.lines[0].upper) l1 = l1.toUpperCase();
             if(state.text.lines[1].upper) l2 = l2.toUpperCase();
-            
-            // Если текст пустой, ничего не рендерим
             let txtParts = [l1, l2].filter(t => t.length > 0);
             if (txtParts.length === 0) return;
-            
             let txt = txtParts.join("\n");
             
             const shadow = new fabric.Shadow({ color: 'rgba(0,0,0,0.15)', blur: 4, offsetX: 0, offsetY: 0 });
@@ -292,7 +304,6 @@ const CoverEngine = {
 
     _placeClippedImage: function(imgData, x, y, w, h, maskType, isBack, state) {
         if(!imgData || !imgData.src) return;
-        
         fabric.Image.fromURL(imgData.src, (img) => {
             const info = imgData.cropInfo; 
             const scaleFactor = w / info.slotPixelSize;
@@ -306,43 +317,23 @@ const CoverEngine = {
                 this.canvas.sendToBack(img);
             } else {
                 let clip;
-                const absoluteOpts = {
-                    left: x,
-                    top: y,
-                    originX: 'center',
-                    originY: 'center',
-                    absolutePositioned: true
-                };
+                const absoluteOpts = { left: x, top: y, originX: 'center', originY: 'center', absolutePositioned: true };
 
-                if(maskType === 'circle') {
-                    clip = new fabric.Circle({ radius: w/2, ...absoluteOpts });
-                } else {
-                    clip = new fabric.Rect({ width: w, height: h, ...absoluteOpts });
-                }
+                if(maskType === 'circle') { clip = new fabric.Circle({ radius: w/2, ...absoluteOpts }); } 
+                else { clip = new fabric.Rect({ width: w, height: h, ...absoluteOpts }); }
 
                 const imgLeft = x + (info.left * scaleFactor);
                 const imgTop = y + (info.top * scaleFactor);
                 const totalScale = info.scale * scaleFactor;
 
                 img.set({ 
-                    left: imgLeft, 
-                    top: imgTop, 
-                    scaleX: totalScale, 
-                    scaleY: totalScale, 
-                    angle: info.angle || 0,
-                    originX: 'center', 
-                    originY: 'center', 
-                    selectable: false, 
-                    evented: true, 
-                    hoverCursor: 'pointer', 
-                    isMain: true,
+                    left: imgLeft, top: imgTop, scaleX: totalScale, scaleY: totalScale, 
+                    angle: info.angle || 0, originX: 'center', originY: 'center', 
+                    selectable: false, evented: true, hoverCursor: 'pointer', isMain: true,
                     clipPath: clip 
                 });
                 
                 this.canvas.add(img);
-                
-                // ВАЖНОЕ ИСПРАВЛЕНИЕ: Если это Журнал, фото должно быть фоном (снизу)
-                // Если другие макеты (Фото+Текст), фото тоже под текстом, так что это безопасно
                 img.sendToBack(); 
             }
         });
@@ -392,23 +383,18 @@ const CropperTool = {
         const img = this.tempImgObject;
         const ang = this.angle || 0;
         const isRotated = (Math.abs(ang % 180) === 90);
-        
         const effectiveW = isRotated ? img.height : img.width;
         const effectiveH = isRotated ? img.width : img.height;
-        
         const minScaleX = this.activeSlot.w / effectiveW;
         const minScaleY = this.activeSlot.h / effectiveH;
         const minCoverScale = Math.max(minScaleX, minScaleY);
-        
         img.scale(minCoverScale);
         img.set({ left: 250, top: 250 });
-        
         const slider = document.getElementById('zoomSlider');
         slider.min = minCoverScale;
         slider.max = minCoverScale * 4;
         slider.step = minCoverScale * 0.01;
         slider.value = minCoverScale;
-        
         this.constrainImage(img);
     },
 
@@ -416,25 +402,20 @@ const CropperTool = {
         const cropW = this.activeSlot.w;
         const cropH = this.activeSlot.h;
         const cx = 250, cy = 250; 
-        
         const ang = img.angle || 0;
         const isRotated = (Math.abs(ang % 180) === 90);
         const imgDisplayW = (isRotated ? img.height : img.width) * img.scaleX;
         const imgDisplayH = (isRotated ? img.width : img.height) * img.scaleY;
-        
         const frameLeft = cx - cropW/2;
         const frameTop = cy - cropH/2;
         const frameRight = cx + cropW/2;
         const frameBottom = cy + cropH/2;
-        
         const maxLeft = frameLeft + imgDisplayW/2;
         const minLeft = frameRight - imgDisplayW/2;
         const maxTop = frameTop + imgDisplayH/2;
         const minTop = frameBottom - imgDisplayH/2;
-        
         if (imgDisplayW >= cropW - 1) img.left = Math.min(Math.max(img.left, minLeft), maxLeft);
         else img.left = cx; 
-        
         if (imgDisplayH >= cropH - 1) img.top = Math.min(Math.max(img.top, minTop), maxTop);
         else img.top = cy;
     },
@@ -444,9 +425,7 @@ const CropperTool = {
         this.tempImgObject = null;
         this.maskType = maskType;
         this.angle = 0; 
-        
         this.drawOverlay(slotW, slotH);
-        
         fabric.Image.fromURL(url, (img) => {
             if(!img) return;
             this.tempImgObject = img;
@@ -454,12 +433,9 @@ const CropperTool = {
             this.tempImgObject.originY = 'center';
             this.tempImgObject.hasControls = false;
             this.tempImgObject.hasBorders = false;
-            
             this.canvas.add(img);
             this.canvas.sendToBack(img);
-            
             this.recalcMinZoomAndCenter();
-            
             const slider = document.getElementById('zoomSlider');
             slider.oninput = () => { 
                 img.scale(parseFloat(slider.value)); 
@@ -474,22 +450,18 @@ const CropperTool = {
         this.canvas.getObjects().forEach(o => { 
             if(o !== this.tempImgObject) this.canvas.remove(o); 
         });
-        
         let aspect = slotW / slotH;
         let pW, pH;
         const maxSize = 400; 
         if(this.maskType === 'circle') { pW = maxSize; pH = maxSize; }
         else if(aspect >= 1) { pW = maxSize; pH = maxSize / aspect; } 
         else { pH = maxSize; pW = maxSize * aspect; }
-        
         this.activeSlot = { w: pW, h: pH };
         const cx = 250, cy = 250;
-        
         if(this.tempImgObject) {
             this.canvas.sendToBack(this.tempImgObject);
             this.recalcMinZoomAndCenter();
         }
-        
         let pathStr = `M 0 0 H 500 V 500 H 0 Z`; 
         if(this.maskType === 'circle') {
             const r = pW/2;
@@ -507,7 +479,6 @@ const CropperTool = {
         if(!this.tempImgObject) return null;
         const offX = this.tempImgObject.left - 250; 
         const offY = this.tempImgObject.top - 250;
-        
         return { 
             src: this.tempImgObject.getSrc(), 
             cropInfo: { left: offX, top: offY, scale: this.tempImgObject.scaleX, slotPixelSize: this.activeSlot.w, angle: this.angle } 
