@@ -50,10 +50,11 @@ label { display: block; margin-bottom: 8px; font-size: 10px; font-weight: bold; 
 .scale-control { display: flex; justify-content: space-between; align-items: center; background: var(--input-bg); border: 1px solid var(--border-color); height: 38px; padding: 0 10px; border-radius: 2px; }
 .scale-label { font-size: 10px; color: #777; cursor: pointer; font-weight: bold; } .scale-label:hover { color: #ccc; }
 .scale-track { flex-grow: 1; margin: 0 10px; height: 2px; background: #444; position: relative; }
-/* Стилизация бегунка (Range Slider) */
+
+/* --- RANGE SLIDER (БЕГУНОК) --- */
 input[type=range] {
     -webkit-appearance: none;
-    width: 100px; /* Фиксированная ширина */
+    width: 100px; 
     background: transparent;
     cursor: pointer;
     margin: 0 10px;
@@ -67,19 +68,20 @@ input[type=range]::-webkit-slider-runnable-track {
     border-radius: 2px;
 }
 
-/* Кружок (Thumb) */
+/* Кружок (Thumb) - Chrome/Safari/Edge */
 input[type=range]::-webkit-slider-thumb {
     -webkit-appearance: none;
-    height: 14px; /* Увеличили размер */
-    width: 14px;  /* Увеличили размер */
+    height: 14px; 
+    width: 14px;  
     border-radius: 50%;
-    background: #D4AF37; /* Золотой цвет */
+    background: #D4AF37; 
     cursor: pointer;
-    margin-top: -6px; /* ВАЖНО: Центрирование по вертикали (2px track - 14px thumb)/2 */
-    box-shadow: 0 0 0 2px #1a1a1a; /* Обводка под цвет фона, чтобы отделить от линии */
+    /* ПОДНЯЛИ ВЫШЕ: -7px */
+    margin-top: -7px; 
+    box-shadow: 0 0 0 2px #1a1a1a; 
 }
 
-/* Для Firefox (на всякий случай) */
+/* Кружок (Thumb) - Firefox */
 input[type=range]::-moz-range-thumb {
     height: 14px;
     width: 14px;
@@ -87,7 +89,9 @@ input[type=range]::-moz-range-thumb {
     border-radius: 50%;
     background: #D4AF37;
     cursor: pointer;
+    /* Firefox центрирует автоматически, margin-top не нужен */
 }
+
 /* Palette */
 .palette-selector { width: 100%; margin-bottom: 15px; }
 .pairs-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 8px; margin-bottom: 15px; }
@@ -174,7 +178,7 @@ button.secondary { background: transparent; border: 1px solid #555; color: #ccc;
 
 /* --- СТИЛЬ ОШИБКИ (BUG FIX MODE) --- */
 .gallery-item.broken-file {
-    border: 2px solid #ff0000 !important; /* Красная рамка */
+    border: 2px solid #ff0000 !important; 
     opacity: 0.5;
     cursor: not-allowed !important;
 }
