@@ -60,7 +60,7 @@ input[type=range] {
     margin: 0 0px;
     
     /* ГЛАВНОЕ ИЗМЕНЕНИЕ: Поднимаем весь элемент на 4px вверх */
-    transform: translateY(-14px); 
+    transform: translateY(-13px); 
 }
 
 /* Линия (Track) */
