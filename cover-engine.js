@@ -280,14 +280,12 @@ const CoverEngine = {
         });
     },
 
-    // --- ГЛАВНОЕ ИСПРАВЛЕНИЕ РЕНДЕРА ОБРЕЗАННОГО ФОТО ---
     _placeClippedImage: function(imgData, x, y, w, h, maskType, isBack, state) {
         if(!imgData || !imgData.src) return;
         fabric.Image.fromURL(imgData.src, (img) => {
             const info = imgData.cropInfo; 
             const scaleFactor = w / info.slotPixelSize;
             
-            // Задняя обложка (дубль) - здесь вращение обычно не нужно или копируется
             if(isBack) {
                 const coverW = w; 
                 const scale = Math.max(coverW / img.width, h / img.height);
@@ -296,52 +294,44 @@ const CoverEngine = {
                 this.canvas.add(img); 
                 this.canvas.sendToBack(img);
             } else {
-                // Основное фото с учетом кропа и поворота
+                // Основной рендер с учетом поворота
                 const angle = info.angle || 0;
+                const totalScale = info.scale * scaleFactor;
                 
                 img.set({ 
-                    scaleX: info.scale * scaleFactor, 
-                    scaleY: info.scale * scaleFactor, 
+                    scaleX: totalScale, 
+                    scaleY: totalScale, 
                     left: x + (info.left * scaleFactor), 
                     top: y + (info.top * scaleFactor), 
                     originX: 'center', originY: 'center', 
-                    angle: angle, // Поворот
+                    angle: angle, 
                     selectable: false, evented: true, hoverCursor: 'pointer', isMain: true
                 });
                 
                 let clip;
                 
-                // РАЗМЕРЫ ДЛЯ КЛИП-МАСКИ
-                // Маска должна быть стационарной (не вращаться визуально).
-                // Но так как она внутри вращающегося объекта, мы вращаем её обратно (-angle).
-                // ЕСЛИ угол 90 или 270 - ширина и высота маски должны поменяться местами
-                // относительно локальных осей повернутой картинки.
+                // РАЗМЕРЫ МАСКИ (относительно невращенного объекта)
+                // Если объект повернут на 90/270, локальные оси W и H меняются местами
+                // для наблюдателя, поэтому маску нужно строить "перевернутой".
+                const isSwapped = (Math.abs(angle % 180) === 90);
                 
-                const isSwapped = (angle % 180 !== 0);
+                const localW = w / totalScale;
+                const localH = h / totalScale;
                 
-                // Целевой размер маски в локальных координатах изображения (с учетом скейла)
-                // scaleFactor и info.scale уже применены к самому объекту.
-                // ClipPath наследует скейл объекта.
-                // Нам нужно, чтобы размер маски был равен W / (totalScale)
-                const totalScale = info.scale * scaleFactor;
-                const localTargetW = w / totalScale;
-                const localTargetH = h / totalScale;
-                
-                // Если повернуто, меняем оси для Rect
-                const clipW = isSwapped ? localTargetH : localTargetW;
-                const clipH = isSwapped ? localTargetW : localTargetH;
+                // Если картинка повернута, то "ширина" маски должна ложиться на "высоту" картинки
+                const clipW = isSwapped ? localH : localW;
+                const clipH = isSwapped ? localW : localH;
 
                 if(maskType === 'circle') {
-                    // Круг симметричен, свап не нужен
+                    // Круг симметричен, берем диаметр по ширине слота
                     clip = new fabric.Circle({ 
-                        radius: localTargetW / 2, // Берем W, так как считаем круг вписанным
+                        radius: localW / 2, 
                         left: -(info.left * scaleFactor) / totalScale, 
                         top: -(info.top * scaleFactor) / totalScale, 
                         originX: 'center', originY: 'center' 
                     });
                 } 
                 else {
-                    // Прямоугольник (Журнал, Фото)
                     clip = new fabric.Rect({ 
                         width: clipW, 
                         height: clipH, 
@@ -351,7 +341,7 @@ const CoverEngine = {
                     });
                 }
                 
-                // Компенсируем вращение картинки обратным вращением маски
+                // Компенсируем вращение маски
                 clip.angle = -angle;
                 
                 img.clipPath = clip;
@@ -395,6 +385,8 @@ const CropperTool = {
         if(!this.tempImgObject) return;
         this.angle = (this.angle + 90) % 360;
         this.tempImgObject.rotate(this.angle);
+        
+        // После поворота меняются габариты -> нужен пересчет минимального зума
         this.recalcMinZoomAndCenter();
         this.canvas.requestRenderAll();
     },
@@ -403,9 +395,9 @@ const CropperTool = {
         if(!this.tempImgObject) return;
         const img = this.tempImgObject;
         const ang = this.angle || 0;
-        const isRotated = (ang % 180 !== 0);
+        const isRotated = (Math.abs(ang % 180) === 90);
         
-        // ВАЖНО: Размеры для расчета покрытия меняются при повороте
+        // Если повернуто, ширина и высота меняются ролями
         const effectiveW = isRotated ? img.height : img.width;
         const effectiveH = isRotated ? img.width : img.height;
         
@@ -413,7 +405,7 @@ const CropperTool = {
         const minScaleY = this.activeSlot.h / effectiveH;
         const minCoverScale = Math.max(minScaleX, minScaleY);
         
-        // Сбрасываем слайдер на минимум при повороте, чтобы точно влезло
+        // Сбрасываем слайдер и масштаб
         img.scale(minCoverScale);
         img.set({ left: 250, top: 250 });
         
@@ -432,32 +424,44 @@ const CropperTool = {
         const cx = 250, cy = 250; 
         
         const ang = img.angle || 0;
-        const isRotated = (ang % 180 !== 0);
+        const isRotated = (Math.abs(ang % 180) === 90);
+        
+        // Визуальные размеры картинки на экране
         const imgDisplayW = (isRotated ? img.height : img.width) * img.scaleX;
         const imgDisplayH = (isRotated ? img.width : img.height) * img.scaleY;
         
+        // Границы рамки
         const frameLeft = cx - cropW/2;
         const frameTop = cy - cropH/2;
         const frameRight = cx + cropW/2;
         const frameBottom = cy + cropH/2;
         
+        // Пределы для центра картинки
+        // (Центр картинки не может уйти так далеко, чтобы край картинки "оголил" рамку)
         const maxLeft = frameLeft + imgDisplayW/2;
         const minLeft = frameRight - imgDisplayW/2;
         const maxTop = frameTop + imgDisplayH/2;
         const minTop = frameBottom - imgDisplayH/2;
         
-        if (imgDisplayW >= cropW) img.left = Math.min(Math.max(img.left, minLeft), maxLeft);
-        else img.left = cx; 
+        // Применяем (только если картинка больше рамки, что гарантируется minScale)
+        if (imgDisplayW >= cropW - 1) { // -1 для погрешности
+            img.left = Math.min(Math.max(img.left, minLeft), maxLeft);
+        } else {
+            img.left = cx; 
+        }
         
-        if (imgDisplayH >= cropH) img.top = Math.min(Math.max(img.top, minTop), maxTop);
-        else img.top = cy;
+        if (imgDisplayH >= cropH - 1) {
+            img.top = Math.min(Math.max(img.top, minTop), maxTop);
+        } else {
+            img.top = cy;
+        }
     },
 
     start: function(url, slotW, slotH, maskType) {
         this.init();
         this.tempImgObject = null;
         this.maskType = maskType;
-        this.angle = 0;
+        this.angle = 0; // СБРОС УГЛА
         
         this.drawOverlay(slotW, slotH);
         
@@ -472,6 +476,7 @@ const CropperTool = {
             this.canvas.add(img);
             this.canvas.sendToBack(img);
             
+            // Расчет начального зума и сброс слайдера
             this.recalcMinZoomAndCenter();
             
             const slider = document.getElementById('zoomSlider');
@@ -501,6 +506,7 @@ const CropperTool = {
         
         if(this.tempImgObject) {
             this.canvas.sendToBack(this.tempImgObject);
+            // Если поменяли рамку (например, с круга на квадрат), пересчитываем зум
             this.recalcMinZoomAndCenter();
         }
         
