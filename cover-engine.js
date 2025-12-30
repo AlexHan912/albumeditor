@@ -16,16 +16,12 @@ const CoverEngine = {
     init: function(canvasId) {
         this.canvas = new fabric.Canvas(canvasId, { backgroundColor: '#fff', selection: false, enableRetinaScaling: false });
         
-        // ОБРАБОТЧИК КЛИКОВ
         this.canvas.on('mouse:down', (e) => {
             if(e.target) {
-                // 1. Клик по ГРАФИКЕ (Фото или Плейсхолдер)
                 if(e.target.isMain || e.target.isPlaceholder) {
                     if(window.handleCanvasClick) window.handleCanvasClick(e.target.isMain ? 'mainImage' : 'placeholder');
                 }
-                // 2. Клик по СИМВОЛУ (Обложка или Корешок)
                 else if (e.target.isIcon) {
-                    // Вызываем галерею символов (глобальную)
                     if(window.openGallery) window.openGallery('symbols', 'global');
                 }
             }
@@ -41,35 +37,21 @@ const CoverEngine = {
 
     updateDimensions: function(container, state) {
         if(!container || container.clientWidth === 0) return;
-        
         const margin = 20; 
         
-        // --- ИСПРАВЛЕНИЕ МАСШТАБИРОВАНИЯ ---
-        // Чтобы книга 20х20 выглядела меньше, чем 30х30, мы считаем PPI 
-        // исходя из МАКСИМАЛЬНОГО размера (30 см), а не текущего.
+        // Расчет масштаба от Максимальной книги (30см), чтобы 20см выглядела меньше
         const MAX_REF_SIZE = 30; 
-        
-        // Размеры "виртуального стола" (максимально возможная книга)
         const maxRefW = MAX_REF_SIZE * 2 + CONFIG.spineWidthCm; 
         const maxRefH = MAX_REF_SIZE;
-        
-        // Вычисляем PPI, чтобы максимальная книга влезала в контейнер
-        const basePPI = Math.max(5, Math.min(
-            (container.clientWidth - margin*2) / maxRefW, 
-            (container.clientHeight - margin*2) / maxRefH
-        ));
-        
+        const basePPI = Math.max(5, Math.min((container.clientWidth - margin*2) / maxRefW, (container.clientHeight - margin*2) / maxRefH));
         state.ppi = basePPI * CONFIG.renderScale;
         
-        // А теперь применяем этот PPI к ТЕКУЩЕМУ размеру книги
         const curBookSize = parseFloat(state.bookSize);
         const curW = curBookSize * 2 + CONFIG.spineWidthCm; 
         const curH = curBookSize;
         
-        // Устанавливаем размер канваса (физический и CSS)
         this.canvas.setWidth(curW * state.ppi); 
         this.canvas.setHeight(curH * state.ppi);
-        
         this.canvas.wrapperEl.style.width = `${curW * basePPI}px`; 
         this.canvas.wrapperEl.style.height = `${curH * basePPI}px`;
         this.canvas.lowerCanvasEl.style.width = '100%'; this.canvas.upperCanvasEl.style.width = '100%';
@@ -85,19 +67,10 @@ const CoverEngine = {
         
         const h = this.canvas.height;
         const bookSize = parseFloat(state.bookSize);
-        
         const x1 = bookSize * state.ppi; 
         const x2 = (bookSize + 1.5) * state.ppi;
         
-        const c = { 
-            h: h, 
-            spineX: x1 + ((x2 - x1) / 2), 
-            frontCenter: x2 + (bookSize * state.ppi / 2), 
-            backCenter: (bookSize * state.ppi) / 2, 
-            bottomBase: h - (1.5 * state.ppi), 
-            centerY: h / 2, 
-            gap: 2.0 * state.ppi 
-        };
+        const c = { h: h, spineX: x1 + ((x2 - x1) / 2), frontCenter: x2 + (bookSize * state.ppi / 2), backCenter: (bookSize * state.ppi) / 2, bottomBase: h - (1.5 * state.ppi), centerY: h / 2, gap: 2.0 * state.ppi };
 
         this._drawGuides(x1, x2, h, state);
         this._renderSpine(c, state);
@@ -113,13 +86,7 @@ const CoverEngine = {
 
     _renderSpine: function(c, state) {
         if(state.spine.symbol && state.images.icon) {
-            // Добавили isIcon: true для кликабельности
-            this._placeImage(state.images.icon, c.spineX, c.bottomBase, 1.0 * state.ppi, { 
-                originY: 'bottom', 
-                color: state.text.color,
-                isIcon: true,
-                hoverCursor: 'pointer' 
-            });
+            this._placeImage(state.images.icon, c.spineX, c.bottomBase, 1.0 * state.ppi, { originY: 'bottom', color: state.text.color, isIcon: true, hoverCursor: 'pointer' });
         }
         let parts = [];
         const raw = state.text.lines.map(l => l.text);
@@ -155,12 +122,8 @@ const CoverEngine = {
         if (layout === 'magazine') {
             const coverW = state.bookSize * state.ppi; 
             const coverH = c.h; 
-
-            if(state.images.main) {
-                this._placeClippedImage(state.images.main, x, y, coverW, coverH, 'rect', true, state);
-            } else {
-                this._renderImageSlot(x, y, state, { w: coverW, h: coverH });
-            }
+            if(state.images.main) this._placeClippedImage(state.images.main, x, y, coverW, coverH, 'rect', true, state);
+            else this._renderImageSlot(x, y, state, { w: coverW, h: coverH });
             this._renderTextBlock(x, 2.0 * state.ppi, false, true, state);
         } 
         else if (layout === 'icon') {
@@ -210,7 +173,6 @@ const CoverEngine = {
         const rawLines = state.text.lines.map(l => l.text); 
         const processedLines = rawLines.map((txt, i) => { return state.text.lines[i].upper ? txt.toUpperCase() : txt; });
         const hasText = rawLines.some(t => t.length > 0);
-        
         let renderTxt = hasText ? processedLines.filter(Boolean).join("\n") : "THE VISUAL DIARY\n\n\n";
         let opacity = hasText ? CONFIG.globalOpacity : 0.3;
         const baseSize = compact ? 0.8 : CONFIG.typo.baseTitle; 
@@ -235,10 +197,8 @@ const CoverEngine = {
         if(isMag) {
             let l1 = String(state.text.lines[0].text || "");
             let l2 = String(state.text.lines[1].text || "");
-            
             if(state.text.lines[0].upper) l1 = l1.toUpperCase();
             if(state.text.lines[1].upper) l2 = l2.toUpperCase();
-
             let txtParts = [l1, l2].filter(t => t.length > 0);
             let txt = txtParts.length > 0 ? txtParts.join("\n") : "THE VISUAL DIARY";
             
@@ -255,14 +215,7 @@ const CoverEngine = {
         let iconUrl = state.images.icon; 
         let isGhost = false;
         if(!iconUrl) { iconUrl = 'assets/symbols/love_heart_icon.png'; isGhost = true; }
-        
-        // Добавили isIcon: true
-        this._placeImage(iconUrl, x, y, forcedSize || (2.0/1.6)*state.ppi*state.text.scale, { 
-            color: state.text.color, 
-            opacity: isGhost ? 0.3 : CONFIG.globalOpacity,
-            isIcon: true,
-            hoverCursor: 'pointer'
-        });
+        this._placeImage(iconUrl, x, y, forcedSize || (2.0/1.6)*state.ppi*state.text.scale, { color: state.text.color, opacity: isGhost ? 0.3 : CONFIG.globalOpacity, isIcon: true, hoverCursor: 'pointer' });
     },
 
     _renderImageSlot: function(x, y, state, customSize = null) {
@@ -338,13 +291,23 @@ const CoverEngine = {
                     scaleY: info.scale * scaleFactor, 
                     left: x + (info.left * scaleFactor), 
                     top: y + (info.top * scaleFactor), 
-                    originX: 'center', 
-                    originY: 'center', 
+                    originX: 'center', originY: 'center', 
+                    // Применяем угол поворота
+                    angle: info.angle || 0,
                     selectable: false, evented: true, hoverCursor: 'pointer', isMain: true
                 });
                 let clip;
                 if(maskType === 'circle') clip = new fabric.Circle({ radius: (w * (1/(info.scale * scaleFactor))) / 2, left: -(info.left * scaleFactor) / (info.scale * scaleFactor), top: -(info.top * scaleFactor) / (info.scale * scaleFactor), originX: 'center', originY: 'center' });
                 else clip = new fabric.Rect({ width: w * (1/(info.scale * scaleFactor)), height: h * (1/(info.scale * scaleFactor)), left: -(info.left * scaleFactor) / (info.scale * scaleFactor), top: -(info.top * scaleFactor) / (info.scale * scaleFactor), originX: 'center', originY: 'center' });
+                
+                // ВАЖНО: ClipPath тоже должен вращаться вместе с объектом? Нет, clipPath статичен относительно объекта.
+                // Но так как мы вращаем сам объект, clipPath должен быть "противоположен" или настроен хитро.
+                // В Fabric.js проще всего делать clipPath абсолютным, если объект вращается. 
+                // Но здесь мы используем относительный clipPath.
+                // При вращении объекта clipPath вращается вместе с ним. Но нам нужно, чтобы маска (квадрат) оставалась на месте!
+                // РЕШЕНИЕ: Мы вращаем clipPath в обратную сторону (-angle).
+                clip.angle = -(info.angle || 0);
+                
                 img.clipPath = clip;
                 this.canvas.add(img);
             }
@@ -360,12 +323,13 @@ const CoverEngine = {
     }
 };
 
-/* --- CROPPER TOOL --- */
+/* --- CROPPER TOOL (ROTATION & FIXED BOUNDS) --- */
 const CropperTool = {
     canvas: null,
     tempImgObject: null,
     activeSlot: { w: 0, h: 0 },
     maskType: 'rect',
+    angle: 0, // Храним угол
     
     init: function() {
         if(!this.canvas) {
@@ -381,58 +345,108 @@ const CropperTool = {
         this.canvas.setBackgroundColor('#111', this.canvas.renderAll.bind(this.canvas));
     },
 
+    // Вращение на 90 градусов
+    rotate: function() {
+        if(!this.tempImgObject) return;
+        this.angle = (this.angle + 90) % 360;
+        this.tempImgObject.rotate(this.angle);
+        
+        // После вращения нужно пересчитать минимальный зум и центрировать
+        this.recalcMinZoomAndCenter();
+        this.canvas.requestRenderAll();
+    },
+
+    // Ограничитель границ (Учитывает поворот!)
     constrainImage: function(img) {
         const cropW = this.activeSlot.w;
         const cropH = this.activeSlot.h;
         const cx = 250, cy = 250; 
+        
+        // Текущий угол
+        const ang = img.angle || 0;
+        const isRotated = (ang % 180 !== 0);
+        
+        // Если повернуто на 90/270, ширина и высота меняются местами визуально
+        const imgDisplayW = (isRotated ? img.height : img.width) * img.scaleX;
+        const imgDisplayH = (isRotated ? img.width : img.height) * img.scaleY;
+        
+        // Границы рамки
         const frameLeft = cx - cropW/2;
         const frameTop = cy - cropH/2;
         const frameRight = cx + cropW/2;
         const frameBottom = cy + cropH/2;
-        const imgW = img.width * img.scaleX;
-        const imgH = img.height * img.scaleY;
-        const maxLeft = frameLeft + imgW/2;
-        const minLeft = frameRight - imgW/2;
-        const maxTop = frameTop + imgH/2;
-        const minTop = frameBottom - imgH/2;
         
-        if (imgW >= cropW) img.left = Math.min(Math.max(img.left, minLeft), maxLeft);
+        // Пределы для центра картинки
+        const maxLeft = frameLeft + imgDisplayW/2;
+        const minLeft = frameRight - imgDisplayW/2;
+        const maxTop = frameTop + imgDisplayH/2;
+        const minTop = frameBottom - imgDisplayH/2;
+        
+        if (imgDisplayW >= cropW) img.left = Math.min(Math.max(img.left, minLeft), maxLeft);
         else img.left = cx; 
         
-        if (imgH >= cropH) img.top = Math.min(Math.max(img.top, minTop), maxTop);
+        if (imgDisplayH >= cropH) img.top = Math.min(Math.max(img.top, minTop), maxTop);
         else img.top = cy;
+    },
+
+    // Вспомогательная функция для пересчета зума при старте или повороте
+    recalcMinZoomAndCenter: function() {
+        if(!this.tempImgObject) return;
+        
+        const img = this.tempImgObject;
+        const ang = this.angle || 0;
+        const isRotated = (ang % 180 !== 0);
+        
+        // Размеры исходника с учетом поворота
+        const effectiveW = isRotated ? img.height : img.width;
+        const effectiveH = isRotated ? img.width : img.height;
+        
+        // Считаем Cover
+        const minScaleX = this.activeSlot.w / effectiveW;
+        const minScaleY = this.activeSlot.h / effectiveH;
+        const minCoverScale = Math.max(minScaleX, minScaleY);
+        
+        // Применяем зум, если текущий меньше минимума (или при первом старте)
+        if(img.scaleX < minCoverScale) {
+            img.scale(minCoverScale);
+        }
+        
+        // Центрируем
+        img.set({ left: 250, top: 250 });
+        
+        // Обновляем слайдер
+        const slider = document.getElementById('zoomSlider');
+        slider.min = minCoverScale;
+        slider.max = minCoverScale * 4;
+        slider.step = minCoverScale * 0.01;
+        if(parseFloat(slider.value) < minCoverScale) slider.value = minCoverScale;
+        
+        // Применяем границы сразу
+        this.constrainImage(img);
     },
 
     start: function(url, slotW, slotH, maskType) {
         this.init();
         this.tempImgObject = null;
         this.maskType = maskType;
+        this.angle = 0; // Сброс угла при новом фото
         
         this.drawOverlay(slotW, slotH);
         
         fabric.Image.fromURL(url, (img) => {
             if(!img) return;
             this.tempImgObject = img;
-            
-            const minScaleX = this.activeSlot.w / img.width;
-            const minScaleY = this.activeSlot.h / img.height;
-            const minCoverScale = Math.max(minScaleX, minScaleY);
-            
-            img.set({ 
-                left: 250, top: 250, originX: 'center', originY: 'center', 
-                scaleX: minCoverScale, scaleY: minCoverScale, 
-                hasControls: false, hasBorders: false 
-            });
+            this.tempImgObject.originX = 'center';
+            this.tempImgObject.originY = 'center';
+            this.tempImgObject.hasControls = false;
+            this.tempImgObject.hasBorders = false;
             
             this.canvas.add(img);
             this.canvas.sendToBack(img);
             
-            const slider = document.getElementById('zoomSlider');
-            slider.min = minCoverScale;
-            slider.max = minCoverScale * 4;
-            slider.step = minCoverScale * 0.01;
-            slider.value = minCoverScale;
+            this.recalcMinZoomAndCenter();
             
+            const slider = document.getElementById('zoomSlider');
             slider.oninput = () => { 
                 img.scale(parseFloat(slider.value)); 
                 this.constrainImage(img); 
@@ -459,26 +473,13 @@ const CropperTool = {
         this.activeSlot = { w: pW, h: pH };
         const cx = 250, cy = 250;
         
+        // При смене рамки пересчитываем зум
         if(this.tempImgObject) {
             this.canvas.sendToBack(this.tempImgObject);
-            const minScaleX = pW / this.tempImgObject.width;
-            const minScaleY = pH / this.tempImgObject.height;
-            const newMinScale = Math.max(minScaleX, minScaleY);
-            
-            if(this.tempImgObject.scaleX < newMinScale) this.tempImgObject.scale(newMinScale);
-            
-            const slider = document.getElementById('zoomSlider');
-            slider.min = newMinScale;
-            slider.max = newMinScale * 4;
-            slider.step = newMinScale * 0.01;
-            if(parseFloat(slider.value) < newMinScale) slider.value = newMinScale;
-            
-            this.tempImgObject.set({ left: 250, top: 250 });
-            this.constrainImage(this.tempImgObject);
+            this.recalcMinZoomAndCenter();
         }
         
         let pathStr = `M 0 0 H 500 V 500 H 0 Z`; 
-        
         if(this.maskType === 'circle') {
             const r = pW/2;
             pathStr += ` M ${cx} ${cy-r} A ${r} ${r} 0 1 0 ${cx} ${cy+r} A ${r} ${r} 0 1 0 ${cx} ${cy-r} Z`;
@@ -487,7 +488,6 @@ const CropperTool = {
             pathStr += ` M ${cx-pW/2} ${cy-pH/2} H ${cx+pW/2} V ${cy+pH/2} H ${cx-pW/2} Z`;
             this.canvas.add(new fabric.Rect({ left: cx, top: cy, width: pW, height: pH, fill: 'transparent', stroke: '#fff', strokeWidth: 1, originX: 'center', originY: 'center', selectable: false, evented: false }));
         }
-        
         this.canvas.add(new fabric.Path(pathStr, { fill: 'rgba(0,0,0,0.7)', selectable: false, evented: false, fillRule: 'evenodd' }));
         this.canvas.requestRenderAll();
     },
@@ -499,7 +499,13 @@ const CropperTool = {
         
         return { 
             src: this.tempImgObject.getSrc(), 
-            cropInfo: { left: offX, top: offY, scale: this.tempImgObject.scaleX, slotPixelSize: this.activeSlot.w } 
+            cropInfo: { 
+                left: offX, 
+                top: offY, 
+                scale: this.tempImgObject.scaleX, 
+                slotPixelSize: this.activeSlot.w,
+                angle: this.angle // Передаем угол
+            } 
         };
     }
 };
