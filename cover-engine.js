@@ -151,7 +151,6 @@ const CoverEngine = {
         else if (layout === 'graphic' || layout === 'photo_text') {
             let imgY = c.centerY; 
             
-            // --- GRAPHIC ---
             if(layout === 'graphic') {
                 const style = getComputedStyle(document.documentElement);
                 const offsetCm = parseFloat(style.getPropertyValue('--graphic-offset-y-cm')) || 2;
@@ -159,33 +158,18 @@ const CoverEngine = {
                 if(state.images.main) this._renderNaturalImage(x, imgY, state);
                 else this._renderImageSlot(x, imgY, state);
             } 
-            // --- PHOTO + TEXT (МАСШТАБИРУЕМОЕ ФОТО) ---
             else {
-                // ИЗМЕНЕНО: Применяем зум к размеру фото
                 const zoom = state.text.scale || 1.0;
-                
-                // Базовый размер слота 6x6 см, умноженный на зум
                 const w = state.slotSize.w * state.ppi * zoom;
                 const h = state.slotSize.h * state.ppi * zoom;
-                
-                // Позиция фото: Центр смещен вверх на 2 см * зум? 
-                // Нет, лучше оставить центр фиксированным (2см от центра), а фото пусть растет вокруг него
-                // Или двигать? Давайте оставим центр фото на месте, оно просто будет расти.
                 imgY = c.centerY - (2.0 * state.ppi); 
                 
                 if(state.images.main) {
-                    // Рендерим фото с новым размером w/h
                     this._placeClippedImage(state.images.main, x, imgY, w, h, state.maskType, false, state);
                 } else {
-                    // Рендерим пустой слот (он сам возьмет зум внутри функции, но мы передадим размеры явно для надежности)
                     this._renderImageSlot(x, imgY, state, {w: w, h: h});
                 }
-                
-                // Текст тоже должен сдвигаться вниз, если фото растет
-                // Нижний край фото = imgY + h/2
-                // Отступ = 1.5 см * PPI (можно тоже зумить отступ, но фиксированный надежнее)
                 const textY = imgY + (h / 2) + (1.5 * state.ppi);
-                
                 this._renderTextBlock(x, textY, true, false, state, 'top'); 
             }
         }
@@ -206,7 +190,17 @@ const CoverEngine = {
         const baseSize = compact ? 0.8 : CONFIG.typo.baseTitle; 
         const finalSize = baseSize * state.ppi * state.text.scale;
         
-        const tObj = new fabric.Text(renderTxt, { fontFamily: 'Tenor Sans', fontSize: finalSize, textAlign: 'center', lineHeight: 1.3, fill: state.text.color, opacity: opacity, selectable: false, originX: 'center', originY: 'center' });
+        const tObj = new fabric.Text(renderTxt, { 
+            fontFamily: state.text.font, 
+            fontSize: finalSize, 
+            textAlign: 'center', 
+            lineHeight: 1.3, 
+            fill: state.text.color, 
+            opacity: opacity, 
+            selectable: false, 
+            originX: 'center', 
+            originY: 'center' 
+        });
         const group = new fabric.Group([tObj], { originX: 'center', originY: 'center' });
         
         if(state.text.date) { 
@@ -214,7 +208,15 @@ const CoverEngine = {
             const dateOp = CONFIG.globalOpacity; 
             const dateSize = CONFIG.typo.baseDetails * state.ppi * state.text.scale;
             const gap = (compact ? 1.0 : 2.0) * state.ppi;
-            const dObj = new fabric.Text(dateStr, { fontFamily: 'Tenor Sans', fontSize: dateSize, fill: state.text.color, opacity: dateOp, originX: 'center', originY: 'top', top: (tObj.height / 2) + gap });
+            const dObj = new fabric.Text(dateStr, { 
+                fontFamily: state.text.font, 
+                fontSize: dateSize, 
+                fill: state.text.color, 
+                opacity: dateOp, 
+                originX: 'center', 
+                originY: 'top', 
+                top: (tObj.height / 2) + gap 
+            });
             group.addWithUpdate(dObj);
         }
         return group;
@@ -232,7 +234,20 @@ const CoverEngine = {
             let txt = txtParts.join("\n");
             
             const shadow = new fabric.Shadow({ color: 'rgba(0,0,0,0.15)', blur: 4, offsetX: 0, offsetY: 0 });
-            this.canvas.add(new fabric.Text(txt, { fontFamily: 'Tenor Sans', fontSize: 2.5 * state.ppi * state.text.scale, textAlign: 'center', lineHeight: 1.0, originX: 'center', originY: 'top', left: x, top: y, fill: state.text.color, selectable: false, evented: false, shadow: shadow }));
+            this.canvas.add(new fabric.Text(txt, { 
+                fontFamily: state.text.font, 
+                fontSize: 2.5 * state.ppi * state.text.scale, 
+                textAlign: 'center', 
+                lineHeight: 1.0, 
+                originX: 'center', 
+                originY: 'top', 
+                left: x, 
+                top: y, 
+                fill: state.text.color, 
+                selectable: false, 
+                evented: false, 
+                shadow: shadow 
+            }));
             return;
         }
         const group = this._createTextBlockObj(compact, state); 
