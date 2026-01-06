@@ -1,408 +1,215 @@
-/* cover-engine.js - Logic for Rendering & Cropping */
-
-const CONFIG = {
-    dpi: 300, cmToInch: 2.54, spineWidthCm: 1.5, renderScale: 3.0,
-    globalOpacity: 1.0, typo: { baseTitle: 1.2, baseDetails: 0.5, baseCopy: 0.35 },
-    scales: [0.7, 0.85, 1.0, 1.15, 1.3]
-};
-
-const CoverEngine = {
-    canvas: null,
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MALEVICH | Configurator V58</title>
     
-    init: function(canvasId) {
-        this.canvas = new fabric.Canvas(canvasId, { backgroundColor: '#fff', selection: false, enableRetinaScaling: false });
-        this.canvas.on('mouse:down', (e) => {
-            if(e.target) {
-                if(e.target.isMain || e.target.isPlaceholder) {
-                    if(window.handleCanvasClick) window.handleCanvasClick(e.target.isMain ? 'mainImage' : 'placeholder');
-                }
-                else if (e.target.isIcon) {
-                    if(window.openGallery) window.openGallery('symbols', 'global');
-                }
-            }
-        });
-    },
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
 
-    loadSimpleImage: function(path, callback) {
-        const img = new Image();
-        img.onload = () => callback(path);
-        img.onerror = () => { callback(null); };
-        img.src = path;
-    },
-
-    updateDimensions: function(container, state) {
-        if(!container || container.clientWidth === 0) return;
-        const isMobile = window.innerWidth < 900;
-        const margin = isMobile ? 10 : 20; 
-        const curBookSize = parseFloat(state.bookSize);
-        const curW = curBookSize * 2 + CONFIG.spineWidthCm; const curH = curBookSize;
-        let basePPI;
-        if (isMobile) {
-            const safeW = container.clientWidth - (margin * 2);
-            const safeH = container.clientHeight - (margin * 2);
-            basePPI = Math.min(safeW / curW, safeH / curH);
-        } else {
-            const MAX_REF_SIZE = 30; const maxRefW = MAX_REF_SIZE * 2 + CONFIG.spineWidthCm; const maxRefH = MAX_REF_SIZE;
-            basePPI = Math.max(5, Math.min((container.clientWidth - margin*2) / maxRefW, (container.clientHeight - margin*2) / maxRefH));
-        }
-        state.ppi = basePPI * CONFIG.renderScale;
-        this.canvas.setWidth(curW * state.ppi); this.canvas.setHeight(curH * state.ppi);
-        this.canvas.wrapperEl.style.width = `${curW * basePPI}px`; this.canvas.wrapperEl.style.height = `${curH * basePPI}px`;
-        this.canvas.lowerCanvasEl.style.width = '100%'; this.canvas.upperCanvasEl.style.width = '100%';
-        this.canvas.lowerCanvasEl.style.height = '100%'; this.canvas.upperCanvasEl.style.height = '100%';
-        this.render(state);
-    },
-
-    render: function(state) {
-        if(!this.canvas) return;
-        this.canvas.clear(); this.canvas.setBackgroundColor(state.coverColor);
-        const h = this.canvas.height;
-        const bookSize = parseFloat(state.bookSize);
-        const x1 = bookSize * state.ppi; const x2 = (bookSize + 1.5) * state.ppi;
-        const c = { h: h, spineX: x1 + ((x2 - x1) / 2), frontCenter: x2 + (bookSize * state.ppi / 2), backCenter: (bookSize * state.ppi) / 2, bottomBase: h - (1.5 * state.ppi), centerY: h / 2, gap: 2.0 * state.ppi };
-        this._drawGuides(x1, x2, h, state);
-        this._renderSpine(c, state);
-        this._renderBackCover(c, state);
-        this._renderFrontCover(c, state);
-    },
-
-    _drawGuides: function(x1, x2, h, state) {
-        const opts = { stroke: state.text.color, strokeWidth: 2, strokeDashArray: [10,10], selectable: false, evented: false, opacity: 0.3 };
-        this.canvas.add(new fabric.Line([x1, 0, x1, h], opts)); this.canvas.add(new fabric.Line([x2, 0, x2, h], opts));
-    },
-
-    _renderSpine: function(c, state) {
-        if(state.spine.symbol && state.images.icon) {
-            this._placeImage(state.images.icon, c.spineX, c.bottomBase, 1.0 * state.ppi, { originY: 'bottom', color: state.text.color, isIcon: true, hoverCursor: 'pointer' });
-        }
-        let parts = [];
-        const raw = state.text.lines.map(l => l.text);
-        if(state.spine.title) {
-            const processed = raw.map((txt, i) => state.text.lines[i].upper ? txt.toUpperCase() : txt).filter(Boolean);
-            if(processed.length > 0) parts.push(processed.join(" "));
-        }
-        if(state.spine.date && state.text.date) parts.push(state.text.date);
-        if(parts.length > 0) {
-            const spineStr = parts.join("  •  ");
-            let yPos = c.bottomBase; if(state.spine.symbol && state.images.icon) yPos -= (1.8 * state.ppi);
-            this.canvas.add(new fabric.Text(spineStr, { fontFamily: state.text.font, fontSize: CONFIG.typo.baseDetails * state.ppi * state.text.scale, fill: state.text.color, opacity: CONFIG.globalOpacity, originX: 'left', originY: 'center', left: c.spineX, top: yPos, angle: -90, selectable: false }));
-        }
-    },
-
-    _renderBackCover: function(c, state) {
-        if(state.text.copyright) {
-            this.canvas.add(new fabric.Text(state.text.copyright, { left: c.backCenter, top: c.bottomBase, fontSize: CONFIG.typo.baseCopy * state.ppi * state.text.scale, fontFamily: state.text.font, fill: state.text.color, opacity: CONFIG.globalOpacity * 0.7, originX: 'center', originY: 'bottom', selectable: false, letterSpacing: 50 }));
-        }
-        if(state.qr.enabled && state.qr.url) {
-            const qrObj = new QRious({ value: state.qr.url, size: 500, level: 'H', foreground: state.text.color, backgroundAlpha: 0 });
-            this._placeImage(qrObj.toDataURL(), c.backCenter, c.bottomBase - (0.5 * state.ppi) - (0.35 * state.ppi) - (0.5*state.ppi), 1.2 * state.ppi, { originY: 'bottom' });
-        }
-    },
-
-    _renderFrontCover: function(c, state) {
-        const layout = state.layout; const x = c.frontCenter; const y = c.centerY; const gap = c.gap;
-        if (layout === 'magazine') {
-            const coverW = state.bookSize * state.ppi; const coverH = c.h; 
-            if(state.images.main) this._placeClippedImage(state.images.main, x, y, coverW, coverH, 'rect', false, state);
-            else this._renderImageSlot(x, y, state, { w: coverW, h: coverH });
-            this._renderTextBlock(x, 2.0 * state.ppi, false, true, state);
-        } 
-        else if (layout === 'icon') { this._renderIcon(x, y, null, state); }
-        else if (layout === 'text_icon') {
-            const dynGap = gap * state.text.scale; const tObj = this._createTextBlockObj(true, state);
-            const iconSize = (2.0 / 1.6) * state.ppi * state.text.scale; const visualGap = dynGap * 1.5; 
-            const totalH = tObj.height + visualGap + iconSize; const startY = y - (totalH / 2); 
-            tObj.set({ left: x, top: startY + tObj.height/2 }); this.canvas.add(tObj);
-            this._renderIcon(x, startY + tObj.height + visualGap + iconSize/2, iconSize, state);
-        } 
-        else if (layout === 'graphic' || layout === 'photo_text') {
-            let imgY = c.centerY; 
-            if(layout === 'graphic') {
-                const style = getComputedStyle(document.documentElement);
-                const offsetCm = parseFloat(style.getPropertyValue('--graphic-offset-y-cm')) || 2;
-                imgY = c.centerY - (offsetCm * state.ppi);
-                if(state.images.main) this._renderNaturalImage(x, imgY, state);
-                else this._renderImageSlot(x, imgY, state);
-            } else {
-                const zoom = state.text.scale || 1.0;
-                const w = state.slotSize.w * state.ppi * zoom; const h = state.slotSize.h * state.ppi * zoom;
-                imgY = c.centerY - (2.0 * state.ppi); 
-                if(state.images.main) this._placeClippedImage(state.images.main, x, imgY, w, h, state.maskType, false, state);
-                else this._renderImageSlot(x, imgY, state, {w: w, h: h});
-                const textY = imgY + (h / 2) + (1.5 * state.ppi);
-                this._renderTextBlock(x, textY, true, false, state, 'top'); 
-            }
-        }
-        else if (layout === 'text') { const tObj = this._createTextBlockObj(false, state); tObj.set({ left: x, top: c.centerY }); this.canvas.add(tObj); } 
-    },
-
-    _createTextBlockObj: function(compact, state) {
-        const rawLines = state.text.lines.map(l => l.text); 
-        const processedLines = rawLines.map((txt, i) => { return state.text.lines[i].upper ? txt.toUpperCase() : txt; });
-        const hasText = rawLines.some(t => t.length > 0);
-        let renderTxt = hasText ? processedLines.filter(Boolean).join("\n") : "THE VISUAL DIARY\n\n\n";
-        let opacity = hasText ? CONFIG.globalOpacity : 0.3;
-        const baseSize = compact ? 0.8 : CONFIG.typo.baseTitle; const finalSize = baseSize * state.ppi * state.text.scale;
-        const tObj = new fabric.Text(renderTxt, { fontFamily: state.text.font, fontSize: finalSize, textAlign: 'center', lineHeight: 1.3, fill: state.text.color, opacity: opacity, selectable: false, originX: 'center', originY: 'center' });
-        const group = new fabric.Group([tObj], { originX: 'center', originY: 'center' });
-        if(state.text.date) { 
-            const dateStr = state.text.date; const dateOp = CONFIG.globalOpacity; const dateSize = CONFIG.typo.baseDetails * state.ppi * state.text.scale;
-            const gap = (compact ? 1.0 : 2.0) * state.ppi;
-            const dObj = new fabric.Text(dateStr, { fontFamily: state.text.font, fontSize: dateSize, fill: state.text.color, opacity: dateOp, originX: 'center', originY: 'top', top: (tObj.height / 2) + gap });
-            group.addWithUpdate(dObj);
-        }
-        return group;
-    },
-
-    _renderTextBlock: function(x, y, compact, isMag, state, verticalOrigin = 'center') {
-        if(state.layout === 'graphic') return;
-        if(isMag) {
-            let l1 = String(state.text.lines[0].text || ""); let l2 = String(state.text.lines[1].text || "");
-            if(state.text.lines[0].upper) l1 = l1.toUpperCase(); if(state.text.lines[1].upper) l2 = l2.toUpperCase();
-            let txtParts = [l1, l2].filter(t => t.length > 0); if (txtParts.length === 0) return;
-            let txt = txtParts.join("\n");
-            const shadow = new fabric.Shadow({ color: 'rgba(0,0,0,0.15)', blur: 4, offsetX: 0, offsetY: 0 });
-            this.canvas.add(new fabric.Text(txt, { fontFamily: state.text.font, fontSize: 2.5 * state.ppi * state.text.scale, textAlign: 'center', lineHeight: 1.0, originX: 'center', originY: 'top', left: x, top: y, fill: state.text.color, selectable: false, evented: false, shadow: shadow }));
-            return;
-        }
-        const group = this._createTextBlockObj(compact, state); group.set({ left: x, top: y, originY: verticalOrigin }); this.canvas.add(group);
-    },
-
-    _renderIcon: function(x, y, forcedSize, state) {
-        let iconUrl = state.images.icon; let isGhost = false;
-        if(!iconUrl) { iconUrl = 'assets/symbols/love_heart_icon.png'; isGhost = true; }
-        this._placeImage(iconUrl, x, y, forcedSize || (2.0/1.6)*state.ppi*state.text.scale, { color: state.text.color, opacity: isGhost ? 0.3 : CONFIG.globalOpacity, isIcon: true, hoverCursor: 'pointer' });
-    },
-
-    _renderImageSlot: function(x, y, state, customSize = null) {
-        let w, h;
-        if (customSize) { w = customSize.w; h = customSize.h; } 
-        else { const zoom = state.text.scale || 1.0; w = state.slotSize.w * state.ppi * zoom; h = state.slotSize.h * state.ppi * zoom; }
-        let shape;
-        const commonOpts = { fill: 'transparent', stroke: '#aaaaaa', strokeWidth: 1.5, strokeDashArray: [10, 10], left: x, top: y, originX: 'center', originY: 'center', selectable: false, evented: true, hoverCursor: 'pointer', isPlaceholder: true };
-        if(state.maskType === 'circle') shape = new fabric.Circle({ radius: w/2, ...commonOpts });
-        else shape = new fabric.Rect({ width: w, height: h, ...commonOpts });
-        this.canvas.add(shape);
-        const centerIconSize = 1.5 * state.ppi; 
-        const btnCircle = new fabric.Circle({ radius: centerIconSize / 2, fill: 'transparent', stroke: '#aaaaaa', strokeWidth: 1.5, originX: 'center', originY: 'center', left: x, top: y, selectable: false, evented: false });
-        this.canvas.add(btnCircle);
-        const plusLen = centerIconSize * 0.5; const plusThick = 1.5 * (state.ppi / 30); 
-        const vLine = new fabric.Rect({ width: plusThick, height: plusLen, fill: '#aaaaaa', originX: 'center', originY: 'center', left: x, top: y, selectable: false, evented: false });
-        const hLine = new fabric.Rect({ width: plusLen, height: plusThick, fill: '#aaaaaa', originX: 'center', originY: 'center', left: x, top: y, selectable: false, evented: false });
-        this.canvas.add(vLine); this.canvas.add(hLine);
-    },
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..900;1,6..96,400..900&family=Tenor+Sans&display=swap" rel="stylesheet">
     
-    _renderNaturalImage: function(x, y, state) {
-        if(state.images.main && state.images.main.src) {
-            fabric.Image.fromURL(state.images.main.src, (img) => {
-                if(!img) return;
-                const slotW_px = state.slotSize.w * state.ppi; const slotH_px = state.slotSize.h * state.ppi;
-                const scaleX = slotW_px / img.width; const scaleY = slotH_px / img.height;
-                const baseScale = Math.min(scaleX, scaleY);
-                const userZoom = state.text.scale || 1.0;
-                const finalScale = baseScale * userZoom;
-                img.set({ left: x, top: y, originX: 'center', originY: 'center', scaleX: finalScale, scaleY: finalScale, opacity: CONFIG.globalOpacity, selectable: false, evented: true, hoverCursor: 'pointer', isMain: true });
-                const filter = new fabric.Image.filters.BlendColor({ color: state.text.color, mode: 'tint', alpha: 1 }); 
-                img.filters.push(filter); img.applyFilters();
-                this.canvas.add(img);
-            });
-        }
-    },
-
-    _placeImage: function(url, x, y, width, opts = {}) {
-        fabric.Image.fromURL(url, (img) => {
-            if(!img) return;
-            img.scaleToWidth(width);
-            img.set({ left: x, top: y, originX: 'center', originY: 'center', selectable: false, opacity: CONFIG.globalOpacity, ...opts });
-            if(opts.color) { img.filters.push(new fabric.Image.filters.BlendColor({ color: opts.color, mode: 'tint', alpha: 1 })); img.applyFilters(); }
-            this.canvas.add(img); if(opts.sendBack) this.canvas.sendToBack(img);
-        });
-    },
-
-    _placeClippedImage: function(imgData, x, y, w, h, maskType, isBack, state) {
-        if(!imgData || !imgData.src) return;
-        fabric.Image.fromURL(imgData.src, (img) => {
-            const info = imgData.cropInfo; const scaleFactor = w / info.slotPixelSize;
-            if(isBack) {
-                const coverW = w; const scale = Math.max(coverW / img.width, h / img.height);
-                img.set({ scaleX: scale, scaleY: scale, left: x, top: h/2, originX: 'center', originY: 'center', selectable: false, evented: true, hoverCursor: 'pointer', isMain: true });
-                img.clipPath = new fabric.Rect({ width: coverW/scale, height: h/scale, left: -coverW/2/scale, top: -h/2/scale });
-                this.canvas.add(img); this.canvas.sendToBack(img);
-            } else {
-                let clip; const absoluteOpts = { left: x, top: y, originX: 'center', originY: 'center', absolutePositioned: true };
-                if(maskType === 'circle') { clip = new fabric.Circle({ radius: w/2, ...absoluteOpts }); } 
-                else { clip = new fabric.Rect({ width: w, height: h, ...absoluteOpts }); }
-                const imgLeft = x + (info.left * scaleFactor); const imgTop = y + (info.top * scaleFactor);
-                const totalScale = info.scale * scaleFactor;
-                img.set({ left: imgLeft, top: imgTop, scaleX: totalScale, scaleY: totalScale, angle: info.angle || 0, originX: 'center', originY: 'center', selectable: false, evented: true, hoverCursor: 'pointer', isMain: true, clipPath: clip });
-                this.canvas.add(img); img.sendToBack(); 
-            }
-        });
-    },
+    <link rel="stylesheet" href="style.css">
     
-    download: function(state) {
-        const mult = (CONFIG.dpi / CONFIG.cmToInch) / state.ppi;
-        this.canvas.getObjects('line').forEach(o => o.opacity = 0);
-        const data = this.canvas.toDataURL({ format: 'png', multiplier: mult, quality: 1 });
-        this.canvas.getObjects('line').forEach(o => o.opacity = 0.3);
-        const a = document.createElement('a'); a.download = `malevich_cover_${state.bookSize}.png`; a.href = data; a.click();
-    }
-};
+    <script src="assets.js"></script>
+</head>
+<body oncontextmenu="return false;">
 
-/* --- CROPPER TOOL --- */
-const CropperTool = {
-    canvas: null, tempImgObject: null, activeSlot: { w: 0, h: 0 }, maskType: 'rect', angle: 0, 
-    
-    init: function() {
-        if(!this.canvas) {
-            // FIX: Dynamic size for mobile
-            const size = Math.min(500, window.innerWidth - 40);
-            this.canvas = new fabric.Canvas('cropCanvas', { 
-                width: size, height: size, backgroundColor: '#111', selection: false, preserveObjectStacking: true 
-            });
-            this.canvas.on('object:moving', (e) => {
-                if(e.target === this.tempImgObject) this.constrainImage(e.target);
-            });
-        } else {
-            // Update dims if reused
-            const size = Math.min(500, window.innerWidth - 40);
-            this.canvas.setDimensions({width: size, height: size});
-        }
-        this.canvas.clear(); 
-        this.canvas.setBackgroundColor('#111', this.canvas.renderAll.bind(this.canvas));
-    },
+    <div id="app-loader">
+        <div class="loader-text">MALEVICH</div>
+        <div class="loader-sub">EST. 2025</div>
+    </div>
 
-    rotate: function() {
-        if(!this.tempImgObject) return;
-        this.angle = (this.angle + 90) % 360;
-        this.tempImgObject.rotate(this.angle);
-        this.recalcMinZoomAndCenter();
-        this.canvas.requestRenderAll();
-    },
+    <div id="workspace">
+        <canvas id="c"></canvas>
+        <div id="photoTrigger" class="hidden" onclick="triggerAssetLoader()"></div>
+    </div>
 
-    recalcMinZoomAndCenter: function() {
-        if(!this.tempImgObject) return;
-        const img = this.tempImgObject;
-        const ang = this.angle || 0;
-        const isRotated = (Math.abs(ang % 180) === 90);
-        const effectiveW = isRotated ? img.height : img.width;
-        const effectiveH = isRotated ? img.width : img.height;
-        const minScaleX = this.activeSlot.w / effectiveW;
-        const minScaleY = this.activeSlot.h / effectiveH;
-        const minCoverScale = Math.max(minScaleX, minScaleY);
-        img.scale(minCoverScale);
+    <div id="controls">
+        <h1>MALEVICH</h1>
         
-        // Center image
-        const cx = this.canvas.width / 2;
-        const cy = this.canvas.height / 2;
-        img.set({ left: cx, top: cy });
-        
-        const slider = document.getElementById('zoomSlider');
-        slider.min = minCoverScale;
-        slider.max = minCoverScale * 4;
-        slider.step = minCoverScale * 0.01;
-        slider.value = minCoverScale;
-        this.constrainImage(img);
-    },
+        <div class="section">
+            <h2>1. Название Книги</h2>
+            <div id="textBuilder">
+                <div class="text-row" id="row1">
+                    <input type="text" id="inputLine1" placeholder="THE VISUAL DIARY">
+                    <div class="tool-btn" onclick="toggleCase(1)" id="btnTt1">Tt</div>
+                    <div class="tool-btn" onclick="showRow(2)">+</div>
+                </div>
+                <div class="text-row hidden" id="row2">
+                    <input type="text" id="inputLine2" placeholder="Доп. строка">
+                    <div class="tool-btn" onclick="toggleCase(2)" id="btnTt2">Tt</div>
+                    <div class="tool-btn" onclick="showRow(3)">+</div>
+                    <div class="tool-btn red" onclick="hideRow(2)">×</div>
+                </div>
+                <div class="text-row hidden" id="row3">
+                    <input type="text" id="inputLine3" placeholder="Доп. строка">
+                    <div class="tool-btn" onclick="toggleCase(3)" id="btnTt3">Tt</div>
+                    <div class="tool-btn red" onclick="hideRow(3)">×</div>
+                </div>
+                <label style="margin-top:10px;">Символ и Дата</label>
+                <div class="input-row-icon">
+                    <div id="globalSymbolBtn" class="icon-trigger-btn pulse-attention" onclick="openGallery('symbols', 'global')"></div>
+                    <input type="text" id="dateLine" placeholder="2025 / Подпись" style="margin-bottom:0;">
+                </div>
+            </div>
+            <input type="file" id="imageLoader" hidden accept="image/*, .heic">
+            <input type="file" id="iconLoader" hidden accept="image/png">
+        </div>
 
-    constrainImage: function(img) {
-        const cropW = this.activeSlot.w;
-        const cropH = this.activeSlot.h;
-        const cx = this.canvas.width / 2;
-        const cy = this.canvas.height / 2;
-        const ang = img.angle || 0;
-        const isRotated = (Math.abs(ang % 180) === 90);
-        const imgDisplayW = (isRotated ? img.height : img.width) * img.scaleX;
-        const imgDisplayH = (isRotated ? img.width : img.height) * img.scaleY;
-        const frameLeft = cx - cropW/2;
-        const frameTop = cy - cropH/2;
-        const frameRight = cx + cropW/2;
-        const frameBottom = cy + cropH/2;
-        const maxLeft = frameLeft + imgDisplayW/2;
-        const minLeft = frameRight - imgDisplayW/2;
-        const maxTop = frameTop + imgDisplayH/2;
-        const minTop = frameBottom - imgDisplayH/2;
-        
-        // Using tolerance -1 to prevent locking on exact fit
-        if (imgDisplayW >= cropW - 1) img.left = Math.min(Math.max(img.left, minLeft), maxLeft);
-        else img.left = cx; 
-        if (imgDisplayH >= cropH - 1) img.top = Math.min(Math.max(img.top, minTop), maxTop);
-        else img.top = cy;
-    },
+        <div class="section">
+            <label>2. Размер книги и шрифт</label>
+            <div class="format-selector">
+                <div class="format-card f-30 active" onclick="setBookSize(30, this)"><span>30x30</span></div>
+                <div class="format-card f-25" onclick="setBookSize(25, this)"><span>25x25</span></div>
+                <div class="format-card f-20" onclick="setBookSize(20, this)"><span>20x20</span></div>
+            </div>
+            <div class="typo-row">
+                <div class="typo-col">
+                    <select id="fontSelector" style="margin:0;">
+                        <option value="Tenor Sans">Tenor Sans</option>
+                        <option value="Bodoni Moda">Bodoni Moda</option>
+                    </select>
+                </div>
+                <div class="typo-col">
+                    <div class="scale-control">
+                        <span class="scale-label" onclick="setScale(0.8, this)">S</span>
+                        <div class="scale-track">
+                            <input type="range" id="textScale" min="1" max="5" value="3" step="1" oninput="window.updateScaleFromSlider(this.value)">
+                        </div>
+                        <span class="scale-label" onclick="setScale(1.6, this)">XL</span>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-    start: function(url, slotW, slotH, maskType) {
-        this.init();
-        this.tempImgObject = null;
-        this.maskType = maskType;
-        this.angle = 0; 
-        this.drawOverlay(slotW, slotH);
-        fabric.Image.fromURL(url, (img) => {
-            if(!img) return;
-            this.tempImgObject = img;
-            this.tempImgObject.originX = 'center';
-            this.tempImgObject.originY = 'center';
-            this.tempImgObject.hasControls = false;
-            this.tempImgObject.hasBorders = false;
-            this.canvas.add(img);
-            // FIX: Set active to enable drag immediately
-            this.canvas.setActiveObject(img);
-            this.canvas.sendToBack(img);
-            this.recalcMinZoomAndCenter();
-            const slider = document.getElementById('zoomSlider');
-            slider.oninput = () => { 
-                img.scale(parseFloat(slider.value)); 
-                this.constrainImage(img); 
-                this.canvas.requestRenderAll(); 
-            };
-            this.canvas.requestRenderAll();
-        });
-    },
+        <div class="section">
+            <h2>3. Цветовая палитра</h2>
+            <select id="paletteSelector" class="palette-selector" onchange="changeCollection(this.value)">
+                <option value="Wedding Trends">Wedding Trends</option>
+                <option value="New Born">New Born Trends</option>
+                <option value="Pantone Trends">Pantone Trends</option>
+                <option value="Kinfolk - Cinema">Kinfolk - Cinema</option>
+                <option value="Fashion Magazine">Fashion Magazine</option>
+                <option value="Avant-Garde">Yayoi Kusama Avant-Garde</option>
+                <option value="Custom">Выбрать свои цвета...</option>
+            </select>
+            <div id="pairsGrid" class="pairs-grid"></div>
+            <div id="customPickers" class="hidden">
+                <label>Цвет Обложки</label>
+                <input type="color" id="customCoverPicker" value="#FFFFFF">
+                <label>Цвет Элементов</label>
+                <input type="color" id="customTextPicker" value="#1a1a1a">
+            </div>
+        </div>
 
-    drawOverlay: function(slotW, slotH) {
-        this.canvas.getObjects().forEach(o => { 
-            if(o !== this.tempImgObject) this.canvas.remove(o); 
-        });
+        <div class="section">
+            <h2>4. Дизайн Обложки</h2>
+            <div class="layout-grid">
+                <div class="layout-card" onclick="setLayout('icon', this)" title="Символ">
+                    <div class="mini-icon">❤</div>
+                </div>
+                <div class="layout-card active" onclick="setLayout('text_icon', this)" title="Текст+Символ">
+                    <div class="mini-group">
+                        <div class="mini-line"></div>
+                        <div class="mini-line short"></div>
+                    </div>
+                    <div class="mini-icon" style="margin-top:2px">❤</div>
+                </div>
+                <div class="layout-card" onclick="setLayout('graphic', this)" title="Графика">
+                    <div class="mini-graphic-symbol">⌘</div>
+                </div>
+                <div class="layout-card" onclick="setLayout('text', this)" title="Текст">
+                    <div class="mini-group" style="gap:6px">
+                        <div class="mini-line"></div>
+                        <div class="mini-line"></div>
+                        <div class="mini-line short"></div>
+                    </div>
+                </div>
+                <div class="layout-card" onclick="setLayout('photo_text', this)" title="Фото+Текст">
+                    <div class="mini-dashed-rect"></div>
+                    <div class="mini-line short" style="margin-top:4px"></div>
+                </div>
+                <div class="layout-card" onclick="setLayout('magazine', this)" title="Журнал">
+                    <div class="mini-mag-container">
+                        <div class="mini-mag-title"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
         
-        let aspect = slotW / slotH;
-        let pW, pH;
-        // Responsive maxSize
-        const maxSize = Math.min(400, this.canvas.width * 0.8);
-        
-        if(this.maskType === 'circle') { pW = maxSize; pH = maxSize; }
-        else if(aspect >= 1) { pW = maxSize; pH = maxSize / aspect; } 
-        else { pH = maxSize; pW = maxSize * aspect; }
-        
-        this.activeSlot = { w: pW, h: pH };
-        const cx = this.canvas.width / 2;
-        const cy = this.canvas.height / 2;
-        
-        if(this.tempImgObject) {
-            this.canvas.sendToBack(this.tempImgObject);
-            this.recalcMinZoomAndCenter();
-        }
-        
-        let pathStr = `M 0 0 H ${this.canvas.width} V ${this.canvas.height} H 0 Z`; 
-        if(this.maskType === 'circle') {
-            const r = pW/2;
-            pathStr += ` M ${cx} ${cy-r} A ${r} ${r} 0 1 0 ${cx} ${cy+r} A ${r} ${r} 0 1 0 ${cx} ${cy-r} Z`;
-            this.canvas.add(new fabric.Circle({ radius: r, left: cx, top: cy, originX:'center', originY:'center', fill: 'transparent', stroke: '#fff', strokeWidth: 1, selectable: false, evented: false }));
-        } else {
-            pathStr += ` M ${cx-pW/2} ${cy-pH/2} H ${cx+pW/2} V ${cy+pH/2} H ${cx-pW/2} Z`;
-            this.canvas.add(new fabric.Rect({ left: cx, top: cy, width: pW, height: pH, fill: 'transparent', stroke: '#fff', strokeWidth: 1, originX: 'center', originY: 'center', selectable: false, evented: false }));
-        }
-        this.canvas.add(new fabric.Path(pathStr, { fill: 'rgba(0,0,0,0.7)', selectable: false, evented: false, fillRule: 'evenodd' }));
-        this.canvas.requestRenderAll();
-    },
+        <div class="section">
+            <h2>5. Детали</h2>
+            <label>Корешок (Элементы)</label>
+            <div class="spine-controls">
+                <div id="btnSpineSymbol" class="spine-btn active" onclick="toggleSpinePart('symbol')">❤</div>
+                <div id="btnSpineTitle" class="spine-btn active" onclick="toggleSpinePart('title')">Название</div>
+                <div id="btnSpineDate" class="spine-btn active" onclick="toggleSpinePart('date')">Дата</div>
+            </div>
 
-    apply: function() {
-        if(!this.tempImgObject) return null;
-        const cx = this.canvas.width / 2;
-        const cy = this.canvas.height / 2;
-        const offX = this.tempImgObject.left - cx; 
-        const offY = this.tempImgObject.top - cy;
-        return { 
-            src: this.tempImgObject.getSrc(), 
-            cropInfo: { left: offX, top: offY, scale: this.tempImgObject.scaleX, slotPixelSize: this.activeSlot.w, angle: this.angle } 
-        };
-    }
-};
+            <label>Копирайт / QR</label>
+            <div class="input-row-icon">
+                <div id="qrBtn" class="icon-trigger-btn" style="font-size:12px; font-family:'Tenor Sans';" onclick="openQRModal()">QR</div>
+                <input type="text" id="copyrightInput" value="" placeholder="Photo by..." style="margin-bottom:0;">
+            </div>
+        </div>
+
+        <button id="saveBtn">СКАЧАТЬ PRINT-READY</button>
+        <div id="debugInfo" style="font-size:9px; color:#555; text-align:center;"></div>
+    </div>
+
+    <div id="cropperModal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div class="modal-header">Кадрирование</div>
+            <div class="crop-controls">
+                <button class="crop-btn active" onclick="setCropMask(1,1)" title="Квадрат"><div class="crop-shape shape-sq"></div></button>
+                <button class="crop-btn" onclick="setCropMask(2,3)" title="Портрет 2:3"><div class="crop-shape shape-v"></div></button>
+                <button class="crop-btn" onclick="setCropMask(3,2)" title="Альбом 3:2"><div class="crop-shape shape-h"></div></button>
+                <button class="crop-btn" onclick="setCropMask('circle')" title="Круг"><div class="crop-shape shape-c"></div></button>
+            </div>
+            <div class="crop-area-wrapper"><canvas id="cropCanvas"></canvas></div>
+            <div class="zoom-controls"><span>ZOOM</span><input type="range" id="zoomSlider" min="0.1" max="4" step="0.01" value="1"></div>
+            <div style="display:flex; gap:10px; margin-top:10px;">
+                <button class="secondary" id="cancelCropBtn" style="flex:1;">Отмена</button>
+                <button class="btn btn-outline" id="rotateBtn" style="font-size: 20px; padding: 0 15px;" title="Повернуть">&#8635;</button>
+                <button id="applyCropBtn" style="flex:1; background:var(--accent-gold); color:#fff;">Применить</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="galleryModal" class="modal-overlay hidden">
+        <div class="modal-content" style="max-width: 700px;">
+            <div class="modal-header"><span id="galleryTitle">Галерея</span><span class="modal-close" onclick="closeGallery()">×</span></div>
+            <div class="gallery-tabs" id="galleryTabs"></div>
+            <div class="gallery-grid" id="galleryGrid"></div>
+            <div style="border-top:1px solid #333; padding-top:15px; text-align:center;">
+                <button id="galUploadBtn" onclick="handleGalleryUpload()">Загрузить свое</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="qrModal" class="modal-overlay hidden">
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-header">QR Код</div>
+            <div style="color:#ccc; font-size:12px; text-align:center;">
+                Введите ссылку (сайт, instagram).<br>QR-код будет цветом текста.
+            </div>
+            <input type="text" id="qrLinkInput" placeholder="https://..." value="https://">
+            <div style="display:flex; gap:10px;">
+                <button class="secondary" onclick="document.getElementById('qrModal').classList.add('hidden')" style="flex:1;">Отмена</button>
+                <button onclick="applyQR()" style="flex:1; background:var(--accent-gold); color:#fff;">Добавить</button>
+            </div>
+            <div style="text-align:center;">
+                <button class="secondary" onclick="removeQR()" style="border-color:#555; color:#777; font-size:10px; padding:8px;">Удалить QR</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="cover-engine.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
