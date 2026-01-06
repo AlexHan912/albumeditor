@@ -118,12 +118,15 @@ const CoverEngine = {
             const spineStr = parts.join("  •  ");
             let yPos = c.bottomBase; 
             if(state.spine.symbol && state.images.icon) yPos -= (1.8 * state.ppi);
+            
+            // FIX: Use state.text.font
             this.canvas.add(new fabric.Text(spineStr, { fontFamily: state.text.font, fontSize: CONFIG.typo.baseDetails * state.ppi * state.text.scale, fill: state.text.color, opacity: CONFIG.globalOpacity, originX: 'left', originY: 'center', left: c.spineX, top: yPos, angle: -90, selectable: false }));
         }
     },
 
     _renderBackCover: function(c, state) {
         if(state.text.copyright) {
+            // FIX: Use state.text.font
             this.canvas.add(new fabric.Text(state.text.copyright, { left: c.backCenter, top: c.bottomBase, fontSize: CONFIG.typo.baseCopy * state.ppi * state.text.scale, fontFamily: state.text.font, fill: state.text.color, opacity: CONFIG.globalOpacity * 0.7, originX: 'center', originY: 'bottom', selectable: false, letterSpacing: 50 }));
         }
         if(state.qr.enabled && state.qr.url) {
@@ -201,6 +204,7 @@ const CoverEngine = {
         const baseSize = compact ? 0.8 : CONFIG.typo.baseTitle; 
         const finalSize = baseSize * state.ppi * state.text.scale;
         
+        // FIX: Use state.text.font instead of hardcoded 'Tenor Sans'
         const tObj = new fabric.Text(renderTxt, { 
             fontFamily: state.text.font, 
             fontSize: finalSize, 
@@ -219,6 +223,7 @@ const CoverEngine = {
             const dateOp = CONFIG.globalOpacity; 
             const dateSize = CONFIG.typo.baseDetails * state.ppi * state.text.scale;
             const gap = (compact ? 1.0 : 2.0) * state.ppi;
+            // FIX: Use state.text.font
             const dObj = new fabric.Text(dateStr, { 
                 fontFamily: state.text.font, 
                 fontSize: dateSize, 
@@ -235,7 +240,6 @@ const CoverEngine = {
 
     _renderTextBlock: function(x, y, compact, isMag, state, verticalOrigin = 'center') {
         if(state.layout === 'graphic') return;
-        
         if(isMag) {
             let l1 = String(state.text.lines[0].text || "");
             let l2 = String(state.text.lines[1].text || "");
@@ -246,9 +250,10 @@ const CoverEngine = {
             let txt = txtParts.join("\n");
             
             const shadow = new fabric.Shadow({ color: 'rgba(0,0,0,0.15)', blur: 4, offsetX: 0, offsetY: 0 });
-            
+            // FIX: Use state.text.font (Allows changing Magazine font too, or keep Bodoni if desired)
+            // Assuming user wants to change it:
             this.canvas.add(new fabric.Text(txt, { 
-                fontFamily: state.text.font, 
+                fontFamily: state.text.font, // Using selected font
                 fontSize: 2.5 * state.ppi * state.text.scale, 
                 textAlign: 'center', 
                 lineHeight: 1.0, 
@@ -263,7 +268,6 @@ const CoverEngine = {
             }));
             return;
         }
-        
         const group = this._createTextBlockObj(compact, state); 
         group.set({ left: x, top: y, originY: verticalOrigin }); 
         this.canvas.add(group);
