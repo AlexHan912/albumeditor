@@ -46,15 +46,18 @@ function finishInit() {
     refresh();
 }
 
-// --- IMAGE PROCESSOR (Supports HEIC) ---
+// --- IMAGE PROCESSOR (HEIC FIX) ---
 function processAndResizeImage(file, maxSize, outputType, callback) {
-    // HEIC CHECK
+    // 1. HEIC Handling
     if (file.type === "image/heic" || file.name.toLowerCase().endsWith(".heic")) {
         if(window.heic2any) {
             heic2any({ blob: file, toType: "image/jpeg" })
                 .then((conversionResult) => {
-                    // Recursive call with new JPEG blob
-                    processAndResizeImage(conversionResult, maxSize, outputType, callback);
+                    // heic2any returns Blob or Blob[], handle array case
+                    const blob = Array.isArray(conversionResult) ? conversionResult[0] : conversionResult;
+                    // Create a File-like object to pass recursively (keeping name/type)
+                    const newFile = new File([blob], file.name.replace(/\.heic$/i, ".jpg"), { type: "image/jpeg" });
+                    processAndResizeImage(newFile, maxSize, outputType, callback);
                 })
                 .catch((e) => {
                     alert("Ошибка конвертации HEIC. Попробуйте JPG.");
@@ -117,6 +120,7 @@ window.setLayout = (l, btn) => {
     btn.classList.add('active');
     if (!isSameMode) state.images.main = null; 
     
+    // Reset Slot Size defaults based on layout
     if(l === 'magazine') { state.maskType = 'rect'; }
     else if(l === 'graphic') { state.maskType = 'rect'; state.slotSize = { w: 12, h: 12 }; }
     else { state.maskType = 'rect'; state.slotSize = { w: 6, h: 6 }; }
@@ -212,18 +216,29 @@ function initListeners() {
 
             processAndResizeImage(e.target.files[0], limit, type, (resizedUrl) => {
                 document.getElementById('galleryModal').classList.add('hidden'); 
+                
                 if (!userModifiedText && (state.layout === 'magazine' || state.layout === 'photo_text' || state.layout === 'graphic')) {
                     state.text.lines[0].text = ""; state.text.lines[1].text = "";
                     document.getElementById('inputLine1').value = ""; document.getElementById('inputLine2').value = "";
                 }
+
                 if(state.layout === 'graphic') {
                     state.images.main = { src: resizedUrl, natural: true };
                     refresh();
                 } else {
                     document.getElementById('cropperModal').classList.remove('hidden');
                     updateCropperUI();
-                    if (state.layout === 'magazine') CropperTool.start(resizedUrl, 1, 1, 'rect'); 
-                    else CropperTool.start(resizedUrl, state.slotSize.w, state.slotSize.h, state.maskType);
+                    
+                    // FIX: Force reset slot size to default 6x6 if in Photo+Text, to prevent shrinking loop
+                    if(state.layout === 'photo_text') {
+                        state.slotSize = { w: 6, h: 6 };
+                    }
+
+                    if (state.layout === 'magazine') {
+                        CropperTool.start(resizedUrl, 1, 1, 'rect'); 
+                    } else {
+                        CropperTool.start(resizedUrl, state.slotSize.w, state.slotSize.h, state.maskType);
+                    }
                 }
             });
         }
@@ -256,10 +271,12 @@ window.openGallery = (type, target) => {
     let db;
     if(type === 'symbols') {
         db = ASSETS_DB.symbols; galTitle.innerText = "Галерея символов";
-        upBtn.innerText = "Загрузить свой символ"; upBtn.onclick = () => document.getElementById('iconLoader').click();
+        upBtn.innerText = "Загрузить свой символ"; 
+        upBtn.onclick = () => document.getElementById('iconLoader').click();
     } else {
         db = ASSETS_DB.graphics; galTitle.innerText = "Галерея графики";
-        upBtn.innerText = "Загрузить свою графику"; upBtn.onclick = () => document.getElementById('imageLoader').click();
+        upBtn.innerText = "Загрузить свою графику"; 
+        upBtn.onclick = () => document.getElementById('imageLoader').click();
     }
     const tabs = document.getElementById('galleryTabs'); tabs.innerHTML = '';
     if(!db) return;
