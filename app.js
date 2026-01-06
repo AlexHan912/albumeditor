@@ -1,14 +1,9 @@
 /* app.js - UI Controller & State Management */
 
-// 1. Устанавливаем дефолтный текст сразу в State
 let state = {
     bookSize: 30, layout: 'text_icon', ppi: 10, slotSize: { w: 6, h: 6 }, maskType: 'rect',
     text: { 
-        lines: [ 
-            { text: "THE VISUAL DIARY", upper: true }, 
-            { text: "", upper: false }, 
-            { text: "", upper: false } 
-        ], 
+        lines: [ { text: "THE VISUAL DIARY", upper: true }, { text: "", upper: false }, { text: "", upper: false } ], 
         date: "", copyright: "", font: "Tenor Sans", color: "#1a1a1a", scale: 1.0 
     },
     coverColor: "#FFFFFF", images: { icon: null, main: null }, 
@@ -16,16 +11,13 @@ let state = {
     qr: { enabled: false, url: "" }
 };
 
-// Флаг: менял ли пользователь текст руками?
 let userModifiedText = false;
 
-// --- BOOTSTRAP ---
 window.onload = () => {
     CoverEngine.init('c');
     loadDefaultAssets();
     initColors();
     initListeners();
-    // Заполняем инпуты начальным значением
     document.getElementById('inputLine1').value = "THE VISUAL DIARY";
     setTimeout(refresh, 500);
 };
@@ -37,20 +29,13 @@ function refresh() {
 
 function loadDefaultAssets() {
     setTimeout(() => { document.getElementById('app-loader').style.opacity = '0'; setTimeout(() => document.getElementById('app-loader').style.display='none', 800); }, 1500);
-    
     const defaultPath = 'assets/symbols/love_heart.png';
     const defaultPreview = 'assets/symbols/love_heart_icon.png';
-
     CoverEngine.loadSimpleImage(defaultPath, (url) => {
         const final = url || defaultPreview;
         if(final) {
-            CoverEngine.loadSimpleImage(final, (valid) => { 
-                if(valid) state.images.icon = valid; 
-                finishInit(); 
-            });
-        } else {
-            finishInit();
-        }
+            CoverEngine.loadSimpleImage(final, (valid) => { if(valid) state.images.icon = valid; finishInit(); });
+        } else { finishInit(); }
     });
 }
 
@@ -61,24 +46,34 @@ function finishInit() {
     refresh();
 }
 
-// --- IMAGE OPTIMIZER ---
+// --- IMAGE PROCESSOR (Supports HEIC) ---
 function processAndResizeImage(file, maxSize, outputType, callback) {
+    // HEIC CHECK
+    if (file.type === "image/heic" || file.name.toLowerCase().endsWith(".heic")) {
+        if(window.heic2any) {
+            heic2any({ blob: file, toType: "image/jpeg" })
+                .then((conversionResult) => {
+                    // Recursive call with new JPEG blob
+                    processAndResizeImage(conversionResult, maxSize, outputType, callback);
+                })
+                .catch((e) => {
+                    alert("Ошибка конвертации HEIC. Попробуйте JPG.");
+                    console.error(e);
+                });
+            return;
+        }
+    }
+
     const reader = new FileReader();
     reader.onload = (event) => {
         const img = new Image();
         img.onload = () => {
             let width = img.width;
             let height = img.height;
-
-            if (width > height) {
-                if (width > maxSize) { height *= maxSize / width; width = maxSize; }
-            } else {
-                if (height > maxSize) { width *= maxSize / height; height = maxSize; }
-            }
-
+            if (width > height) { if (width > maxSize) { height *= maxSize / width; width = maxSize; } } 
+            else { if (height > maxSize) { width *= maxSize / height; height = maxSize; } }
             const canvas = document.createElement('canvas');
-            canvas.width = width;
-            canvas.height = height;
+            canvas.width = width; canvas.height = height;
             const ctx = canvas.getContext('2d');
             ctx.drawImage(img, 0, 0, width, height);
             callback(canvas.toDataURL(outputType, 0.9));
@@ -88,7 +83,6 @@ function processAndResizeImage(file, maxSize, outputType, callback) {
     reader.readAsDataURL(file);
 }
 
-// --- UI HELPERS ---
 function updateSymbolUI() {
     const btn = document.getElementById('globalSymbolBtn');
     if(state.images.icon) {
@@ -101,14 +95,10 @@ function updateSymbolUI() {
 
 function updateCropperUI() {
     const controls = document.querySelector('.crop-controls');
-    if (state.layout === 'magazine') {
-        controls.style.display = 'none'; 
-    } else {
-        controls.style.display = 'flex'; 
-    }
+    if (state.layout === 'magazine') controls.style.display = 'none'; 
+    else controls.style.display = 'flex'; 
 }
 
-// --- GLOBAL ACTIONS ---
 window.toggleCase = (i) => { state.text.lines[i-1].upper = !state.text.lines[i-1].upper; document.getElementById(`btnTt${i}`).classList.toggle('active'); refresh(); };
 window.showRow = (i) => document.getElementById(`row${i}`).classList.remove('hidden');
 window.hideRow = (i) => { document.getElementById(`row${i}`).classList.add('hidden'); document.getElementById(`inputLine${i}`).value = ''; state.text.lines[i-1].text = ''; refresh(); };
@@ -123,25 +113,13 @@ window.toggleSpinePart = (part) => {
 window.setLayout = (l, btn) => {
     const isSameMode = (state.layout === l);
     state.layout = l;
-    
     document.querySelectorAll('.layout-card').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
+    if (!isSameMode) state.images.main = null; 
     
-    if (!isSameMode) {
-        state.images.main = null; 
-    }
-    
-    if(l === 'magazine') {
-        state.maskType = 'rect';
-    }
-    else if(l === 'graphic') { 
-        state.maskType = 'rect'; 
-        state.slotSize = { w: 12, h: 12 }; 
-    }
-    else { 
-        state.maskType = 'rect'; 
-        state.slotSize = { w: 6, h: 6 }; 
-    }
+    if(l === 'magazine') { state.maskType = 'rect'; }
+    else if(l === 'graphic') { state.maskType = 'rect'; state.slotSize = { w: 12, h: 12 }; }
+    else { state.maskType = 'rect'; state.slotSize = { w: 6, h: 6 }; }
     refresh();
 };
 
@@ -156,25 +134,12 @@ window.setBookSize = (s, btn) => {
     state.bookSize = s; 
     document.querySelectorAll('.format-card').forEach(b => b.classList.remove('active'));
     btn.classList.add('active'); 
-    
-    if (state.layout === 'magazine') {
-        state.slotSize = { w: s, h: s };
-    }
-    
+    if (state.layout === 'magazine') state.slotSize = { w: s, h: s };
     refresh();
 };
 
-window.updateScaleFromSlider = (v) => { 
-    state.text.scale = CONFIG.scales[v-1]; 
-    refresh(); 
-};
-window.setScale = (s) => { 
-    const idx = CONFIG.scales.indexOf(s); 
-    if(idx > -1) { 
-        document.getElementById('textScale').value = idx+1; 
-        window.updateScaleFromSlider(idx+1); 
-    } 
-};
+window.updateScaleFromSlider = (v) => { state.text.scale = CONFIG.scales[v-1]; refresh(); };
+window.setScale = (s) => { const idx = CONFIG.scales.indexOf(s); if(idx > -1) { document.getElementById('textScale').value = idx+1; window.updateScaleFromSlider(idx+1); } };
 
 window.changeCollection = (name) => {
     const grid = document.getElementById('pairsGrid'); const custom = document.getElementById('customPickers');
@@ -206,7 +171,6 @@ window.triggerAssetLoader = () => {
     else document.getElementById('imageLoader').click();
 };
 
-// --- INITIALIZERS ---
 function initColors() {
     if(typeof DESIGNER_PALETTES !== 'undefined') changeCollection('Wedding Trends');
     document.getElementById('customCoverPicker').oninput = (e) => { state.coverColor = e.target.value; refresh(); };
@@ -217,9 +181,7 @@ function initListeners() {
     ['inputLine1','inputLine2','inputLine3','dateLine','copyrightInput'].forEach(id => {
         const el = document.getElementById(id);
         if(el) el.oninput = () => {
-            // Флаг: пользователь начал печатать
             userModifiedText = true;
-            
             if(id === 'inputLine1') state.text.lines[0].text = el.value;
             if(id === 'inputLine2') state.text.lines[1].text = el.value;
             if(id === 'inputLine3') state.text.lines[2].text = el.value;
@@ -250,27 +212,18 @@ function initListeners() {
 
             processAndResizeImage(e.target.files[0], limit, type, (resizedUrl) => {
                 document.getElementById('galleryModal').classList.add('hidden'); 
-                
-                // ЛОГИКА ОЧИСТКИ ТЕКСТА
-                // Если пользователь еще не менял текст и это одна из обложек с картинкой - очищаем заглушку
                 if (!userModifiedText && (state.layout === 'magazine' || state.layout === 'photo_text' || state.layout === 'graphic')) {
-                    state.text.lines[0].text = "";
-                    state.text.lines[1].text = "";
-                    document.getElementById('inputLine1').value = "";
-                    document.getElementById('inputLine2').value = "";
+                    state.text.lines[0].text = ""; state.text.lines[1].text = "";
+                    document.getElementById('inputLine1').value = ""; document.getElementById('inputLine2').value = "";
                 }
-
                 if(state.layout === 'graphic') {
                     state.images.main = { src: resizedUrl, natural: true };
                     refresh();
                 } else {
                     document.getElementById('cropperModal').classList.remove('hidden');
                     updateCropperUI();
-                    if (state.layout === 'magazine') {
-                        CropperTool.start(resizedUrl, 1, 1, 'rect'); 
-                    } else {
-                        CropperTool.start(resizedUrl, state.slotSize.w, state.slotSize.h, state.maskType);
-                    }
+                    if (state.layout === 'magazine') CropperTool.start(resizedUrl, 1, 1, 'rect'); 
+                    else CropperTool.start(resizedUrl, state.slotSize.w, state.slotSize.h, state.maskType);
                 }
             });
         }
@@ -292,33 +245,24 @@ function initListeners() {
     
     const rotBtn = document.getElementById('rotateBtn');
     if(rotBtn) { rotBtn.onclick = () => CropperTool.rotate(); }
-
     document.getElementById('cancelCropBtn').onclick = () => document.getElementById('cropperModal').classList.add('hidden');
 }
 
-// --- GALLERY ---
 window.openGallery = (type, target) => {
     document.getElementById('globalSymbolBtn').classList.remove('pulse-attention');
     document.getElementById('galleryModal').classList.remove('hidden');
     const upBtn = document.getElementById('galUploadBtn');
-    
     const galTitle = document.getElementById('galleryTitle');
     let db;
     if(type === 'symbols') {
-        db = ASSETS_DB.symbols;
-        galTitle.innerText = "Галерея символов";
-        upBtn.innerText = "Загрузить свой символ"; 
-        upBtn.onclick = () => document.getElementById('iconLoader').click();
+        db = ASSETS_DB.symbols; galTitle.innerText = "Галерея символов";
+        upBtn.innerText = "Загрузить свой символ"; upBtn.onclick = () => document.getElementById('iconLoader').click();
     } else {
-        db = ASSETS_DB.graphics;
-        galTitle.innerText = "Галерея графики";
-        upBtn.innerText = "Загрузить свою графику"; 
-        upBtn.onclick = () => document.getElementById('imageLoader').click();
+        db = ASSETS_DB.graphics; galTitle.innerText = "Галерея графики";
+        upBtn.innerText = "Загрузить свою графику"; upBtn.onclick = () => document.getElementById('imageLoader').click();
     }
-    
     const tabs = document.getElementById('galleryTabs'); tabs.innerHTML = '';
     if(!db) return;
-    
     Object.keys(db).forEach((cat, i) => {
         const t = document.createElement('div'); t.className = `gallery-tab ${i===0?'active':''}`; t.innerText = cat;
         t.onclick = () => { document.querySelectorAll('.gallery-tab').forEach(x=>x.classList.remove('active')); t.classList.add('active'); loadGal(type, cat, target); };
@@ -330,47 +274,27 @@ window.openGallery = (type, target) => {
 function loadGal(type, cat, target) {
     const grid = document.getElementById('galleryGrid'); grid.innerHTML = '';
     let files = (type === 'symbols' ? ASSETS_DB.symbols[cat] : ASSETS_DB.graphics[cat]) || [];
-    
     files.forEach(f => {
         const item = document.createElement('div'); item.className = 'gallery-item';
         const img = document.createElement('img');
-        
         const folder = (type === 'symbols') ? 'symbols' : 'graphics';
         const previewName = f.replace('.png', '_icon.png');
         const previewUrl = `assets/${folder}/${previewName}`;
         const printUrl = `assets/${folder}/${f}`;
-        
         img.src = previewUrl;
         img.onerror = () => { item.classList.add('broken-file'); item.title = "Ошибка: Нет файла иконки"; };
-
-        const checkPrint = new Image();
-        checkPrint.src = printUrl;
-        checkPrint.onerror = () => { item.classList.add('broken-file'); item.title = "Ошибка: Нет файла для печати"; };
-
         item.appendChild(img);
-        
         item.onclick = () => {
             if (item.classList.contains('broken-file')) { alert("Файл отсутствует."); return; }
-            
-            // Если это графика (не символ), тоже применяем логику очистки текста
             if(type === 'graphics' && !userModifiedText) {
-                state.text.lines[0].text = "";
-                state.text.lines[1].text = "";
-                document.getElementById('inputLine1').value = "";
-                document.getElementById('inputLine2').value = "";
+                state.text.lines[0].text = ""; state.text.lines[1].text = "";
+                document.getElementById('inputLine1').value = ""; document.getElementById('inputLine2').value = "";
             }
-
             CoverEngine.loadSimpleImage(printUrl, (final) => {
                 final = final || previewUrl;
                 document.getElementById('galleryModal').classList.add('hidden');
-                
-                if(target === 'global') { 
-                    state.images.icon = final; updateSymbolUI(); refresh(); 
-                }
-                else if(type === 'graphics') { 
-                    state.images.main = { src: final, natural: true }; 
-                    refresh(); 
-                }
+                if(target === 'global') { state.images.icon = final; updateSymbolUI(); refresh(); }
+                else if(type === 'graphics') { state.images.main = { src: final, natural: true }; refresh(); }
             });
         };
         grid.appendChild(item);
@@ -378,7 +302,6 @@ function loadGal(type, cat, target) {
 }
 window.closeGallery = () => document.getElementById('galleryModal').classList.add('hidden');
 window.handleGalleryUpload = () => {}; 
-
 window.openQRModal = () => document.getElementById('qrModal').classList.remove('hidden');
 window.applyQR = () => { state.qr.enabled = true; state.qr.url = document.getElementById('qrLinkInput').value; document.getElementById('qrModal').classList.add('hidden'); refresh(); };
 window.removeQR = () => { state.qr.enabled = false; document.getElementById('qrModal').classList.add('hidden'); refresh(); };
