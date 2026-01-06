@@ -4,7 +4,6 @@
 
 /* --- VARIABLES --- */
 :root { 
-    /* Основные цвета */
     --bg-canvas: #e0e0e0; 
     --bg-panel: #1a1a1a; 
     --text-panel: #e5e5e5; 
@@ -14,9 +13,9 @@
     --card-bg: #222; 
     --card-hover: #2a2a2a; 
 
-    /* --- НАСТРОЙКИ ГРАФИКИ (CONFIG) --- */
-    --graphic-max-size-cm: 12;   /* Если картинка больше этого размера (см) — уменьшаем её */
-    --graphic-offset-y-cm: 2;    /* На сколько см поднять картинку вверх от центра */
+    /* CONFIG */
+    --graphic-max-size-cm: 12;
+    --graphic-offset-y-cm: 2;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; outline: none; -webkit-tap-highlight-color: transparent; }
@@ -27,7 +26,7 @@ body { font-family: 'Tenor Sans', sans-serif; background-color: var(--bg-canvas)
 .canvas-container { box-shadow: 0 40px 100px rgba(0,0,0,0.4); border: none; background: #fff; margin: auto; transition: opacity 0.3s; }
 #controls { width: 400px; background: var(--bg-panel); color: var(--text-panel); padding: 30px; overflow-y: auto; display: flex; flex-direction: column; gap: 30px; box-shadow: -10px 0 30px rgba(0,0,0,0.2); z-index: 100; flex-shrink: 0; }
 
-/* --- TYPOGRAPHY & HEADERS --- */
+/* --- TYPOGRAPHY --- */
 h1 { font-family: 'Bodoni Moda', serif; font-size: 24px; color: #fff; letter-spacing: 3px; margin-bottom: 10px; text-align: center; font-weight: 400; }
 h2 { font-family: 'Bodoni Moda', serif; font-size: 13px; color: var(--accent-gold); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 12px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-top: 5px; }
 label { display: block; margin-bottom: 8px; font-size: 10px; font-weight: bold; color: #888; text-transform: uppercase; letter-spacing: 1px; }
@@ -51,51 +50,11 @@ label { display: block; margin-bottom: 8px; font-size: 10px; font-weight: bold; 
 .scale-label { font-size: 10px; color: #777; cursor: pointer; font-weight: bold; } .scale-label:hover { color: #ccc; }
 .scale-track { flex-grow: 1; margin: 0 10px; height: 2px; background: #444; position: relative; }
 
-/* --- СТИЛИЗАЦИЯ БЕГУНКА (RANGE SLIDER) --- */
-input[type=range] {
-    -webkit-appearance: none;
-    width: 100px; /* Фиксированная ширина */
-    background: transparent;
-    cursor: pointer;
-    margin: 0 0px;
-    
-    /* ГЛАВНОЕ ИЗМЕНЕНИЕ: Поднимаем весь элемент на 4px вверх */
-    transform: translateY(-13px); 
-}
-
-/* Линия (Track) */
-input[type=range]::-webkit-slider-runnable-track {
-    width: 100%;
-    height: 2px;
-    background: #555;
-    border-radius: 2px;
-    border: none;
-}
-
-/* Кружок (Thumb) - Chrome/Safari/Edge */
-input[type=range]::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    height: 16px; /* Увеличили размер */
-    width: 16px;  /* Увеличили размер */
-    border-radius: 50%;
-    background: #D4AF37; /* Золотой цвет */
-    cursor: pointer;
-    
-    /* Центрирование: (2px линия - 16px шар) / 2 = -7px */
-    margin-top: -7px; 
-    
-    box-shadow: 0 0 0 2px #1a1a1a; /* Обводка под цвет фона */
-}
-
-/* Кружок (Thumb) - Firefox */
-input[type=range]::-moz-range-thumb {
-    height: 16px;
-    width: 16px;
-    border: none;
-    border-radius: 50%;
-    background: #D4AF37;
-    cursor: pointer;
-}
+/* RANGE SLIDER */
+input[type=range] { -webkit-appearance: none; width: 100px; background: transparent; cursor: pointer; margin: 0 0px; transform: translateY(-13px); }
+input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 2px; background: #555; border-radius: 2px; border: none; }
+input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 16px; width: 16px; border-radius: 50%; background: #D4AF37; cursor: pointer; margin-top: -7px; box-shadow: 0 0 0 2px #1a1a1a; }
+input[type=range]::-moz-range-thumb { height: 16px; width: 16px; border: none; border-radius: 50%; background: #D4AF37; cursor: pointer; }
 
 /* Palette */
 .palette-selector { width: 100%; margin-bottom: 15px; }
@@ -110,17 +69,15 @@ input[type=range]::-moz-range-thumb {
 .layout-card:hover { border-color: #777; background: var(--card-hover); } 
 .layout-card.active { border-color: var(--accent-gold); box-shadow: 0 0 8px rgba(212, 175, 55, 0.2); }
 
-/* Layout Miniatures */
+/* Miniatures */
 .mini-group { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 100%; }
 .mini-line { width: 50%; height: 1px; background: #666; } .mini-line.short { width: 30%; }
 .mini-icon { font-size: 12px; color: #777; line-height: 1; margin: 4px 0; }
+.mini-graphic-symbol { font-size: 22px; color: #777; line-height: 1; font-weight: 100; margin-top: -2px; }
+.layout-card:hover .mini-graphic-symbol { color: #fff; }
 .mini-dashed-circle { width: 30px; height: 30px; border: 1px dashed #666; border-radius: 50%; display: grid; place-items: center; } .mini-dashed-circle::after { content: '+'; color: #666; font-size: 10px; }
 .mini-dashed-rect { width: 36px; height: 24px; border: 1px dashed #666; display: grid; place-items: center; } .mini-dashed-rect::after { content: '+'; color: #666; font-size: 10px; }
 .mini-mag-container { width: 100%; height: 100%; background: #333; display: flex; flex-direction: column; align-items: center; padding-top: 8px; } .mini-mag-title { width: 70%; height: 2px; background: #fff; margin-bottom: 2px; }
-
-/* Символ Графики */
-.mini-graphic-symbol { font-size: 22px; color: #777; line-height: 1; font-weight: 100; margin-top: -2px; }
-.layout-card:hover .mini-graphic-symbol { color: #fff; }
 
 /* Text & Tools */
 .text-row { display: flex; gap: 5px; margin-bottom: 8px; align-items: stretch; height: 38px; }
@@ -148,68 +105,31 @@ button.secondary { background: transparent; border: 1px solid #555; color: #ccc;
 .modal-header { font-family: 'Bodoni Moda', serif; color: #fff; text-align: center; font-size: 18px; position: relative; }
 .modal-close { position: absolute; right: 0; top: -5px; cursor: pointer; font-size: 20px; color: #777; } .modal-close:hover { color: #fff; }
 
-/* Gallery Specifics */
 .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 15px; overflow-y: auto; padding: 10px; min-height: 200px; }
-
-.gallery-item { 
-    aspect-ratio: 1; 
-    border: 1px solid #333; 
-    background: #222; 
-    display: flex; 
-    justify-content: center; 
-    align-items: center; 
-    cursor: pointer; 
-    transition: all 0.2s; 
-    padding: 10px; 
-    position: relative; 
-}
-
-.gallery-item img { 
-    max-width: 100%; 
-    max-height: 100%; 
-    object-fit: contain; 
-    filter: grayscale(1); 
-    pointer-events: none; 
-}
-
-.gallery-item:hover { 
-    border-color: var(--accent-gold); 
-    background: #2a2a2a; 
-} 
-.gallery-item:hover img { 
-    filter: grayscale(0); 
-    transform: scale(1.1); 
-}
-
-/* --- СТИЛЬ ОШИБКИ (BUG FIX MODE) --- */
-.gallery-item.broken-file {
-    border: 2px solid #ff0000 !important; 
-    opacity: 0.5;
-    cursor: not-allowed !important;
-}
-
-.gallery-item.broken-file::after {
-    content: 'MISSING';
-    position: absolute;
-    bottom: 5px;
-    left: 0;
-    width: 100%;
-    text-align: center;
-    background: rgba(255, 0, 0, 0.8);
-    color: white;
-    font-size: 10px;
-    font-weight: bold;
-    padding: 2px 0;
-}
+.gallery-item { aspect-ratio: 1; border: 1px solid #333; background: #222; display: flex; justify-content: center; align-items: center; cursor: pointer; transition: all 0.2s; padding: 10px; position: relative; }
+.gallery-item img { max-width: 100%; max-height: 100%; object-fit: contain; filter: grayscale(1); pointer-events: none; }
+.gallery-item:hover { border-color: var(--accent-gold); background: #2a2a2a; } .gallery-item:hover img { filter: grayscale(0); transform: scale(1.1); }
+.gallery-item.broken-file { border: 2px solid #ff0000 !important; opacity: 0.5; cursor: not-allowed !important; }
+.gallery-item.broken-file::after { content: 'MISSING'; position: absolute; bottom: 5px; left: 0; width: 100%; text-align: center; background: rgba(255, 0, 0, 0.8); color: white; font-size: 10px; font-weight: bold; padding: 2px 0; }
 
 .gallery-tabs { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 10px; border-bottom: 1px solid #333; }
 .gallery-tab { padding: 8px 15px; font-size: 11px; color: #888; cursor: pointer; border: 1px solid transparent; white-space: nowrap; }
 .gallery-tab.active { color: #fff; border: 1px solid var(--accent-gold); background: rgba(212, 175, 55, 0.1); }
 #galUploadBtn { background: transparent; border: none; color: #555; text-decoration: underline; font-size: 10px; cursor: pointer; padding: 5px; text-transform: none; letter-spacing: 0.5px; } #galUploadBtn:hover { color: #999; }
 
-/* Cropper Specifics */
-.crop-controls { display: flex; gap: 10px; justify-content: center; margin-bottom: 10px; }
-.crop-btn { padding: 5px 10px; font-size: 10px; background: #333; border: 1px solid #555; color: #ccc; cursor: pointer; } .crop-btn:hover { color: #fff; border-color: #fff; }
+/* CROPPER CONTROLS (ICONS) */
+.crop-controls { display: flex; gap: 15px; justify-content: center; margin-bottom: 20px; align-items: center; }
+.crop-btn { background: transparent; border: 1px solid #444; padding: 10px; cursor: pointer; transition: all 0.2s; border-radius: 4px; display: flex; align-items: center; justify-content: center; }
+.crop-btn:hover { border-color: #777; background: #222; }
+.crop-btn:focus { border-color: var(--accent-gold); }
+
+.crop-shape { border: 2px solid #ccc; box-sizing: border-box; }
+.crop-btn:hover .crop-shape { border-color: #fff; }
+.crop-shape.shape-sq { width: 20px; height: 20px; }
+.crop-shape.shape-v { width: 16px; height: 24px; }
+.crop-shape.shape-h { width: 24px; height: 16px; }
+.crop-shape.shape-c { width: 20px; height: 20px; border-radius: 50%; }
+
 .crop-area-wrapper { background: #000; padding: 10px; display: flex; justify-content: center; }
 .zoom-controls { color: #fff; font-size: 12px; display: flex; align-items: center; gap: 15px; } 
 
