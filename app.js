@@ -1,4 +1,4 @@
-/* app.js - UI Controller & State Management V80 */
+/* app.js - UI Controller & State Management V81 */
 
 let state = {
     bookSize: 30, layout: 'text_icon', ppi: 10, slotSize: { w: 6, h: 6 }, maskType: 'rect',
@@ -74,8 +74,6 @@ function finishInit() {
 // Random Color from Kinfolk
 function initColors() {
     const collectionName = 'Kinfolk - Cinema';
-    
-    // FIX V80: Set Dropdown Value
     const selector = document.getElementById('paletteSelector');
     if(selector) selector.value = collectionName;
 
@@ -99,7 +97,6 @@ function updateActionButtons() {
     btnGallery.classList.add('hidden');
     btnUpload.classList.add('hidden');
     
-    // Always show action buttons for relevant layouts (even if image exists)
     if (state.layout === 'graphic') btnGallery.classList.remove('hidden');
     else if (state.layout === 'photo_text' || state.layout === 'magazine') btnUpload.classList.remove('hidden');
 }
@@ -261,12 +258,12 @@ function initMobilePreview() {
     const container = document.getElementById('panzoomContainer');
     const closeBtn = document.getElementById('closePreviewBtn');
     
-    // FIX V80: Apply Panzoom to the container inside the wrapper
+    // FIX V81: Simple Panzoom configuration without containment
     if(window.Panzoom && container) {
         panzoomInstance = Panzoom(container, {
             maxScale: 4,
             minScale: 0.8,
-            contain: null, 
+            contain: null, // Allow free dragging
             canvas: true 
         });
         container.parentElement.addEventListener('wheel', panzoomInstance.zoomWithWheel);
@@ -278,8 +275,6 @@ function initMobilePreview() {
 
     document.getElementById('btnZoomIn').onclick = (e) => { e.stopPropagation(); panzoomInstance.zoomIn(); };
     document.getElementById('btnZoomOut').onclick = (e) => { e.stopPropagation(); panzoomInstance.zoomOut(); };
-    
-    // FIX V80: Reset Zoom AND Position to Center
     document.getElementById('btnZoomFit').onclick = (e) => { 
         e.stopPropagation(); 
         panzoomInstance.zoom(1, { animate: true });
@@ -296,21 +291,28 @@ function checkOrientation() {
         } else { closeMobilePreview(); }
     }
 }
+
+// FIX V81: Optimization for mobile memory
 window.openMobilePreview = () => {
     const modal = document.getElementById('mobilePreview');
     const img = document.getElementById('mobilePreviewImg');
-    const dataUrl = CoverEngine.canvas.toDataURL({ format: 'png', multiplier: 2.5 });
+    
+    // Lower resolution for mobile to prevent blank screens
+    const mult = window.innerWidth < 900 ? 1.5 : 2.5;
+    
+    const dataUrl = CoverEngine.canvas.toDataURL({ format: 'png', multiplier: mult });
     img.src = dataUrl;
     modal.classList.remove('hidden');
+    
     if(panzoomInstance) { 
         setTimeout(() => { 
             panzoomInstance.reset(); 
-            // Force Center on Open
             panzoomInstance.zoom(1, { animate: false });
             panzoomInstance.pan(0, 0, { animate: false });
         }, 50); 
     }
 };
+
 window.closeMobilePreview = () => { document.getElementById('mobilePreview').classList.add('hidden'); };
 function processAndResizeImage(file, maxSize, outputType, callback) {
     if (file.type === "image/heic" || file.name.toLowerCase().endsWith(".heic")) {
