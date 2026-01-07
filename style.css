@@ -214,3 +214,69 @@ button.secondary { background: transparent; border: 1px solid #555; color: #ccc;
     #fullscreenBtn { display: none; }
     #canvasActions { display: none; }
 }
+
+
+/* ... (ВСЕ ПРЕДЫДУЩИЕ ШРИФТЫ И БАЗОВЫЕ СТИЛИ ОСТАЮТСЯ) ... */
+
+/* ... */
+
+/* --- CANVAS ACTIONS (BOTTOM BUTTONS) --- */
+#canvasActions { position: absolute; bottom: 20px; left: 0; width: 100%; display: flex; justify-content: center; align-items: center; gap: 15px; z-index: 90; pointer-events: none; }
+.action-pill { pointer-events: auto; background: rgba(255, 255, 255, 0.9); border: 1px solid #ccc; color: #333; padding: 8px 16px; border-radius: 20px; font-size: 12px; text-transform: uppercase; font-weight: bold; box-shadow: 0 4px 10px rgba(0,0,0,0.15); transition: transform 0.2s, background 0.2s; cursor: pointer; font-family: 'Roboto', sans-serif; }
+.action-pill:hover { background: #fff; color: #000; transform: translateY(-2px); }
+.action-pill:active { transform: scale(0.95); }
+
+#fullscreenBtn { position: static; width: 36px; height: 36px; background: rgba(255, 255, 255, 0.9); border-radius: 50%; display: flex !important; justify-content: center; align-items: center; color: #333; box-shadow: 0 4px 10px rgba(0,0,0,0.15); cursor: pointer; pointer-events: auto; transition: transform 0.2s; }
+#fullscreenBtn:hover { background: #fff; transform: scale(1.1); }
+
+/* --- MOBILE PREVIEW (V78 ROTATION FIX) --- */
+#mobilePreview { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #111; z-index: 10000; display: flex; justify-content: center; align-items: center; overflow: hidden; touch-action: none; }
+
+/* Desktop/Default: NO ROTATION */
+#panzoomContainer { display: flex; justify-content: center; align-items: center; width: 100%; height: 100%; transform: none; cursor: grab; }
+#panzoomContainer:active { cursor: grabbing; }
+
+#mobilePreviewImg { max-width: 95%; max-height: 95%; object-fit: contain; box-shadow: 0 0 50px rgba(0,0,0,0.8); }
+
+.preview-toolbar { 
+    position: absolute; bottom: 20px; left: 0; width: 100%; 
+    display: flex; flex-direction: column; align-items: center; gap: 15px; 
+    pointer-events: none; 
+}
+
+.zoom-actions { display: flex; gap: 10px; background: rgba(0, 0, 0, 0.6); padding: 5px 10px; border-radius: 20px; backdrop-filter: blur(4px); pointer-events: auto; }
+.zoom-actions button { background: transparent; color: #fff; border: none; padding: 5px 10px; font-size: 14px; cursor: pointer; }
+.zoom-actions button:hover { color: var(--accent-gold); }
+
+#closePreviewBtn { pointer-events: auto; background: rgba(0, 0, 0, 0.6); border: 1px solid rgba(255, 255, 255, 0.5); color: #fff; padding: 10px 20px; border-radius: 30px; font-size: 12px; font-family: 'Roboto', sans-serif; backdrop-filter: blur(4px); cursor: pointer; text-transform: uppercase; }
+
+/* MOBILE MEDIA QUERY */
+@media (max-width: 900px) {
+    /* V78 FIX: Lower buttons further down */
+    #canvasActions { bottom: 5px; } 
+    
+    body.keyboard-open #workspace { display: none !important; }
+    body.keyboard-open #controls { height: 100vh; flex: 1; padding-bottom: 0; }
+}
+
+/* ONLY ROTATE ON MOBILE PORTRAIT */
+@media screen and (max-width: 900px) and (orientation: portrait) {
+    #panzoomContainer {
+        width: 100vh; height: 100vw;
+        transform: rotate(90deg);
+    }
+    .preview-toolbar {
+        transform: rotate(90deg);
+        /* Adjust positioning for rotated toolbar */
+        bottom: 50%; right: 10px; left: auto;
+        width: auto;
+        flex-direction: row-reverse;
+    }
+}
+
+/* LANDSCAPE MOBILE */
+@media screen and (orientation: landscape) and (max-height: 900px) {
+    .preview-toolbar { display: none !important; }
+    #fullscreenBtn { display: none; }
+    #canvasActions { display: none; }
+}
