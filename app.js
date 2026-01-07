@@ -12,14 +12,14 @@ let state = {
 };
 
 let userModifiedText = false;
-let panzoomInstance = null; // Для зума на мобильном
+let panzoomInstance = null; 
 
 window.onload = () => {
     CoverEngine.init('c');
     loadDefaultAssets();
     initColors();
     initListeners();
-    initMobilePreview(); // <--- НОВАЯ ФУНКЦИЯ
+    initMobilePreview(); // <--- Mobile Preview Init
     document.getElementById('inputLine1').value = "THE VISUAL DIARY";
     setTimeout(refresh, 500);
 };
@@ -48,44 +48,33 @@ function finishInit() {
     refresh();
 }
 
-// --- MOBILE PREVIEW LOGIC (UPDATED V60) ---
+// --- MOBILE PREVIEW LOGIC ---
 function initMobilePreview() {
     const modal = document.getElementById('mobilePreview');
     const container = document.getElementById('panzoomContainer');
 
-    // Инициализация Panzoom
     if(window.Panzoom && container) {
         panzoomInstance = Panzoom(container, {
-            maxScale: 4,
-            minScale: 0.8,
-            contain: 'outside'
+            maxScale: 4, minScale: 0.8, contain: 'outside'
         });
-        // Включаем зум колесиком (для тестов на ПК) и жесты
         container.parentElement.addEventListener('wheel', panzoomInstance.zoomWithWheel);
     }
-
-    // Закрытие по клику
     modal.addEventListener('click', () => {
         modal.classList.add('hidden');
     });
 }
 
-// Глобальная функция, которую вызывает CoverEngine при тапе
 window.openMobilePreview = () => {
-    // Проверка: работаем только на мобильных (< 900px)
-    if (window.innerWidth > 900) return;
+    if (window.innerWidth > 900) return; // Only mobile
 
     const modal = document.getElementById('mobilePreview');
     const img = document.getElementById('mobilePreviewImg');
     
-    // Генерируем картинку
-    // multiplier: 2 для хорошего качества на ретине
     const dataUrl = CoverEngine.canvas.toDataURL({ format: 'png', multiplier: 2.5 });
     img.src = dataUrl;
     
     modal.classList.remove('hidden');
     
-    // Сброс зума
     if(panzoomInstance) {
         setTimeout(() => {
             panzoomInstance.reset();
@@ -94,7 +83,7 @@ window.openMobilePreview = () => {
     }
 };
 
-// --- IMAGE PROCESSOR (HEIC FIX) ---
+// --- IMAGE PROCESSOR (HEIC) ---
 function processAndResizeImage(file, maxSize, outputType, callback) {
     if (file.type === "image/heic" || file.name.toLowerCase().endsWith(".heic")) {
         if(window.heic2any) {
@@ -105,7 +94,7 @@ function processAndResizeImage(file, maxSize, outputType, callback) {
                     processAndResizeImage(newFile, maxSize, outputType, callback);
                 })
                 .catch((e) => {
-                    alert("Ошибка конвертации HEIC.");
+                    alert("Ошибка конвертации HEIC. Попробуйте JPG.");
                     console.error(e);
                 });
             return;
