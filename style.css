@@ -1,4 +1,4 @@
-/* style.css - V87 Final Fix */
+/* style.css - V88 Final Clean */
 
 @font-face { font-family: 'Tenor Sans'; src: url('fonts/TenorSans.ttf') format('truetype'); font-weight: normal; font-style: normal; font-display: swap; }
 @font-face { font-family: 'Bodoni Moda'; src: url('fonts/BodoniModa.ttf') format('truetype'); font-weight: 400 900; font-style: normal; font-display: swap; }
@@ -12,7 +12,6 @@ body { font-family: 'Roboto', sans-serif; background-color: var(--bg-canvas); he
 .canvas-container { box-shadow: 0 40px 100px rgba(0,0,0,0.4); border: none; background: #fff; margin: auto; transition: opacity 0.3s; }
 #cropperModal .canvas-container { background: #111 !important; box-shadow: none; }
 
-/* FIX: ЖЕСТКАЯ ШИРИНА ПАНЕЛИ НА ПК */
 #controls { width: 400px; min-width: 400px; flex: 0 0 400px; background: var(--bg-panel); color: var(--text-panel); padding: 30px; overflow-y: auto; display: flex; flex-direction: column; gap: 30px; box-shadow: -10px 0 30px rgba(0,0,0,0.2); z-index: 100; }
 
 h1 { font-family: 'Bodoni Moda', serif; font-weight: 400; font-size: 24px; color: #fff; letter-spacing: 3px; margin-bottom: 10px; text-align: center; }
@@ -31,7 +30,6 @@ label { display: block; margin-bottom: 8px; font-size: 10px; font-weight: bold; 
 #fullscreenBtn { position: static; width: 36px; height: 36px; background: rgba(255, 255, 255, 0.9); border-radius: 50%; display: flex !important; justify-content: center; align-items: center; color: #333; box-shadow: 0 4px 10px rgba(0,0,0,0.15); cursor: pointer; pointer-events: auto; transition: transform 0.2s; }
 #fullscreenBtn:hover { background: #fff; transform: scale(1.1); }
 
-/* FIX: INPUT FIELDS */
 .text-row { display: flex; gap: 5px; margin-bottom: 8px; align-items: stretch; height: 38px; width: 100%; }
 .text-row input { margin-bottom: 0; flex-grow: 1; width: 0; min-width: 0; height: 100%; }
 .tool-btn { width: 38px; min-width: 38px; flex: 0 0 38px; height: 100%; border: 1px solid #444; background: var(--input-bg); color: #777; display: grid; place-items: center; cursor: pointer; transition: 0.2s; font-family: 'Roboto', sans-serif; font-size: 12px; }
@@ -59,7 +57,7 @@ button.secondary { background: transparent; border: 1px solid #555; color: #ccc;
 
 .typo-row { display: flex; gap: 15px; align-items: center; } .typo-col { flex: 1; display: flex; flex-direction: column; gap: 5px; }
 .scale-control { display: flex; justify-content: space-between; align-items: center; background: var(--input-bg); border: 1px solid var(--border-color); height: 38px; padding: 0 10px; border-radius: 2px; }
-.scale-label { font-size: 10px; color: #777; cursor: pointer; font-weight: bold; font-family: 'Roboto', sans-serif; } .scale-label:hover { color: #ccc; }
+.scale-label { font-size: 10px; color: #777; cursor: pointer; font-weight: bold; font-family: 'Roboto', sans-serif; } 
 .scale-track { flex-grow: 1; margin: 0 10px; height: 2px; background: #444; position: relative; }
 input[type=range] { -webkit-appearance: none; width: 100px; background: transparent; cursor: pointer; margin: 0 0px; transform: translateY(-13px); }
 input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 2px; background: #555; border-radius: 2px; border: none; }
