@@ -136,3 +136,47 @@ button.secondary { background: transparent; border: 1px solid #555; color: #ccc;
     #photoTrigger { width: 60px; height: 60px; font-size: 30px; }
     .modal-content { width: 95%; max-width: 95%; padding: 20px; max-height: 90vh; }
 }
+
+/* --- MOBILE PREVIEW (ROTATED) --- */
+#mobilePreview {
+    position: fixed;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    background: #000;
+    z-index: 10000; /* Поверх всего */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    touch-action: none; /* Важно для зума */
+}
+
+#panzoomContainer {
+    /* Контейнер будет повернут */
+    width: 100vh; /* Высота экрана становится шириной */
+    height: 100vw; /* Ширина экрана становится высотой */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transform: rotate(90deg);
+}
+
+#mobilePreviewImg {
+    max-width: 95%;
+    max-height: 95%;
+    object-fit: contain;
+    box-shadow: 0 0 50px rgba(0,0,0,0.8);
+}
+
+.preview-hint {
+    position: absolute;
+    bottom: 20px;
+    left: 0;
+    width: 100%;
+    text-align: center;
+    color: rgba(255,255,255,0.3);
+    font-size: 10px;
+    pointer-events: none;
+    transform: rotate(90deg); /* Тоже поворачиваем текст */
+    right: -45%; /* Центрирование повернутого текста сложное, подбираем */
+    bottom: 50%;
+}
