@@ -1,4 +1,4 @@
-/* app.js - UI Controller & State Management */
+/* app.js - UI Controller & State Management V61 */
 
 let state = {
     bookSize: 30, layout: 'text_icon', ppi: 10, slotSize: { w: 6, h: 6 }, maskType: 'rect',
@@ -19,11 +19,24 @@ window.onload = () => {
     loadDefaultAssets();
     initColors();
     initListeners();
-    initMobilePreview(); // <--- Mobile Preview Init
-    document.getElementById('inputLine1').value = "THE VISUAL DIARY";
-    setTimeout(refresh, 500);
+    initMobilePreview(); 
+    
+    // Set default text
+    const input1 = document.getElementById('inputLine1');
+    if (input1) input1.value = "THE VISUAL DIARY";
+    
+    setTimeout(() => {
+        refresh();
+        checkOrientation(); // Check orientation on load
+    }, 500);
 };
-window.addEventListener('resize', () => setTimeout(refresh, 100));
+
+window.addEventListener('resize', () => {
+    setTimeout(() => {
+        refresh();
+        checkOrientation();
+    }, 100);
+});
 
 function refresh() {
     CoverEngine.updateDimensions(document.getElementById('workspace'), state);
@@ -52,6 +65,7 @@ function finishInit() {
 function initMobilePreview() {
     const modal = document.getElementById('mobilePreview');
     const container = document.getElementById('panzoomContainer');
+    const closeBtn = document.getElementById('closePreviewBtn');
 
     if(window.Panzoom && container) {
         panzoomInstance = Panzoom(container, {
@@ -59,17 +73,40 @@ function initMobilePreview() {
         });
         container.parentElement.addEventListener('wheel', panzoomInstance.zoomWithWheel);
     }
-    modal.addEventListener('click', () => {
-        modal.classList.add('hidden');
-    });
+
+    // Close on button click
+    if (closeBtn) {
+        closeBtn.onclick = (e) => {
+            e.stopPropagation();
+            closeMobilePreview();
+        };
+    }
+}
+
+function checkOrientation() {
+    // Check if mobile device
+    const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 900;
+    
+    if (isMobileDevice) {
+        if (window.innerWidth > window.innerHeight) {
+            // Landscape -> Open Preview
+            if (document.getElementById('mobilePreview').classList.contains('hidden')) {
+                openMobilePreview();
+            }
+        } else {
+            // Portrait -> Close Preview
+            closeMobilePreview();
+        }
+    }
 }
 
 window.openMobilePreview = () => {
-    if (window.innerWidth > 900) return; // Only mobile
+    if (window.innerWidth > 1024 && window.innerHeight > 800) return; // Skip on desktop
 
     const modal = document.getElementById('mobilePreview');
     const img = document.getElementById('mobilePreviewImg');
     
+    // Generate high quality image
     const dataUrl = CoverEngine.canvas.toDataURL({ format: 'png', multiplier: 2.5 });
     img.src = dataUrl;
     
@@ -83,8 +120,13 @@ window.openMobilePreview = () => {
     }
 };
 
-// --- IMAGE PROCESSOR (HEIC) ---
+window.closeMobilePreview = () => {
+    document.getElementById('mobilePreview').classList.add('hidden');
+};
+
+// --- IMAGE PROCESSOR (HEIC Support) ---
 function processAndResizeImage(file, maxSize, outputType, callback) {
+    // HEIC Handling
     if (file.type === "image/heic" || file.name.toLowerCase().endsWith(".heic")) {
         if(window.heic2any) {
             heic2any({ blob: file, toType: "image/jpeg" })
@@ -135,6 +177,8 @@ function updateCropperUI() {
     if (state.layout === 'magazine') controls.style.display = 'none'; 
     else controls.style.display = 'flex'; 
 }
+
+// --- GLOBAL UI HANDLERS ---
 
 window.toggleCase = (i) => { state.text.lines[i-1].upper = !state.text.lines[i-1].upper; document.getElementById(`btnTt${i}`).classList.toggle('active'); refresh(); };
 window.showRow = (i) => document.getElementById(`row${i}`).classList.remove('hidden');
@@ -261,9 +305,17 @@ function initListeners() {
                 } else {
                     document.getElementById('cropperModal').classList.remove('hidden');
                     updateCropperUI();
-                    if(state.layout === 'photo_text') { state.slotSize = { w: 6, h: 6 }; }
-                    if (state.layout === 'magazine') { CropperTool.start(resizedUrl, 1, 1, 'rect'); } 
-                    else { CropperTool.start(resizedUrl, state.slotSize.w, state.slotSize.h, state.maskType); }
+                    
+                    // Force reset slot size to default if in Photo+Text
+                    if(state.layout === 'photo_text') {
+                        state.slotSize = { w: 6, h: 6 };
+                    }
+
+                    if (state.layout === 'magazine') {
+                        CropperTool.start(resizedUrl, 1, 1, 'rect'); 
+                    } else {
+                        CropperTool.start(resizedUrl, state.slotSize.w, state.slotSize.h, state.maskType);
+                    }
                 }
             });
         }
