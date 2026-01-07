@@ -1,4 +1,4 @@
-/* app.js - UI Controller & State Management V75 */
+/* app.js - UI Controller & State Management V76 */
 
 let state = {
     bookSize: 30, layout: 'text_icon', ppi: 10, slotSize: { w: 6, h: 6 }, maskType: 'rect',
@@ -71,7 +71,7 @@ function finishInit() {
     refresh();
 }
 
-// Random Color
+// Random Color from Kinfolk
 function initColors() {
     const collectionName = 'Kinfolk - Cinema';
     if(typeof DESIGNER_PALETTES !== 'undefined' && DESIGNER_PALETTES[collectionName]) {
@@ -139,9 +139,9 @@ function loadGal(type, cat, target) {
         item.appendChild(img);
         item.onclick = () => {
             if (item.classList.contains('broken-file')) { alert("Файл отсутствует."); return; }
+            // FIX V76: DO NOT CLEAR TEXT
             if(type === 'graphics' && !userModifiedText) {
-                state.text.lines[0].text = ""; state.text.lines[1].text = "";
-                document.getElementById('inputLine1').value = ""; document.getElementById('inputLine2').value = "";
+                // state.text.lines[0].text = ""; // REMOVED
             }
             CoverEngine.loadSimpleImage(printUrl, (final) => {
                 final = final || previewUrl;
@@ -223,10 +223,12 @@ function initListeners() {
 
             processAndResizeImage(e.target.files[0], limit, type, (resizedUrl) => {
                 document.getElementById('galleryModal').classList.add('hidden'); 
+                
+                // FIX V76: DO NOT CLEAR TEXT
                 if (!userModifiedText && (state.layout === 'magazine' || state.layout === 'photo_text' || state.layout === 'graphic')) {
-                    state.text.lines[0].text = ""; state.text.lines[1].text = "";
-                    document.getElementById('inputLine1').value = ""; document.getElementById('inputLine2').value = "";
+                    // state.text.lines[0].text = ""; // REMOVED
                 }
+
                 if(state.layout === 'graphic') {
                     state.images.main = { src: resizedUrl, natural: true };
                     refresh();
@@ -261,7 +263,7 @@ function initListeners() {
     document.getElementById('cancelCropBtn').onclick = () => document.getElementById('cropperModal').classList.add('hidden');
 }
 
-// FIX V75: Enable mouse drag on desktop
+// FIX V76: No constraints on panzoom
 function initMobilePreview() {
     const modal = document.getElementById('mobilePreview');
     const container = document.getElementById('panzoomContainer');
@@ -270,8 +272,8 @@ function initMobilePreview() {
         panzoomInstance = Panzoom(container, {
             maxScale: 4,
             minScale: 0.8,
-            contain: 'outside',
-            canvas: true // Enable mouse panning
+            contain: null, // Allow dragging anywhere
+            canvas: true 
         });
         container.parentElement.addEventListener('wheel', panzoomInstance.zoomWithWheel);
     }
@@ -290,7 +292,6 @@ function checkOrientation() {
     }
 }
 window.openMobilePreview = () => {
-    // V75: Allow on desktop too
     const modal = document.getElementById('mobilePreview');
     const img = document.getElementById('mobilePreviewImg');
     const dataUrl = CoverEngine.canvas.toDataURL({ format: 'png', multiplier: 2.5 });
