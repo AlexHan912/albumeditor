@@ -180,3 +180,87 @@ button.secondary { background: transparent; border: 1px solid #555; color: #ccc;
     right: -45%; /* Центрирование повернутого текста сложное, подбираем */
     bottom: 50%;
 }
+
+
+/* --- MOBILE PREVIEW STYLES (V61) --- */
+#mobilePreview {
+    position: fixed;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    background: #111;
+    z-index: 10000; /* Поверх всего */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    touch-action: none;
+}
+
+#panzoomContainer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    /* По умолчанию (для вертикального телефона) поворачиваем контейнер */
+    width: 100vh; 
+    height: 100vw;
+    transform: rotate(90deg);
+    transition: transform 0.3s;
+}
+
+#mobilePreviewImg {
+    max-width: 95%;
+    max-height: 95%;
+    object-fit: contain;
+    box-shadow: 0 0 50px rgba(0,0,0,0.8);
+}
+
+/* Кнопка возврата */
+#closePreviewBtn {
+    position: absolute;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 30px;
+    font-size: 14px;
+    font-family: 'Tenor Sans', sans-serif;
+    backdrop-filter: blur(5px);
+    cursor: pointer;
+    z-index: 10001;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.preview-hint {
+    position: absolute;
+    top: 50%;
+    right: 10px;
+    color: rgba(255,255,255,0.3);
+    font-size: 10px;
+    pointer-events: none;
+    transform: rotate(90deg);
+}
+
+/* --- ВАЖНО: Если телефон РЕАЛЬНО повернули (Landscape) --- */
+@media screen and (orientation: landscape) and (max-height: 900px) {
+    #panzoomContainer {
+        /* Убираем поворот, так как экран уже широкий */
+        transform: rotate(0deg); 
+        width: 100vw; 
+        height: 100vh; 
+    }
+    
+    .preview-hint {
+        display: none;
+    }
+    
+    /* Кнопку можно сдвинуть в угол, чтобы не мешала */
+    #closePreviewBtn {
+        bottom: 20px;
+        right: 20px;
+        left: auto;
+        transform: none;
+    }
+}
