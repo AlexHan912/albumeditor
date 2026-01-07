@@ -1,4 +1,4 @@
-/* cover-engine.js - Logic for Rendering & Cropping V69 (Recovery) */
+/* cover-engine.js - Logic for Rendering & Cropping V70 */
 
 const CONFIG = {
     dpi: 300, 
@@ -28,13 +28,15 @@ const CoverEngine = {
             }
         });
 
-        // Mobile Preview Tap
+        // Mobile Preview Handler
         this.canvas.on('mouse:up', (e) => {
-            // FIX: Ensure no interaction happened
             const isMobile = window.innerWidth <= 900;
             const hitInteractive = e.target && (e.target.isMain || e.target.isPlaceholder || e.target.isIcon);
+            
             if (isMobile && e.isClick && !hitInteractive) {
-                setTimeout(() => { if(window.openMobilePreview) window.openMobilePreview(); }, 100);
+                setTimeout(() => {
+                    if(window.openMobilePreview) window.openMobilePreview();
+                }, 100);
             }
         });
     },
@@ -50,7 +52,6 @@ const CoverEngine = {
         if(!container || container.clientWidth === 0) return;
         const isMobile = window.innerWidth < 900;
         const margin = isMobile ? 10 : 20; 
-        
         const curBookSize = parseFloat(state.bookSize);
         const curW = curBookSize * 2 + CONFIG.spineWidthCm; 
         const curH = curBookSize;
@@ -71,7 +72,6 @@ const CoverEngine = {
         }
 
         state.ppi = basePPI * CONFIG.renderScale;
-        
         this.canvas.setWidth(curW * state.ppi); 
         this.canvas.setHeight(curH * state.ppi);
         this.canvas.wrapperEl.style.width = `${curW * basePPI}px`; 
@@ -93,13 +93,11 @@ const CoverEngine = {
         const x2 = (bookSize + 1.5) * state.ppi;
         
         const c = { 
-            h: h, 
-            spineX: x1 + ((x2 - x1) / 2), 
+            h: h, spineX: x1 + ((x2 - x1) / 2), 
             frontCenter: x2 + (bookSize * state.ppi / 2), 
             backCenter: (bookSize * state.ppi) / 2, 
             bottomBase: h - (1.5 * state.ppi), 
-            centerY: h / 2, 
-            gap: 2.0 * state.ppi 
+            centerY: h / 2, gap: 2.0 * state.ppi 
         };
 
         this._drawGuides(x1, x2, h, state);
@@ -377,7 +375,8 @@ const CropperTool = {
         if(!this.canvas) {
             const size = Math.min(500, window.innerWidth - 40);
             this.canvas = new fabric.Canvas('cropCanvas', { 
-                width: size, height: size, backgroundColor: '#111', selection: false, preserveObjectStacking: true 
+                width: size, height: size, backgroundColor: '#111', selection: false,
+                preserveObjectStacking: true 
             });
             this.canvas.on('object:moving', (e) => {
                 if(e.target === this.tempImgObject) this.constrainImage(e.target);
@@ -477,7 +476,6 @@ const CropperTool = {
         this.canvas.getObjects().forEach(o => { 
             if(o !== this.tempImgObject) this.canvas.remove(o); 
         });
-        
         let aspect = slotW / slotH;
         let pW, pH;
         const maxSize = Math.min(400, this.canvas.width * 0.8);
