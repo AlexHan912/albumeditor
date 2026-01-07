@@ -1,4 +1,4 @@
-/* app.js - UI Controller & State Management V68 */
+/* app.js - UI Controller & State Management V69 */
 
 let state = {
     bookSize: 30, layout: 'text_icon', ppi: 10, slotSize: { w: 6, h: 6 }, maskType: 'rect',
@@ -61,29 +61,24 @@ function finishInit() {
     refresh();
 }
 
-// --- GALLERY LOGIC (FIXED) ---
+// --- GALLERY LOGIC (REVERTED TO FLAT STRUCTURE V69) ---
 window.openGallery = (type, target) => {
     document.getElementById('globalSymbolBtn').classList.remove('pulse-attention');
     document.getElementById('galleryModal').classList.remove('hidden');
     const upBtn = document.getElementById('galUploadBtn');
-    
     const galTitle = document.getElementById('galleryTitle');
     let db;
     if(type === 'symbols') {
-        db = ASSETS_DB.symbols;
-        galTitle.innerText = "Галерея символов";
+        db = ASSETS_DB.symbols; galTitle.innerText = "Галерея символов";
         upBtn.innerText = "Загрузить свой символ"; 
         upBtn.onclick = () => document.getElementById('iconLoader').click();
     } else {
-        db = ASSETS_DB.graphics;
-        galTitle.innerText = "Галерея графики";
+        db = ASSETS_DB.graphics; galTitle.innerText = "Галерея графики";
         upBtn.innerText = "Загрузить свою графику"; 
         upBtn.onclick = () => document.getElementById('imageLoader').click();
     }
-    
     const tabs = document.getElementById('galleryTabs'); tabs.innerHTML = '';
     if(!db) return;
-    
     Object.keys(db).forEach((cat, i) => {
         const t = document.createElement('div'); t.className = `gallery-tab ${i===0?'active':''}`; t.innerText = cat;
         t.onclick = () => { document.querySelectorAll('.gallery-tab').forEach(x=>x.classList.remove('active')); t.classList.add('active'); loadGal(type, cat, target); };
@@ -94,65 +89,51 @@ window.openGallery = (type, target) => {
 
 function loadGal(type, cat, target) {
     const grid = document.getElementById('galleryGrid'); grid.innerHTML = '';
-    
-    // Получаем файлы для категории
     let files = (type === 'symbols' ? ASSETS_DB.symbols[cat] : ASSETS_DB.graphics[cat]) || [];
     
-    // FIX V68: Восстановление путей
-    // 1. Папка типа: 'icons' или 'graphics' (вместо 'symbols')
-    const typeFolder = (type === 'symbols') ? 'icons' : 'graphics';
-    
-    // 2. Папка категории: берем первое слово из ключа (например "Love symbols" -> "love")
-    const catFolder = cat.split(' ')[0].toLowerCase();
+    // V69 FIX: ИСПОЛЬЗУЕМ СТАРУЮ СТРУКТУРУ ПАПОК (как в assets.js)
+    // type: 'symbols' или 'graphics'
+    const folder = (type === 'symbols') ? 'symbols' : 'graphics';
     
     files.forEach(f => {
         const item = document.createElement('div'); item.className = 'gallery-item';
         const img = document.createElement('img');
         
-        // 3. Формируем путь превью
         const previewName = f.replace('.png', '_icon.png');
-        const previewUrl = `assets/preview/${typeFolder}/${catFolder}/${f}`; 
-        
-        // 4. Формируем путь для печати
-        const printUrl = `assets/print/${typeFolder}/${catFolder}/${f}`;
+        const previewUrl = `assets/${folder}/${previewName}`;
+        const printUrl = `assets/${folder}/${f}`;
         
         img.src = previewUrl;
-        img.onerror = () => { 
-            // Fallback: пробуем старый путь, если новая структура еще не залита
-            img.src = `assets/${typeFolder}/${previewName}`; 
-            item.title = "Preview not found";
-        };
-
+        img.onerror = () => { item.classList.add('broken-file'); item.title = "Ошибка: Нет файла иконки"; };
+        const checkPrint = new Image();
+        checkPrint.src = printUrl;
+        checkPrint.onerror = () => { item.classList.add('broken-file'); item.title = "Ошибка: Нет файла для печати"; };
         item.appendChild(img);
-        
         item.onclick = () => {
+            if (item.classList.contains('broken-file')) { alert("Файл отсутствует."); return; }
             if(type === 'graphics' && !userModifiedText) {
                 state.text.lines[0].text = ""; state.text.lines[1].text = "";
                 document.getElementById('inputLine1').value = ""; document.getElementById('inputLine2').value = "";
             }
-
             CoverEngine.loadSimpleImage(printUrl, (final) => {
                 final = final || previewUrl;
                 document.getElementById('galleryModal').classList.add('hidden');
-                
-                if(target === 'global') { 
-                    state.images.icon = final; updateSymbolUI(); refresh(); 
-                }
-                else if(type === 'graphics') { 
-                    state.images.main = { src: final, natural: true }; 
-                    refresh(); 
-                }
+                if(target === 'global') { state.images.icon = final; updateSymbolUI(); refresh(); }
+                else if(type === 'graphics') { state.images.main = { src: final, natural: true }; refresh(); }
             });
         };
         grid.appendChild(item);
     });
 }
+window.closeGallery = () => document.getElementById('galleryModal').classList.add('hidden');
+window.handleGalleryUpload = () => {}; 
+window.openQRModal = () => document.getElementById('qrModal').classList.remove('hidden');
+window.applyQR = () => { state.qr.enabled = true; state.qr.url = document.getElementById('qrLinkInput').value; document.getElementById('qrModal').classList.add('hidden'); refresh(); };
+window.removeQR = () => { state.qr.enabled = false; document.getElementById('qrModal').classList.add('hidden'); refresh(); };
 
-// ... (Остальной код: initListeners, setCropMask и т.д. без изменений, они уже корректны в V67)
-// ... Только добавьте setCropMask ниже
+// ... (Остальные функции без изменений, но обязательно обновите setCropMask)
 
 function initListeners() {
-    // ... (стандартные слушатели) ...
     ['inputLine1','inputLine2','inputLine3','dateLine','copyrightInput'].forEach(id => {
         const el = document.getElementById(id);
         if(el) el.oninput = () => {
@@ -185,7 +166,7 @@ function initListeners() {
     
     document.getElementById('fontSelector').addEventListener('change', (e) => { state.text.font = e.target.value; refresh(); });
     document.getElementById('saveBtn').onclick = () => CoverEngine.download(state);
-    
+
     document.getElementById('iconLoader').onchange = (e) => { 
         if(e.target.files[0]) {
             processAndResizeImage(e.target.files[0], 500, 'image/png', (resizedUrl) => {
@@ -204,10 +185,12 @@ function initListeners() {
 
             processAndResizeImage(e.target.files[0], limit, type, (resizedUrl) => {
                 document.getElementById('galleryModal').classList.add('hidden'); 
+                
                 if (!userModifiedText && (state.layout === 'magazine' || state.layout === 'photo_text' || state.layout === 'graphic')) {
                     state.text.lines[0].text = ""; state.text.lines[1].text = "";
                     document.getElementById('inputLine1').value = ""; document.getElementById('inputLine2').value = "";
                 }
+
                 if(state.layout === 'graphic') {
                     state.images.main = { src: resizedUrl, natural: true };
                     refresh();
@@ -215,15 +198,22 @@ function initListeners() {
                     document.getElementById('cropperModal').classList.remove('hidden');
                     updateCropperUI();
                     
-                    if (state.layout === 'magazine') { CropperTool.start(resizedUrl, 1, 1, 'rect'); } 
-                    else { CropperTool.start(resizedUrl, state.slotSize.w, state.slotSize.h, state.maskType); }
+                    if(state.layout === 'photo_text') {
+                        state.slotSize = { w: 6, h: 6 };
+                    }
+
+                    if (state.layout === 'magazine') {
+                        CropperTool.start(resizedUrl, 1, 1, 'rect'); 
+                    } else {
+                        CropperTool.start(resizedUrl, state.slotSize.w, state.slotSize.h, state.maskType);
+                    }
                 }
             });
         }
         e.target.value = '';
     };
 
-    // FIX: Update state dimensions when mask is chosen
+    // FIX: Обновляем slotSize при клике на кнопки кроппера (6x4, 4x6 и т.д.)
     window.setCropMask = (w, h) => {
         if(w === 'circle') { 
             state.slotSize = { w: 6, h: 6 }; 
@@ -241,13 +231,14 @@ function initListeners() {
         refresh();
         document.getElementById('cropperModal').classList.add('hidden');
     };
+    
     const rotBtn = document.getElementById('rotateBtn');
     if(rotBtn) { rotBtn.onclick = () => CropperTool.rotate(); }
+
     document.getElementById('cancelCropBtn').onclick = () => document.getElementById('cropperModal').classList.add('hidden');
 }
 
-// ... (Mobile preview functions like initMobilePreview, checkOrientation etc.)
-// COPY THEM FROM V66 OR KEEP AS IS
+// ... Mobile Preview ...
 function initMobilePreview() {
     const modal = document.getElementById('mobilePreview');
     const container = document.getElementById('panzoomContainer');
@@ -314,8 +305,3 @@ function updateCropperUI() {
     const controls = document.querySelector('.crop-controls');
     if (state.layout === 'magazine') controls.style.display = 'none'; else controls.style.display = 'flex'; 
 }
-window.closeGallery = () => document.getElementById('galleryModal').classList.add('hidden');
-window.handleGalleryUpload = () => {}; 
-window.openQRModal = () => document.getElementById('qrModal').classList.remove('hidden');
-window.applyQR = () => { state.qr.enabled = true; state.qr.url = document.getElementById('qrLinkInput').value; document.getElementById('qrModal').classList.add('hidden'); refresh(); };
-window.removeQR = () => { state.qr.enabled = false; document.getElementById('qrModal').classList.add('hidden'); refresh(); };
