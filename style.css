@@ -229,3 +229,31 @@ button.secondary { background: transparent; border: 1px solid #555; color: #ccc;
     #mobilePreview { justify-content: center; align-items: center; }
     #closePreviewBtn { display: none !important; }
 }
+
+/* --- V75 FIXES --- */
+
+/* 1. DESKTOP PANZOOM CURSOR */
+#panzoomContainer {
+    cursor: grab; /* Рука для перетаскивания */
+}
+#panzoomContainer:active {
+    cursor: grabbing; /* Сжатая рука */
+}
+
+/* 2. MOBILE RETURN BUTTON POSITION */
+#closePreviewBtn {
+    bottom: 20px; /* Было 30px */
+    background: rgba(0, 0, 0, 0.6); /* Темный фон для контраста на белом корешке */
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    backdrop-filter: blur(4px);
+    transition: opacity 0.3s;
+}
+
+/* Скрываем кнопку, если пользователь не взаимодействует (опционально) */
+/* #mobilePreview.idle #closePreviewBtn { opacity: 0; } */
+
+/* 3. MOBILE KEYBOARD FIX */
+/* Убедимся, что input теряет фокус при нажатии Enter */
+input:focus {
+    outline: 2px solid var(--accent-gold); 
+}
