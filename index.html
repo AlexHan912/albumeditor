@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MALEVICH | Configurator V72</title>
+    <title>MALEVICH | Configurator V73</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
@@ -26,9 +26,7 @@
 
     <div id="workspace">
         <canvas id="c"></canvas>
-        
         <div id="photoTrigger" class="hidden" onclick="triggerAssetLoader()"></div>
-        
         <div id="fullscreenBtn" onclick="openMobilePreview()" title="На весь экран">
             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>
@@ -43,25 +41,25 @@
             <h2>1. Название Книги</h2>
             <div id="textBuilder">
                 <div class="text-row" id="row1">
-                    <input type="text" id="inputLine1" placeholder="THE VISUAL DIARY">
+                    <input type="text" id="inputLine1" value="THE VISUAL DIARY" placeholder="Название" enterkeyhint="done">
                     <div class="tool-btn" onclick="toggleCase(1)" id="btnTt1">Tt</div>
                     <div class="tool-btn" onclick="showRow(2)">+</div>
                 </div>
                 <div class="text-row hidden" id="row2">
-                    <input type="text" id="inputLine2" placeholder="Доп. строка">
+                    <input type="text" id="inputLine2" placeholder="Доп. строка" enterkeyhint="done">
                     <div class="tool-btn" onclick="toggleCase(2)" id="btnTt2">Tt</div>
                     <div class="tool-btn" onclick="showRow(3)">+</div>
                     <div class="tool-btn red" onclick="hideRow(2)">×</div>
                 </div>
                 <div class="text-row hidden" id="row3">
-                    <input type="text" id="inputLine3" placeholder="Доп. строка">
+                    <input type="text" id="inputLine3" placeholder="Доп. строка" enterkeyhint="done">
                     <div class="tool-btn" onclick="toggleCase(3)" id="btnTt3">Tt</div>
                     <div class="tool-btn red" onclick="hideRow(3)">×</div>
                 </div>
                 <label style="margin-top:10px;">Символ и Дата</label>
                 <div class="input-row-icon">
                     <div id="globalSymbolBtn" class="icon-trigger-btn pulse-attention" onclick="openGallery('symbols', 'global')"></div>
-                    <input type="text" id="dateLine" placeholder="2025 / Подпись" style="margin-bottom:0;">
+                    <input type="text" id="dateLine" value="2025" placeholder="2025 / Подпись" style="margin-bottom:0;" enterkeyhint="done">
                 </div>
             </div>
             <input type="file" id="imageLoader" hidden accept="image/*, .heic">
@@ -161,7 +159,7 @@
             <label>Копирайт / QR</label>
             <div class="input-row-icon">
                 <div id="qrBtn" class="icon-trigger-btn" style="font-size:12px;" onclick="openQRModal()">QR</div>
-                <input type="text" id="copyrightInput" value="" placeholder="Photo by..." style="margin-bottom:0;">
+                <input type="text" id="copyrightInput" value="" placeholder="Photo by..." style="margin-bottom:0;" enterkeyhint="done">
             </div>
         </div>
 
@@ -170,9 +168,7 @@
     </div>
 
     <div id="mobilePreview" class="hidden">
-        <div id="panzoomContainer">
-            <img id="mobilePreviewImg" src="" alt="Preview">
-        </div>
+        <div id="panzoomContainer"><img id="mobilePreviewImg" src="" alt="Preview"></div>
         <button id="closePreviewBtn">Вернуться в редактор</button>
         <div class="preview-hint">Свайп для зума</div>
     </div>
