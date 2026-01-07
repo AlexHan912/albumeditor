@@ -22,15 +22,9 @@ body { font-family: 'Roboto', sans-serif; background-color: var(--bg-canvas); he
 
 #controls { width: 400px; background: var(--bg-panel); color: var(--text-panel); padding: 30px; overflow-y: auto; display: flex; flex-direction: column; gap: 30px; box-shadow: -10px 0 30px rgba(0,0,0,0.2); z-index: 100; flex-shrink: 0; }
 
-/* FIX: MALEVICH Header - Bodoni */
 h1 { font-family: 'Bodoni Moda', serif; font-weight: 400; font-size: 24px; color: #fff; letter-spacing: 3px; margin-bottom: 10px; text-align: center; }
-/* H2 is Roboto */
 h2 { font-family: 'Roboto', sans-serif; font-weight: 500; font-size: 13px; color: var(--accent-gold); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 12px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-top: 5px; }
 label { display: block; margin-bottom: 8px; font-size: 10px; font-weight: bold; color: #888; text-transform: uppercase; letter-spacing: 1px; font-family: 'Roboto', sans-serif; }
-
-/* ... (ВЕСЬ ОСТАЛЬНОЙ CSS ОСТАВЛЯЕМ БЕЗ ИЗМЕНЕНИЙ ИЗ V72) ... */
-#fullscreenBtn { position: absolute; bottom: 15px; right: 15px; width: 36px; height: 36px; background: rgba(255, 255, 255, 0.9); border-radius: 4px; display: none; justify-content: center; align-items: center; color: #333; box-shadow: 0 2px 10px rgba(0,0,0,0.1); cursor: pointer; z-index: 90; transition: transform 0.2s; }
-#fullscreenBtn:active { transform: scale(0.95); background: #fff; }
 
 #photoTrigger { position: absolute; width: 50px; height: 50px; background: rgba(255,255,255,0.9); border-radius: 50%; display: flex; justify-content: center; align-items: center; color: #333; font-size: 24px; cursor: pointer; box-shadow: 0 0 0 0 rgba(255,255,255, 0.7); animation: pulse-white 2s infinite; z-index: 10; pointer-events: auto; transition: transform 0.2s; }
 #photoTrigger:hover { transform: scale(1.1); background: #fff; } #photoTrigger::after { content: '+'; }
@@ -80,7 +74,7 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 16px
 .icon-trigger-btn { width: 46px; border: 1px solid #444; background: var(--input-bg); display: grid; place-items: center; cursor: pointer; transition: 0.3s; color: #555; font-size: 18px; background-size: 60%; background-position: center; background-repeat: no-repeat; flex-shrink: 0; height: 100%; font-family: 'Roboto', sans-serif; }
 .icon-trigger-btn:hover { border-color: #777; color: #999; } .icon-trigger-btn.active { border-color: var(--accent-gold); } 
 select, input[type="text"] { font-family: 'Roboto', sans-serif; width: 100%; padding: 0 12px; margin-bottom: 15px; background: var(--input-bg); border: 1px solid var(--border-color); color: #fff; border-radius: 2px; font-size: 14px; transition: border 0.3s; height: 38px; line-height: 38px;}
-select:focus, input:focus { border-color: var(--accent-gold); }
+select:focus, input:focus { border-color: var(--accent-gold); outline: none; }
 button { background-color: #fff; color: #000; cursor: pointer; border: none; padding: 12px; font-weight: bold; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; transition: all 0.3s; font-family: 'Roboto', sans-serif; }
 button:hover { background-color: var(--accent-gold); color: #fff; }
 button.secondary { background: transparent; border: 1px solid #555; color: #ccc; } button.secondary:hover { border-color: #fff; color: #fff; background: transparent; }
@@ -127,13 +121,27 @@ button.secondary { background: transparent; border: 1px solid #555; color: #ccc;
 @keyframes glow { 0% { box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.4); border-color: #777; } 50% { box-shadow: 0 0 10px 0 rgba(212, 175, 55, 0.8); border-color: var(--accent-gold); } 100% { box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.4); border-color: #777; } }
 .pulse-attention { animation: glow 2s infinite; }
 
-/* MOBILE PREVIEW (ROTATED) */
+/* CANVAS ACTIONS (BOTTOM BUTTONS) */
+#canvasActions { position: absolute; bottom: 20px; left: 0; width: 100%; display: flex; justify-content: center; align-items: center; gap: 15px; z-index: 90; pointer-events: none; }
+.action-pill { pointer-events: auto; background: rgba(255, 255, 255, 0.9); border: 1px solid #ccc; color: #333; padding: 8px 16px; border-radius: 20px; font-size: 12px; text-transform: uppercase; font-weight: bold; box-shadow: 0 4px 10px rgba(0,0,0,0.15); transition: transform 0.2s, background 0.2s; cursor: pointer; font-family: 'Roboto', sans-serif; }
+/* FIX: Dark text on white background on hover */
+.action-pill:hover { background: #fff; color: #000; transform: translateY(-2px); }
+.action-pill:active { transform: scale(0.95); }
+
+#fullscreenBtn { position: static; width: 36px; height: 36px; background: rgba(255, 255, 255, 0.9); border-radius: 50%; display: flex !important; justify-content: center; align-items: center; color: #333; box-shadow: 0 4px 10px rgba(0,0,0,0.15); cursor: pointer; pointer-events: auto; transition: transform 0.2s; }
+#fullscreenBtn:hover { background: #fff; transform: scale(1.1); }
+
+/* DESKTOP PANZOOM */
+#panzoomContainer { cursor: grab; }
+#panzoomContainer:active { cursor: grabbing; }
+
+/* MOBILE PREVIEW */
 #mobilePreview { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #111; z-index: 10000; display: flex; justify-content: center; align-items: center; overflow: hidden; touch-action: none; }
 #panzoomContainer { display: flex; justify-content: center; align-items: center; width: 100vh; height: 100vw; transform: rotate(90deg); transition: transform 0.3s; }
 #mobilePreviewImg { max-width: 95%; max-height: 95%; object-fit: contain; box-shadow: 0 0 50px rgba(0,0,0,0.8); }
 
-#closePreviewBtn { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); background: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255, 255, 255, 0.3); color: #fff; padding: 10px 20px; border-radius: 30px; font-size: 14px; font-family: 'Roboto', sans-serif; backdrop-filter: blur(5px); cursor: pointer; z-index: 10001; text-transform: uppercase; letter-spacing: 1px; }
-.preview-hint { position: absolute; top: 50%; right: 10px; color: rgba(255,255,255,0.3); font-size: 10px; pointer-events: none; transform: rotate(90deg); }
+/* FIX: Button lowered to avoid spine */
+#closePreviewBtn { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); background: rgba(0, 0, 0, 0.6); border: 1px solid rgba(255, 255, 255, 0.5); color: #fff; padding: 10px 20px; border-radius: 30px; font-size: 14px; font-family: 'Roboto', sans-serif; backdrop-filter: blur(4px); cursor: pointer; z-index: 10001; text-transform: uppercase; letter-spacing: 1px; }
 
 /* MOBILE MEDIA QUERY */
 @media (max-width: 900px) {
@@ -143,7 +151,6 @@ button.secondary { background: transparent; border: 1px solid #555; color: #ccc;
     
     .layout-grid { grid-template-columns: repeat(3, 1fr); }
     .pairs-grid { grid-template-columns: repeat(6, 1fr); gap: 6px; }
-    
     .format-card { height: auto; }
     .layout-card { height: auto; aspect-ratio: 1; }
     
@@ -151,7 +158,7 @@ button.secondary { background: transparent; border: 1px solid #555; color: #ccc;
     #photoTrigger { width: 60px; height: 60px; font-size: 30px; }
     .modal-content { width: 95%; max-width: 95%; padding: 20px; max-height: 90vh; }
     
-    #fullscreenBtn { display: flex; }
+    #canvasActions { bottom: 15px; }
     
     body.keyboard-open #workspace { display: none !important; }
     body.keyboard-open #controls { height: 100vh; flex: 1; padding-bottom: 0; }
@@ -159,101 +166,7 @@ button.secondary { background: transparent; border: 1px solid #555; color: #ccc;
 
 @media screen and (orientation: landscape) and (max-height: 900px) {
     #panzoomContainer { transform: rotate(0deg); width: 100vw; height: 100vh; }
-    .preview-hint { display: none; }
     #closePreviewBtn { display: none !important; }
     #fullscreenBtn { display: none; }
-}
-
-
-/* --- CANVAS ACTIONS (NEW V74) --- */
-#canvasActions {
-    position: absolute;
-    bottom: 20px;
-    left: 0;
-    width: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 15px;
-    z-index: 90;
-    pointer-events: none; /* Пропускаем клики сквозь контейнер */
-}
-
-/* Кнопки действий (Загрузить / Галерея) */
-.action-pill {
-    pointer-events: auto;
-    background: rgba(255, 255, 255, 0.9);
-    border: 1px solid #ccc;
-    color: #333;
-    padding: 8px 16px;
-    border-radius: 20px;
-    font-size: 12px;
-    text-transform: uppercase;
-    font-weight: bold;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
-    transition: transform 0.2s, background 0.2s;
-    cursor: pointer;
-    font-family: 'Roboto', sans-serif;
-}
-
-.action-pill:hover { background: #fff; transform: translateY(-2px); }
-.action-pill:active { transform: scale(0.95); }
-
-/* Кнопка "На весь экран" (Теперь внутри canvasActions) */
-#fullscreenBtn {
-    position: static; /* Убираем absolute, теперь он в flex контейнере */
-    width: 36px; height: 36px;
-    background: rgba(255, 255, 255, 0.9);
-    border-radius: 50%; /* Круг */
-    display: flex !important; /* ВСЕГДА ПОКАЗЫВАТЬ (и на десктопе) */
-    justify-content: center; align-items: center;
-    color: #333;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
-    cursor: pointer;
-    pointer-events: auto;
-    transition: transform 0.2s;
-}
-#fullscreenBtn:hover { background: #fff; transform: scale(1.1); }
-
-/* MOBILE ADJUSTMENTS */
-@media (max-width: 900px) {
-    #canvasActions { bottom: 15px; }
-    /* Скрываем холст при открытой клавиатуре */
-    body.keyboard-open #workspace { display: none !important; }
-}
-
-/* LANDSCAPE PREVIEW CLEANUP */
-@media screen and (orientation: landscape) and (max-height: 900px) {
-    #panzoomContainer { transform: rotate(0deg); width: 100vw; height: 100vh; }
-    /* Центрирование */
-    #mobilePreview { justify-content: center; align-items: center; }
-    #closePreviewBtn { display: none !important; }
-}
-
-/* --- V75 FIXES --- */
-
-/* 1. DESKTOP PANZOOM CURSOR */
-#panzoomContainer {
-    cursor: grab; /* Рука для перетаскивания */
-}
-#panzoomContainer:active {
-    cursor: grabbing; /* Сжатая рука */
-}
-
-/* 2. MOBILE RETURN BUTTON POSITION */
-#closePreviewBtn {
-    bottom: 20px; /* Было 30px */
-    background: rgba(0, 0, 0, 0.6); /* Темный фон для контраста на белом корешке */
-    border: 1px solid rgba(255, 255, 255, 0.5);
-    backdrop-filter: blur(4px);
-    transition: opacity 0.3s;
-}
-
-/* Скрываем кнопку, если пользователь не взаимодействует (опционально) */
-/* #mobilePreview.idle #closePreviewBtn { opacity: 0; } */
-
-/* 3. MOBILE KEYBOARD FIX */
-/* Убедимся, что input теряет фокус при нажатии Enter */
-input:focus {
-    outline: 2px solid var(--accent-gold); 
+    #canvasActions { display: none; }
 }
