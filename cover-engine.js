@@ -1,4 +1,4 @@
-/* cover-engine.js - Logic for Rendering & Cropping V83 */
+/* cover-engine.js - Logic for Rendering & Cropping V78 */
 
 const CONFIG = {
     dpi: 300, 
@@ -28,8 +28,7 @@ const CoverEngine = {
         });
 
         this.canvas.on('mouse:up', (e) => {
-            // FIX: Mobile check
-            const isMobile = window.innerWidth < 1024;
+            const isMobile = window.innerWidth <= 900;
             const hitInteractive = e.target && (e.target.isMain || e.target.isPlaceholder || e.target.isIcon);
             
             if (isMobile && e.isClick && !hitInteractive) {
@@ -49,7 +48,7 @@ const CoverEngine = {
 
     updateDimensions: function(container, state) {
         if(!container || container.clientWidth === 0) return;
-        const isMobile = window.innerWidth < 1024;
+        const isMobile = window.innerWidth < 900;
         const margin = isMobile ? 10 : 20; 
         
         const curBookSize = parseFloat(state.bookSize);
@@ -59,9 +58,7 @@ const CoverEngine = {
         let basePPI;
         if (isMobile) {
             const safeW = container.clientWidth - (margin * 2);
-            // FIX V83: Reserve 80px height for bottom buttons on mobile
-            const safeH = container.clientHeight - (margin * 2) - 80; 
-            
+            const safeH = container.clientHeight - (margin * 2);
             basePPI = Math.min(safeW / curW, safeH / curH);
         } else {
             const MAX_REF_SIZE = 30; 
@@ -130,26 +127,13 @@ const CoverEngine = {
             const spineStr = parts.join("  •  ");
             let yPos = c.bottomBase; 
             if(state.spine.symbol && state.images.icon) yPos -= (1.8 * state.ppi);
-            
             const fontSize = CONFIG.typo.baseDetails * state.ppi; 
+            const textYPos = yPos - (0.5 * state.ppi); // Lift slightly
             
-            // FIX V83: Lift text significantly (1.5 ppi) to prevent clipping
-            const textYPos = yPos - (1.5 * state.ppi); 
-            
-            const textObj = new fabric.Text(spineStr, { 
-                fontFamily: 'Tenor Sans', 
-                fontSize: fontSize, 
-                fill: state.text.color, 
-                opacity: CONFIG.globalOpacity, 
-                originX: 'left', 
-                originY: 'center', 
-                left: c.spineX, 
-                top: textYPos, 
-                angle: -90, 
-                selectable: false,
-                letterSpacing: 100 
-            });
-            this.canvas.add(textObj);
+            this.canvas.add(new fabric.Text(spineStr, { 
+                fontFamily: 'Tenor Sans', fontSize: fontSize, fill: state.text.color, opacity: CONFIG.globalOpacity, 
+                originX: 'left', originY: 'center', left: c.spineX, top: textYPos, angle: -90, selectable: false, letterSpacing: 100 
+            }));
         }
     },
 
@@ -247,6 +231,7 @@ const CoverEngine = {
         this._placeImage(iconUrl, x, y, forcedSize || (2.0/1.6)*state.ppi*state.text.scale, { color: state.text.color, opacity: isGhost ? 0.3 : CONFIG.globalOpacity, isIcon: true, hoverCursor: 'pointer' });
     },
 
+    /* V78: NEW STYLE FOR PLACEHOLDER BUTTON (+ Circle with Shadow) */
     _renderImageSlot: function(x, y, state, customSize = null) {
         let w, h;
         if (customSize) { w = customSize.w; h = customSize.h; } 
@@ -258,20 +243,32 @@ const CoverEngine = {
         else shape = new fabric.Rect({ width: w, height: h, ...commonOpts });
         this.canvas.add(shape);
 
-        // V78: White Button Style
+        // White Circle Button (matches HTML button style)
         const btnRadius = 25 * (state.ppi / 30); 
         const btnShadow = new fabric.Shadow({ color: 'rgba(0,0,0,0.15)', blur: 10, offsetX: 0, offsetY: 4 });
         
         const btnCircle = new fabric.Circle({ 
-            radius: btnRadius, fill: '#ffffff', shadow: btnShadow,
-            originX: 'center', originY: 'center', left: x, top: y, selectable: false, evented: false 
+            radius: btnRadius, 
+            fill: '#ffffff', 
+            shadow: btnShadow,
+            originX: 'center', 
+            originY: 'center', 
+            left: x, 
+            top: y, 
+            selectable: false, 
+            evented: false 
         });
         this.canvas.add(btnCircle);
 
-        const plusSize = btnRadius * 0.6; const plusWidth = 2 * (state.ppi / 30); 
+        // Plus Icon
+        const plusSize = btnRadius * 0.6; 
+        const plusWidth = 2 * (state.ppi / 30); // Thin elegant plus
+        
         const vLine = new fabric.Rect({ width: plusWidth, height: plusSize, fill: '#333333', originX: 'center', originY: 'center', left: x, top: y, selectable: false, evented: false });
         const hLine = new fabric.Rect({ width: plusSize, height: plusWidth, fill: '#333333', originX: 'center', originY: 'center', left: x, top: y, selectable: false, evented: false });
-        this.canvas.add(vLine); this.canvas.add(hLine);
+        
+        this.canvas.add(vLine);
+        this.canvas.add(hLine);
     },
     
     _renderNaturalImage: function(x, y, state) {
