@@ -220,3 +220,17 @@ button.secondary { background: transparent; border: 1px solid #555; color: #ccc;
         padding-top: 40px; /* Отступ сверху */
     }
 }
+
+/* --- MOBILE KEYBOARD FIX (V65) --- */
+@media (max-width: 900px) {
+    /* Когда клавиатура открыта (класс добавляется JS) */
+    body.keyboard-open #workspace {
+        display: none !important; /* Скрываем обложку */
+    }
+    
+    body.keyboard-open #controls {
+        height: 100vh; /* Панель на весь экран */
+        flex: 1;
+        padding-bottom: 0;
+    }
+}
