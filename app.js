@@ -1,15 +1,10 @@
-/* app.js - UI Controller & State Management V73 */
+/* app.js - UI Controller & State Management V74 */
 
 let state = {
     bookSize: 30, layout: 'text_icon', ppi: 10, slotSize: { w: 6, h: 6 }, maskType: 'rect',
     text: { 
-        lines: [ 
-            { text: "THE VISUAL DIARY", upper: true }, // Default Line 1
-            { text: "", upper: false }, 
-            { text: "", upper: false } 
-        ], 
-        date: "2025", // Default Date
-        copyright: "", font: "Tenor Sans", color: "#1a1a1a", scale: 1.0 
+        lines: [ { text: "THE VISUAL DIARY", upper: true }, { text: "", upper: false }, { text: "", upper: false } ], 
+        date: "", copyright: "", font: "Tenor Sans", color: "#1a1a1a", scale: 1.0 
     },
     coverColor: "#FFFFFF", images: { icon: null, main: null }, 
     spine: { symbol: true, title: true, date: true },
@@ -22,39 +17,28 @@ let panzoomInstance = null;
 window.onload = () => {
     CoverEngine.init('c');
     loadDefaultAssets();
-    initColors();
+    
+    // 1. Установка текущего года
+    const currentYear = new Date().getFullYear().toString();
+    state.text.date = currentYear;
+    const dateInput = document.getElementById('dateLine');
+    if(dateInput) dateInput.value = currentYear;
+
+    initColors(); // Рандомный цвет внутри
     initListeners();
     initMobilePreview(); 
     
-    // Sync Buttons with State (Specifically Uppercase Button 1)
-    if(state.text.lines[0].upper) {
-        document.getElementById('btnTt1').classList.add('active');
-    }
+    const input1 = document.getElementById('inputLine1');
+    if (input1) input1.value = "THE VISUAL DIARY";
+    
+    if(state.text.lines[0].upper) document.getElementById('btnTt1').classList.add('active');
     
     setTimeout(() => {
         refresh();
         checkOrientation();
+        updateActionButtons(); // Обновить кнопки при старте
     }, 500);
 };
-
-// ... (Остальной код без изменений из V71, кроме initColors) ...
-
-// FIX: Default Color to Kinfolk
-function initColors() {
-    // Default Palette: Kinfolk - Cinema
-    if(typeof DESIGNER_PALETTES !== 'undefined') changeCollection('Kinfolk - Cinema');
-    
-    const bgPicker = document.getElementById('customCoverPicker');
-    const textPicker = document.getElementById('customTextPicker');
-    
-    if(bgPicker) bgPicker.oninput = (e) => { state.coverColor = e.target.value; refresh(); };
-    if(textPicker) textPicker.oninput = (e) => { state.text.color = e.target.value; updateSymbolUI(); refresh(); };
-}
-
-// ... (Все функции галереи, processAndResizeImage и т.д. остаются без изменений) ...
-
-// --- Copy the rest of app.js from V71, ensure initColors is replaced ---
-// Only pasting changed functions for brevity, but you should use the full file context.
 
 window.addEventListener('resize', () => {
     if (document.activeElement.tagName === 'INPUT') return;
@@ -87,29 +71,72 @@ function finishInit() {
     refresh();
 }
 
-// --- GALLERY LOGIC (FLAT STRUCTURE) ---
+// --- RANDOM COLOR LOGIC (V74) ---
+function initColors() {
+    // Выбираем коллекцию
+    const collectionName = 'Kinfolk - Cinema';
+    
+    if(typeof DESIGNER_PALETTES !== 'undefined' && DESIGNER_PALETTES[collectionName]) {
+        // Строим сетку кнопок
+        changeCollection(collectionName);
+        
+        // Выбираем случайный индекс
+        const palette = DESIGNER_PALETTES[collectionName];
+        const randomIdx = Math.floor(Math.random() * palette.length);
+        
+        // Находим кнопку в DOM и кликаем по ней
+        const btns = document.querySelectorAll('#pairsGrid .pair-btn');
+        if (btns[randomIdx]) {
+            btns[randomIdx].click();
+        }
+    }
+    
+    const bgPicker = document.getElementById('customCoverPicker');
+    const textPicker = document.getElementById('customTextPicker');
+    
+    if(bgPicker) bgPicker.oninput = (e) => { state.coverColor = e.target.value; refresh(); };
+    if(textPicker) textPicker.oninput = (e) => { state.text.color = e.target.value; updateSymbolUI(); refresh(); };
+}
+
+// --- ACTION BUTTONS LOGIC (V74) ---
+function updateActionButtons() {
+    const btnGallery = document.getElementById('btnActionGallery');
+    const btnUpload = document.getElementById('btnActionUpload');
+    
+    // Сначала скрываем обе
+    btnGallery.classList.add('hidden');
+    btnUpload.classList.add('hidden');
+    
+    // Если картинка уже есть - не показываем кнопки
+    if (state.images.main) return;
+
+    // Показываем в зависимости от макета
+    if (state.layout === 'graphic') {
+        btnGallery.classList.remove('hidden');
+    } 
+    else if (state.layout === 'photo_text' || state.layout === 'magazine') {
+        btnUpload.classList.remove('hidden');
+    }
+}
+
+// ... (Функции галереи без изменений) ...
 window.openGallery = (type, target) => {
     document.getElementById('globalSymbolBtn').classList.remove('pulse-attention');
     document.getElementById('galleryModal').classList.remove('hidden');
     const upBtn = document.getElementById('galUploadBtn');
-    
     const galTitle = document.getElementById('galleryTitle');
     let db;
     if(type === 'symbols') {
-        db = ASSETS_DB.symbols;
-        galTitle.innerText = "Галерея символов";
+        db = ASSETS_DB.symbols; galTitle.innerText = "Галерея символов";
         upBtn.innerText = "Загрузить свой символ"; 
         upBtn.onclick = () => document.getElementById('iconLoader').click();
     } else {
-        db = ASSETS_DB.graphics;
-        galTitle.innerText = "Галерея графики";
+        db = ASSETS_DB.graphics; galTitle.innerText = "Галерея графики";
         upBtn.innerText = "Загрузить свою графику"; 
         upBtn.onclick = () => document.getElementById('imageLoader').click();
     }
-    
     const tabs = document.getElementById('galleryTabs'); tabs.innerHTML = '';
     if(!db) return;
-    
     Object.keys(db).forEach((cat, i) => {
         const t = document.createElement('div'); t.className = `gallery-tab ${i===0?'active':''}`; t.innerText = cat;
         t.onclick = () => { document.querySelectorAll('.gallery-tab').forEach(x=>x.classList.remove('active')); t.classList.add('active'); loadGal(type, cat, target); };
@@ -141,13 +168,16 @@ function loadGal(type, cat, target) {
                 final = final || previewUrl;
                 document.getElementById('galleryModal').classList.add('hidden');
                 if(target === 'global') { state.images.icon = final; updateSymbolUI(); refresh(); }
-                else if(type === 'graphics') { state.images.main = { src: final, natural: true }; refresh(); }
+                else if(type === 'graphics') { 
+                    state.images.main = { src: final, natural: true }; 
+                    refresh(); 
+                    updateActionButtons(); // Скрыть кнопку
+                }
             });
         };
         grid.appendChild(item);
     });
 }
-
 window.closeGallery = () => document.getElementById('galleryModal').classList.add('hidden');
 window.handleGalleryUpload = () => {}; 
 window.openQRModal = () => document.getElementById('qrModal').classList.remove('hidden');
@@ -213,6 +243,7 @@ function initListeners() {
                 if(state.layout === 'graphic') {
                     state.images.main = { src: resizedUrl, natural: true };
                     refresh();
+                    updateActionButtons();
                 } else {
                     document.getElementById('cropperModal').classList.remove('hidden');
                     updateCropperUI();
@@ -236,6 +267,7 @@ function initListeners() {
         state.images.main = CropperTool.apply();
         refresh();
         document.getElementById('cropperModal').classList.add('hidden');
+        updateActionButtons(); // Скрыть кнопку после применения
     };
     const rotBtn = document.getElementById('rotateBtn');
     if(rotBtn) { rotBtn.onclick = () => CropperTool.rotate(); }
@@ -264,7 +296,7 @@ function checkOrientation() {
     }
 }
 window.openMobilePreview = () => {
-    if (window.innerWidth > 1024 && window.innerHeight > 800) return; 
+    // В V74 убираем ограничение > 1024, чтобы работало и на ПК
     const modal = document.getElementById('mobilePreview');
     const img = document.getElementById('mobilePreviewImg');
     const dataUrl = CoverEngine.canvas.toDataURL({ format: 'png', multiplier: 2.5 });
@@ -312,7 +344,18 @@ window.toggleCase = (i) => { state.text.lines[i-1].upper = !state.text.lines[i-1
 window.showRow = (i) => document.getElementById(`row${i}`).classList.remove('hidden');
 window.hideRow = (i) => { document.getElementById(`row${i}`).classList.add('hidden'); document.getElementById(`inputLine${i}`).value = ''; state.text.lines[i-1].text = ''; refresh(); };
 window.toggleSpinePart = (part) => { state.spine[part] = !state.spine[part]; document.getElementById('btnSpine'+part.charAt(0).toUpperCase()+part.slice(1)).classList.toggle('active', state.spine[part]); refresh(); };
-window.setLayout = (l, btn) => { const isSame = state.layout===l; state.layout=l; document.querySelectorAll('.layout-card').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); if(!isSame) state.images.main=null; if(l==='magazine') state.maskType='rect'; else if(l==='graphic') { state.maskType='rect'; state.slotSize={w:12,h:12}; } else { state.maskType='rect'; state.slotSize={w:6,h:6}; } refresh(); };
+window.setLayout = (l, btn) => { 
+    const isSame = state.layout===l; 
+    state.layout=l; 
+    document.querySelectorAll('.layout-card').forEach(b=>b.classList.remove('active')); 
+    btn.classList.add('active'); 
+    if(!isSame) state.images.main=null; 
+    if(l==='magazine') state.maskType='rect'; 
+    else if(l==='graphic') { state.maskType='rect'; state.slotSize={w:12,h:12}; } 
+    else { state.maskType='rect'; state.slotSize={w:6,h:6}; } 
+    refresh(); 
+    updateActionButtons(); // Update buttons when layout changes
+};
 window.handleCanvasClick = (objType) => { if (objType === 'mainImage' || objType === 'placeholder') { if (state.layout === 'graphic') openGallery('graphics', 'main'); else if (state.layout === 'photo_text' || state.layout === 'magazine') document.getElementById('imageLoader').click(); } };
 window.setBookSize = (s, btn) => { state.bookSize = s; document.querySelectorAll('.format-card').forEach(b => b.classList.remove('active')); btn.classList.add('active'); if (state.layout === 'magazine') state.slotSize = { w: s, h: s }; refresh(); };
 window.updateScaleFromSlider = (v) => { state.text.scale = CONFIG.scales[v-1]; refresh(); };
