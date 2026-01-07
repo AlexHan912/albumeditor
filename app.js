@@ -1,4 +1,7 @@
-/* app.js - UI Controller & State Management V81 */
+/* app.js - UI Controller & State Management V82 */
+
+// ... (ВЕСЬ КОД В НАЧАЛЕ ФАЙЛА БЕЗ ИЗМЕНЕНИЙ, КОПИРУЙТЕ ИЗ V81) ...
+// Только найдите функцию checkOrientation и listeners, где было < 900
 
 let state = {
     bookSize: 30, layout: 'text_icon', ppi: 10, slotSize: { w: 6, h: 6 }, maskType: 'rect',
@@ -18,7 +21,6 @@ window.onload = () => {
     CoverEngine.init('c');
     loadDefaultAssets();
     
-    // Auto Year
     const currentYear = new Date().getFullYear().toString();
     state.text.date = currentYear;
     const dateInput = document.getElementById('dateLine');
@@ -71,7 +73,6 @@ function finishInit() {
     refresh();
 }
 
-// Random Color from Kinfolk
 function initColors() {
     const collectionName = 'Kinfolk - Cinema';
     const selector = document.getElementById('paletteSelector');
@@ -96,7 +97,6 @@ function updateActionButtons() {
     const btnUpload = document.getElementById('btnActionUpload');
     btnGallery.classList.add('hidden');
     btnUpload.classList.add('hidden');
-    
     if (state.layout === 'graphic') btnGallery.classList.remove('hidden');
     else if (state.layout === 'photo_text' || state.layout === 'magazine') btnUpload.classList.remove('hidden');
 }
@@ -171,21 +171,19 @@ function initListeners() {
         };
 
         el.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                el.blur();
-            }
+            if (e.key === 'Enter') { e.preventDefault(); el.blur(); }
         });
 
         el.addEventListener('focus', () => {
-            if (window.innerWidth < 900) {
+            // FIX V82: Use 1024
+            if (window.innerWidth < 1024) {
                 document.body.classList.add('keyboard-open');
                 setTimeout(() => { el.scrollIntoView({ behavior: "smooth", block: "center" }); }, 300); 
             }
         });
 
         el.addEventListener('blur', () => {
-            if (window.innerWidth < 900) {
+            if (window.innerWidth < 1024) {
                 setTimeout(() => {
                     if (document.activeElement.tagName !== 'INPUT') {
                         document.body.classList.remove('keyboard-open');
@@ -203,27 +201,19 @@ function initListeners() {
     document.getElementById('iconLoader').onchange = (e) => { 
         if(e.target.files[0]) {
             processAndResizeImage(e.target.files[0], 500, 'image/png', (resizedUrl) => {
-                state.images.icon = resizedUrl; 
-                updateSymbolUI(); refresh(); 
-                document.getElementById('galleryModal').classList.add('hidden'); 
+                state.images.icon = resizedUrl; updateSymbolUI(); refresh(); document.getElementById('galleryModal').classList.add('hidden'); 
             });
         }
     };
     
     document.getElementById('imageLoader').onchange = (e) => {
         if(e.target.files[0]) {
-            let limit = 2500;
-            let type = 'image/jpeg';
+            let limit = 2500; let type = 'image/jpeg';
             if (state.layout === 'graphic') { limit = 1417; type = 'image/png'; }
-
             processAndResizeImage(e.target.files[0], limit, type, (resizedUrl) => {
                 document.getElementById('galleryModal').classList.add('hidden'); 
-                
-                if(state.layout === 'graphic') {
-                    state.images.main = { src: resizedUrl, natural: true };
-                    refresh();
-                    updateActionButtons();
-                } else {
+                if(state.layout === 'graphic') { state.images.main = { src: resizedUrl, natural: true }; refresh(); updateActionButtons(); } 
+                else {
                     document.getElementById('cropperModal').classList.remove('hidden');
                     updateCropperUI();
                     if(state.layout === 'photo_text') { state.slotSize = { w: 6, h: 6 }; }
@@ -243,10 +233,7 @@ function initListeners() {
     };
     
     document.getElementById('applyCropBtn').onclick = () => {
-        state.images.main = CropperTool.apply();
-        refresh();
-        document.getElementById('cropperModal').classList.add('hidden');
-        updateActionButtons();
+        state.images.main = CropperTool.apply(); refresh(); document.getElementById('cropperModal').classList.add('hidden'); updateActionButtons();
     };
     const rotBtn = document.getElementById('rotateBtn');
     if(rotBtn) { rotBtn.onclick = () => CropperTool.rotate(); }
@@ -257,34 +244,20 @@ function initMobilePreview() {
     const modal = document.getElementById('mobilePreview');
     const container = document.getElementById('panzoomContainer');
     const closeBtn = document.getElementById('closePreviewBtn');
-    
-    // FIX V81: Simple Panzoom configuration without containment
     if(window.Panzoom && container) {
-        panzoomInstance = Panzoom(container, {
-            maxScale: 4,
-            minScale: 0.8,
-            contain: null, // Allow free dragging
-            canvas: true 
-        });
+        panzoomInstance = Panzoom(container, { maxScale: 4, minScale: 0.8, contain: null, canvas: true });
         container.parentElement.addEventListener('wheel', panzoomInstance.zoomWithWheel);
     }
-    
-    if (closeBtn) {
-        closeBtn.onclick = (e) => { e.stopPropagation(); closeMobilePreview(); };
-    }
-
+    if (closeBtn) { closeBtn.onclick = (e) => { e.stopPropagation(); closeMobilePreview(); }; }
     document.getElementById('btnZoomIn').onclick = (e) => { e.stopPropagation(); panzoomInstance.zoomIn(); };
     document.getElementById('btnZoomOut').onclick = (e) => { e.stopPropagation(); panzoomInstance.zoomOut(); };
-    document.getElementById('btnZoomFit').onclick = (e) => { 
-        e.stopPropagation(); 
-        panzoomInstance.zoom(1, { animate: true });
-        panzoomInstance.pan(0, 0, { animate: true });
-    };
+    document.getElementById('btnZoomFit').onclick = (e) => { e.stopPropagation(); panzoomInstance.zoom(1, { animate: true }); panzoomInstance.pan(0, 0, { animate: true }); };
 }
 
 function checkOrientation() {
     if (document.activeElement.tagName === 'INPUT' || document.body.classList.contains('keyboard-open')) return;
-    const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 900;
+    // FIX V82: Use 1024
+    const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 1024;
     if (isMobileDevice) {
         if (window.innerWidth > window.innerHeight) {
             if (document.getElementById('mobilePreview').classList.contains('hidden')) openMobilePreview();
@@ -292,27 +265,16 @@ function checkOrientation() {
     }
 }
 
-// FIX V81: Optimization for mobile memory
 window.openMobilePreview = () => {
     const modal = document.getElementById('mobilePreview');
     const img = document.getElementById('mobilePreviewImg');
-    
-    // Lower resolution for mobile to prevent blank screens
-    const mult = window.innerWidth < 900 ? 1.5 : 2.5;
-    
+    // Use 1024 for check
+    const mult = window.innerWidth < 1024 ? 1.5 : 2.5;
     const dataUrl = CoverEngine.canvas.toDataURL({ format: 'png', multiplier: mult });
     img.src = dataUrl;
     modal.classList.remove('hidden');
-    
-    if(panzoomInstance) { 
-        setTimeout(() => { 
-            panzoomInstance.reset(); 
-            panzoomInstance.zoom(1, { animate: false });
-            panzoomInstance.pan(0, 0, { animate: false });
-        }, 50); 
-    }
+    if(panzoomInstance) { setTimeout(() => { panzoomInstance.reset(); panzoomInstance.zoom(1, { animate: false }); panzoomInstance.pan(0, 0, { animate: false }); }, 50); }
 };
-
 window.closeMobilePreview = () => { document.getElementById('mobilePreview').classList.add('hidden'); };
 function processAndResizeImage(file, maxSize, outputType, callback) {
     if (file.type === "image/heic" || file.name.toLowerCase().endsWith(".heic")) {
