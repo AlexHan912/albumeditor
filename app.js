@@ -1,4 +1,4 @@
-/* app.js - UI Controller & State Management V69 */
+/* app.js - UI Controller & State Management V70 */
 
 let state = {
     bookSize: 30, layout: 'text_icon', ppi: 10, slotSize: { w: 6, h: 6 }, maskType: 'rect',
@@ -61,24 +61,29 @@ function finishInit() {
     refresh();
 }
 
-// --- GALLERY LOGIC (REVERTED TO FLAT STRUCTURE V69) ---
+// --- GALLERY LOGIC (REVERTED TO FLAT STRUCTURE V70) ---
 window.openGallery = (type, target) => {
     document.getElementById('globalSymbolBtn').classList.remove('pulse-attention');
     document.getElementById('galleryModal').classList.remove('hidden');
     const upBtn = document.getElementById('galUploadBtn');
+    
     const galTitle = document.getElementById('galleryTitle');
     let db;
     if(type === 'symbols') {
-        db = ASSETS_DB.symbols; galTitle.innerText = "Галерея символов";
+        db = ASSETS_DB.symbols;
+        galTitle.innerText = "Галерея символов";
         upBtn.innerText = "Загрузить свой символ"; 
         upBtn.onclick = () => document.getElementById('iconLoader').click();
     } else {
-        db = ASSETS_DB.graphics; galTitle.innerText = "Галерея графики";
+        db = ASSETS_DB.graphics;
+        galTitle.innerText = "Галерея графики";
         upBtn.innerText = "Загрузить свою графику"; 
         upBtn.onclick = () => document.getElementById('imageLoader').click();
     }
+    
     const tabs = document.getElementById('galleryTabs'); tabs.innerHTML = '';
     if(!db) return;
+    
     Object.keys(db).forEach((cat, i) => {
         const t = document.createElement('div'); t.className = `gallery-tab ${i===0?'active':''}`; t.innerText = cat;
         t.onclick = () => { document.querySelectorAll('.gallery-tab').forEach(x=>x.classList.remove('active')); t.classList.add('active'); loadGal(type, cat, target); };
@@ -91,8 +96,7 @@ function loadGal(type, cat, target) {
     const grid = document.getElementById('galleryGrid'); grid.innerHTML = '';
     let files = (type === 'symbols' ? ASSETS_DB.symbols[cat] : ASSETS_DB.graphics[cat]) || [];
     
-    // V69 FIX: ИСПОЛЬЗУЕМ СТАРУЮ СТРУКТУРУ ПАПОК (как в assets.js)
-    // type: 'symbols' или 'graphics'
+    // V70 FIX: Use simple paths
     const folder = (type === 'symbols') ? 'symbols' : 'graphics';
     
     files.forEach(f => {
@@ -105,21 +109,34 @@ function loadGal(type, cat, target) {
         
         img.src = previewUrl;
         img.onerror = () => { item.classList.add('broken-file'); item.title = "Ошибка: Нет файла иконки"; };
+
         const checkPrint = new Image();
         checkPrint.src = printUrl;
         checkPrint.onerror = () => { item.classList.add('broken-file'); item.title = "Ошибка: Нет файла для печати"; };
+
         item.appendChild(img);
+        
         item.onclick = () => {
             if (item.classList.contains('broken-file')) { alert("Файл отсутствует."); return; }
+            
             if(type === 'graphics' && !userModifiedText) {
-                state.text.lines[0].text = ""; state.text.lines[1].text = "";
-                document.getElementById('inputLine1').value = ""; document.getElementById('inputLine2').value = "";
+                state.text.lines[0].text = "";
+                state.text.lines[1].text = "";
+                document.getElementById('inputLine1').value = "";
+                document.getElementById('inputLine2').value = "";
             }
+
             CoverEngine.loadSimpleImage(printUrl, (final) => {
                 final = final || previewUrl;
                 document.getElementById('galleryModal').classList.add('hidden');
-                if(target === 'global') { state.images.icon = final; updateSymbolUI(); refresh(); }
-                else if(type === 'graphics') { state.images.main = { src: final, natural: true }; refresh(); }
+                
+                if(target === 'global') { 
+                    state.images.icon = final; updateSymbolUI(); refresh(); 
+                }
+                else if(type === 'graphics') { 
+                    state.images.main = { src: final, natural: true }; 
+                    refresh(); 
+                }
             });
         };
         grid.appendChild(item);
@@ -127,11 +144,10 @@ function loadGal(type, cat, target) {
 }
 window.closeGallery = () => document.getElementById('galleryModal').classList.add('hidden');
 window.handleGalleryUpload = () => {}; 
+
 window.openQRModal = () => document.getElementById('qrModal').classList.remove('hidden');
 window.applyQR = () => { state.qr.enabled = true; state.qr.url = document.getElementById('qrLinkInput').value; document.getElementById('qrModal').classList.add('hidden'); refresh(); };
 window.removeQR = () => { state.qr.enabled = false; document.getElementById('qrModal').classList.add('hidden'); refresh(); };
-
-// ... (Остальные функции без изменений, но обязательно обновите setCropMask)
 
 function initListeners() {
     ['inputLine1','inputLine2','inputLine3','dateLine','copyrightInput'].forEach(id => {
@@ -213,7 +229,7 @@ function initListeners() {
         e.target.value = '';
     };
 
-    // FIX: Обновляем slotSize при клике на кнопки кроппера (6x4, 4x6 и т.д.)
+    // FIX: Update state dimensions when mask is chosen (with cm units)
     window.setCropMask = (w, h) => {
         if(w === 'circle') { 
             state.slotSize = { w: 6, h: 6 }; 
