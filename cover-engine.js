@@ -1,9 +1,14 @@
-/* cover-engine.js - Logic for Rendering & Cropping V64 */
+/* cover-engine.js - Logic for Rendering & Cropping V68 */
 
 const CONFIG = {
-    dpi: 300, cmToInch: 2.54, spineWidthCm: 1.5, renderScale: 3.0,
-    globalOpacity: 1.0, typo: { baseTitle: 1.2, baseDetails: 0.5, baseCopy: 0.35 },
-    scales: [0.7, 0.85, 1.0, 1.15, 1.3]
+    dpi: 300, 
+    cmToInch: 2.54, 
+    spineWidthCm: 1.5, 
+    renderScale: 3.0,
+    globalOpacity: 1.0, 
+    typo: { baseTitle: 1.2, baseDetails: 0.5, baseCopy: 0.35 },
+    // НОВАЯ ШКАЛА: 50% - 150%
+    scales: [0.5, 0.75, 1.0, 1.25, 1.5]
 };
 
 const CoverEngine = {
@@ -11,9 +16,6 @@ const CoverEngine = {
     
     init: function(canvasId) {
         this.canvas = new fabric.Canvas(canvasId, { backgroundColor: '#fff', selection: false, enableRetinaScaling: false });
-        
-        // Только обработка кликов по объектам.
-        // УДАЛЕНО: Обработка mouse:up для открытия превью (теперь через кнопку).
         
         this.canvas.on('mouse:down', (e) => {
             if(e.target) {
@@ -23,6 +25,18 @@ const CoverEngine = {
                 else if (e.target.isIcon) {
                     if(window.openGallery) window.openGallery('symbols', 'global');
                 }
+            }
+        });
+
+        // Mobile Preview Handler
+        this.canvas.on('mouse:up', (e) => {
+            const isMobile = window.innerWidth <= 900;
+            const hitInteractive = e.target && (e.target.isMain || e.target.isPlaceholder || e.target.isIcon);
+            
+            if (isMobile && e.isClick && !hitInteractive) {
+                setTimeout(() => {
+                    if(window.openMobilePreview) window.openMobilePreview();
+                }, 100);
             }
         });
     },
@@ -39,31 +53,53 @@ const CoverEngine = {
         const isMobile = window.innerWidth < 900;
         const margin = isMobile ? 10 : 20; 
         const curBookSize = parseFloat(state.bookSize);
-        const curW = curBookSize * 2 + CONFIG.spineWidthCm; const curH = curBookSize;
+        const curW = curBookSize * 2 + CONFIG.spineWidthCm; 
+        const curH = curBookSize;
+
         let basePPI;
         if (isMobile) {
             const safeW = container.clientWidth - (margin * 2);
             const safeH = container.clientHeight - (margin * 2);
             basePPI = Math.min(safeW / curW, safeH / curH);
         } else {
-            const MAX_REF_SIZE = 30; const maxRefW = MAX_REF_SIZE * 2 + CONFIG.spineWidthCm; const maxRefH = MAX_REF_SIZE;
-            basePPI = Math.max(5, Math.min((container.clientWidth - margin*2) / maxRefW, (container.clientHeight - margin*2) / maxRefH));
+            const MAX_REF_SIZE = 30; 
+            const maxRefW = MAX_REF_SIZE * 2 + CONFIG.spineWidthCm; 
+            const maxRefH = MAX_REF_SIZE;
+            basePPI = Math.max(5, Math.min(
+                (container.clientWidth - margin*2) / maxRefW, 
+                (container.clientHeight - margin*2) / maxRefH
+            ));
         }
+
         state.ppi = basePPI * CONFIG.renderScale;
-        this.canvas.setWidth(curW * state.ppi); this.canvas.setHeight(curH * state.ppi);
-        this.canvas.wrapperEl.style.width = `${curW * basePPI}px`; this.canvas.wrapperEl.style.height = `${curH * basePPI}px`;
+        this.canvas.setWidth(curW * state.ppi); 
+        this.canvas.setHeight(curH * state.ppi);
+        this.canvas.wrapperEl.style.width = `${curW * basePPI}px`; 
+        this.canvas.wrapperEl.style.height = `${curH * basePPI}px`;
         this.canvas.lowerCanvasEl.style.width = '100%'; this.canvas.upperCanvasEl.style.width = '100%';
         this.canvas.lowerCanvasEl.style.height = '100%'; this.canvas.upperCanvasEl.style.height = '100%';
+        
         this.render(state);
     },
 
     render: function(state) {
         if(!this.canvas) return;
-        this.canvas.clear(); this.canvas.setBackgroundColor(state.coverColor);
+        this.canvas.clear(); 
+        this.canvas.setBackgroundColor(state.coverColor);
+        
         const h = this.canvas.height;
         const bookSize = parseFloat(state.bookSize);
-        const x1 = bookSize * state.ppi; const x2 = (bookSize + 1.5) * state.ppi;
-        const c = { h: h, spineX: x1 + ((x2 - x1) / 2), frontCenter: x2 + (bookSize * state.ppi / 2), backCenter: (bookSize * state.ppi) / 2, bottomBase: h - (1.5 * state.ppi), centerY: h / 2, gap: 2.0 * state.ppi };
+        const x1 = bookSize * state.ppi; 
+        const x2 = (bookSize + 1.5) * state.ppi;
+        
+        const c = { 
+            h: h, spineX: x1 + ((x2 - x1) / 2), 
+            frontCenter: x2 + (bookSize * state.ppi / 2), 
+            backCenter: (bookSize * state.ppi) / 2, 
+            bottomBase: h - (1.5 * state.ppi), 
+            centerY: h / 2, gap: 2.0 * state.ppi 
+        };
+
         this._drawGuides(x1, x2, h, state);
         this._renderSpine(c, state);
         this._renderBackCover(c, state);
@@ -72,7 +108,8 @@ const CoverEngine = {
 
     _drawGuides: function(x1, x2, h, state) {
         const opts = { stroke: state.text.color, strokeWidth: 2, strokeDashArray: [10,10], selectable: false, evented: false, opacity: 0.3 };
-        this.canvas.add(new fabric.Line([x1, 0, x1, h], opts)); this.canvas.add(new fabric.Line([x2, 0, x2, h], opts));
+        this.canvas.add(new fabric.Line([x1, 0, x1, h], opts)); 
+        this.canvas.add(new fabric.Line([x2, 0, x2, h], opts));
     },
 
     _renderSpine: function(c, state) {
@@ -86,16 +123,47 @@ const CoverEngine = {
             if(processed.length > 0) parts.push(processed.join(" "));
         }
         if(state.spine.date && state.text.date) parts.push(state.text.date);
+        
         if(parts.length > 0) {
             const spineStr = parts.join("  •  ");
-            let yPos = c.bottomBase; if(state.spine.symbol && state.images.icon) yPos -= (1.8 * state.ppi);
-            this.canvas.add(new fabric.Text(spineStr, { fontFamily: state.text.font, fontSize: CONFIG.typo.baseDetails * state.ppi * state.text.scale, fill: state.text.color, opacity: CONFIG.globalOpacity, originX: 'left', originY: 'center', left: c.spineX, top: yPos, angle: -90, selectable: false }));
+            let yPos = c.bottomBase; 
+            if(state.spine.symbol && state.images.icon) yPos -= (1.8 * state.ppi);
+            
+            // FIX: Removed state.text.scale to decouple spine from main text scale
+            const fontSize = CONFIG.typo.baseDetails * state.ppi; 
+            
+            this.canvas.add(new fabric.Text(spineStr, { 
+                fontFamily: state.text.font, 
+                fontSize: fontSize, 
+                fill: state.text.color, 
+                opacity: CONFIG.globalOpacity, 
+                originX: 'left', 
+                originY: 'center', 
+                left: c.spineX, 
+                top: yPos, 
+                angle: -90, 
+                selectable: false 
+            }));
         }
     },
 
     _renderBackCover: function(c, state) {
         if(state.text.copyright) {
-            this.canvas.add(new fabric.Text(state.text.copyright, { left: c.backCenter, top: c.bottomBase, fontSize: CONFIG.typo.baseCopy * state.ppi * state.text.scale, fontFamily: state.text.font, fill: state.text.color, opacity: CONFIG.globalOpacity * 0.7, originX: 'center', originY: 'bottom', selectable: false, letterSpacing: 50 }));
+            // FIX: Removed state.text.scale to decouple copyright from main text scale
+            const fontSize = CONFIG.typo.baseCopy * state.ppi;
+            
+            this.canvas.add(new fabric.Text(state.text.copyright, { 
+                left: c.backCenter, 
+                top: c.bottomBase, 
+                fontSize: fontSize, 
+                fontFamily: state.text.font, 
+                fill: state.text.color, 
+                opacity: CONFIG.globalOpacity * 0.7, 
+                originX: 'center', 
+                originY: 'bottom', 
+                selectable: false, 
+                letterSpacing: 50 
+            }));
         }
         if(state.qr.enabled && state.qr.url) {
             const qrObj = new QRious({ value: state.qr.url, size: 500, level: 'H', foreground: state.text.color, backgroundAlpha: 0 });
@@ -104,40 +172,63 @@ const CoverEngine = {
     },
 
     _renderFrontCover: function(c, state) {
-        const layout = state.layout; const x = c.frontCenter; const y = c.centerY; const gap = c.gap;
+        const layout = state.layout; 
+        const x = c.frontCenter; 
+        const y = c.centerY; 
+        const gap = c.gap;
+
         if (layout === 'magazine') {
-            const coverW = state.bookSize * state.ppi; const coverH = c.h; 
+            const coverW = state.bookSize * state.ppi; 
+            const coverH = c.h; 
             if(state.images.main) this._placeClippedImage(state.images.main, x, y, coverW, coverH, 'rect', false, state);
             else this._renderImageSlot(x, y, state, { w: coverW, h: coverH });
             this._renderTextBlock(x, 2.0 * state.ppi, false, true, state);
         } 
-        else if (layout === 'icon') { this._renderIcon(x, y, null, state); }
+        else if (layout === 'icon') {
+            this._renderIcon(x, y, null, state);
+        }
         else if (layout === 'text_icon') {
-            const dynGap = gap * state.text.scale; const tObj = this._createTextBlockObj(true, state);
-            const iconSize = (2.0 / 1.6) * state.ppi * state.text.scale; const visualGap = dynGap * 1.5; 
-            const totalH = tObj.height + visualGap + iconSize; const startY = y - (totalH / 2); 
-            tObj.set({ left: x, top: startY + tObj.height/2 }); this.canvas.add(tObj);
+            const dynGap = gap * state.text.scale; 
+            const tObj = this._createTextBlockObj(true, state);
+            const iconSize = (2.0 / 1.6) * state.ppi * state.text.scale;
+            const visualGap = dynGap * 1.5; 
+            const totalH = tObj.height + visualGap + iconSize;
+            const startY = y - (totalH / 2); 
+            tObj.set({ left: x, top: startY + tObj.height/2 }); 
+            this.canvas.add(tObj);
             this._renderIcon(x, startY + tObj.height + visualGap + iconSize/2, iconSize, state);
         } 
         else if (layout === 'graphic' || layout === 'photo_text') {
             let imgY = c.centerY; 
+            
             if(layout === 'graphic') {
                 const style = getComputedStyle(document.documentElement);
                 const offsetCm = parseFloat(style.getPropertyValue('--graphic-offset-y-cm')) || 2;
                 imgY = c.centerY - (offsetCm * state.ppi);
                 if(state.images.main) this._renderNaturalImage(x, imgY, state);
                 else this._renderImageSlot(x, imgY, state);
-            } else {
+            } 
+            else {
+                // PHOTO + TEXT
                 const zoom = state.text.scale || 1.0;
-                const w = state.slotSize.w * state.ppi * zoom; const h = state.slotSize.h * state.ppi * zoom;
+                const w = state.slotSize.w * state.ppi * zoom;
+                const h = state.slotSize.h * state.ppi * zoom;
                 imgY = c.centerY - (2.0 * state.ppi); 
-                if(state.images.main) this._placeClippedImage(state.images.main, x, imgY, w, h, state.maskType, false, state);
-                else this._renderImageSlot(x, imgY, state, {w: w, h: h});
+                
+                if(state.images.main) {
+                    this._placeClippedImage(state.images.main, x, imgY, w, h, state.maskType, false, state);
+                } else {
+                    this._renderImageSlot(x, imgY, state, {w: w, h: h});
+                }
                 const textY = imgY + (h / 2) + (1.5 * state.ppi);
                 this._renderTextBlock(x, textY, true, false, state, 'top'); 
             }
         }
-        else if (layout === 'text') { const tObj = this._createTextBlockObj(false, state); tObj.set({ left: x, top: c.centerY }); this.canvas.add(tObj); } 
+        else if (layout === 'text') { 
+            const tObj = this._createTextBlockObj(false, state); 
+            tObj.set({ left: x, top: c.centerY }); 
+            this.canvas.add(tObj); 
+        } 
     },
 
     _createTextBlockObj: function(compact, state) {
@@ -146,13 +237,36 @@ const CoverEngine = {
         const hasText = rawLines.some(t => t.length > 0);
         let renderTxt = hasText ? processedLines.filter(Boolean).join("\n") : "THE VISUAL DIARY\n\n\n";
         let opacity = hasText ? CONFIG.globalOpacity : 0.3;
-        const baseSize = compact ? 0.8 : CONFIG.typo.baseTitle; const finalSize = baseSize * state.ppi * state.text.scale;
-        const tObj = new fabric.Text(renderTxt, { fontFamily: state.text.font, fontSize: finalSize, textAlign: 'center', lineHeight: 1.3, fill: state.text.color, opacity: opacity, selectable: false, originX: 'center', originY: 'center' });
+        const baseSize = compact ? 0.8 : CONFIG.typo.baseTitle; 
+        const finalSize = baseSize * state.ppi * state.text.scale;
+        
+        const tObj = new fabric.Text(renderTxt, { 
+            fontFamily: state.text.font, 
+            fontSize: finalSize, 
+            textAlign: 'center', 
+            lineHeight: 1.3, 
+            fill: state.text.color, 
+            opacity: opacity, 
+            selectable: false, 
+            originX: 'center', 
+            originY: 'center' 
+        });
         const group = new fabric.Group([tObj], { originX: 'center', originY: 'center' });
+        
         if(state.text.date) { 
-            const dateStr = state.text.date; const dateOp = CONFIG.globalOpacity; const dateSize = CONFIG.typo.baseDetails * state.ppi * state.text.scale;
+            const dateStr = state.text.date; 
+            const dateOp = CONFIG.globalOpacity; 
+            const dateSize = CONFIG.typo.baseDetails * state.ppi * state.text.scale;
             const gap = (compact ? 1.0 : 2.0) * state.ppi;
-            const dObj = new fabric.Text(dateStr, { fontFamily: state.text.font, fontSize: dateSize, fill: state.text.color, opacity: dateOp, originX: 'center', originY: 'top', top: (tObj.height / 2) + gap });
+            const dObj = new fabric.Text(dateStr, { 
+                fontFamily: state.text.font, 
+                fontSize: dateSize, 
+                fill: state.text.color, 
+                opacity: dateOp, 
+                originX: 'center', 
+                originY: 'top', 
+                top: (tObj.height / 2) + gap 
+            });
             group.addWithUpdate(dObj);
         }
         return group;
@@ -161,19 +275,39 @@ const CoverEngine = {
     _renderTextBlock: function(x, y, compact, isMag, state, verticalOrigin = 'center') {
         if(state.layout === 'graphic') return;
         if(isMag) {
-            let l1 = String(state.text.lines[0].text || ""); let l2 = String(state.text.lines[1].text || "");
-            if(state.text.lines[0].upper) l1 = l1.toUpperCase(); if(state.text.lines[1].upper) l2 = l2.toUpperCase();
-            let txtParts = [l1, l2].filter(t => t.length > 0); if (txtParts.length === 0) return;
+            let l1 = String(state.text.lines[0].text || "");
+            let l2 = String(state.text.lines[1].text || "");
+            if(state.text.lines[0].upper) l1 = l1.toUpperCase();
+            if(state.text.lines[1].upper) l2 = l2.toUpperCase();
+            let txtParts = [l1, l2].filter(t => t.length > 0);
+            if (txtParts.length === 0) return;
             let txt = txtParts.join("\n");
+            
             const shadow = new fabric.Shadow({ color: 'rgba(0,0,0,0.15)', blur: 4, offsetX: 0, offsetY: 0 });
-            this.canvas.add(new fabric.Text(txt, { fontFamily: state.text.font, fontSize: 2.5 * state.ppi * state.text.scale, textAlign: 'center', lineHeight: 1.0, originX: 'center', originY: 'top', left: x, top: y, fill: state.text.color, selectable: false, evented: false, shadow: shadow }));
+            this.canvas.add(new fabric.Text(txt, { 
+                fontFamily: state.text.font, 
+                fontSize: 2.5 * state.ppi * state.text.scale, 
+                textAlign: 'center', 
+                lineHeight: 1.0, 
+                originX: 'center', 
+                originY: 'top', 
+                left: x, 
+                top: y, 
+                fill: state.text.color, 
+                selectable: false, 
+                evented: false, 
+                shadow: shadow 
+            }));
             return;
         }
-        const group = this._createTextBlockObj(compact, state); group.set({ left: x, top: y, originY: verticalOrigin }); this.canvas.add(group);
+        const group = this._createTextBlockObj(compact, state); 
+        group.set({ left: x, top: y, originY: verticalOrigin }); 
+        this.canvas.add(group);
     },
 
     _renderIcon: function(x, y, forcedSize, state) {
-        let iconUrl = state.images.icon; let isGhost = false;
+        let iconUrl = state.images.icon; 
+        let isGhost = false;
         if(!iconUrl) { iconUrl = 'assets/symbols/love_heart_icon.png'; isGhost = true; }
         this._placeImage(iconUrl, x, y, forcedSize || (2.0/1.6)*state.ppi*state.text.scale, { color: state.text.color, opacity: isGhost ? 0.3 : CONFIG.globalOpacity, isIcon: true, hoverCursor: 'pointer' });
     },
@@ -255,21 +389,13 @@ const CoverEngine = {
 
 /* --- CROPPER TOOL --- */
 const CropperTool = {
-    canvas: null,
-    tempImgObject: null,
-    activeSlot: { w: 0, h: 0 },
-    maskType: 'rect',
-    angle: 0, 
+    canvas: null, tempImgObject: null, activeSlot: { w: 0, h: 0 }, maskType: 'rect', angle: 0, 
     
     init: function() {
         if(!this.canvas) {
             const size = Math.min(500, window.innerWidth - 40);
-            this.canvas = new fabric.Canvas('cropCanvas', { 
-                width: size, height: size, backgroundColor: '#111', selection: false, preserveObjectStacking: true 
-            });
-            this.canvas.on('object:moving', (e) => {
-                if(e.target === this.tempImgObject) this.constrainImage(e.target);
-            });
+            this.canvas = new fabric.Canvas('cropCanvas', { width: size, height: size, backgroundColor: '#111', selection: false, preserveObjectStacking: true });
+            this.canvas.on('object:moving', (e) => { if(e.target === this.tempImgObject) this.constrainImage(e.target); });
         } else {
             const size = Math.min(500, window.innerWidth - 40);
             this.canvas.setDimensions({width: size, height: size});
@@ -302,7 +428,7 @@ const CropperTool = {
         const cy = this.canvas.height / 2;
         img.set({ left: cx, top: cy });
         
-        // FIX: Force coords update
+        // FIX: Force coords update so movement boundaries work immediately
         img.setCoords();
 
         const slider = document.getElementById('zoomSlider');
@@ -330,7 +456,6 @@ const CropperTool = {
         const minLeft = frameRight - imgDisplayW/2;
         const maxTop = frameTop + imgDisplayH/2;
         const minTop = frameBottom - imgDisplayH/2;
-        
         if (imgDisplayW >= cropW - 1) img.left = Math.min(Math.max(img.left, minLeft), maxLeft);
         else img.left = cx; 
         if (imgDisplayH >= cropH - 1) img.top = Math.min(Math.max(img.top, minTop), maxTop);
@@ -343,7 +468,6 @@ const CropperTool = {
         this.maskType = maskType;
         this.angle = 0; 
         this.drawOverlay(slotW, slotH);
-        
         fabric.Image.fromURL(url, (img) => {
             if(!img) return;
             this.tempImgObject = img;
@@ -351,48 +475,28 @@ const CropperTool = {
             this.tempImgObject.originY = 'center';
             this.tempImgObject.hasControls = false;
             this.tempImgObject.hasBorders = false;
-            
             this.canvas.add(img);
+            this.canvas.setActiveObject(img); // Enable drag
             this.canvas.sendToBack(img);
-            
-            // FIX: Calculate positions FIRST
             this.recalcMinZoomAndCenter();
-            
-            // FIX: Set Active AFTER coords are ready
-            this.canvas.setActiveObject(img);
-            
             const slider = document.getElementById('zoomSlider');
-            slider.oninput = () => { 
-                img.scale(parseFloat(slider.value)); 
-                this.constrainImage(img); 
-                this.canvas.requestRenderAll(); 
-            };
+            slider.oninput = () => { img.scale(parseFloat(slider.value)); this.constrainImage(img); this.canvas.requestRenderAll(); };
             this.canvas.requestRenderAll();
         });
     },
 
     drawOverlay: function(slotW, slotH) {
-        this.canvas.getObjects().forEach(o => { 
-            if(o !== this.tempImgObject) this.canvas.remove(o); 
-        });
-        
+        this.canvas.getObjects().forEach(o => { if(o !== this.tempImgObject) this.canvas.remove(o); });
         let aspect = slotW / slotH;
         let pW, pH;
         const maxSize = Math.min(400, this.canvas.width * 0.8);
-        
         if(this.maskType === 'circle') { pW = maxSize; pH = maxSize; }
         else if(aspect >= 1) { pW = maxSize; pH = maxSize / aspect; } 
         else { pH = maxSize; pW = maxSize * aspect; }
-        
         this.activeSlot = { w: pW, h: pH };
         const cx = this.canvas.width / 2;
         const cy = this.canvas.height / 2;
-        
-        if(this.tempImgObject) {
-            this.canvas.sendToBack(this.tempImgObject);
-            this.recalcMinZoomAndCenter();
-        }
-        
+        if(this.tempImgObject) { this.canvas.sendToBack(this.tempImgObject); this.recalcMinZoomAndCenter(); }
         let pathStr = `M 0 0 H ${this.canvas.width} V ${this.canvas.height} H 0 Z`; 
         if(this.maskType === 'circle') {
             const r = pW/2;
@@ -412,9 +516,6 @@ const CropperTool = {
         const cy = this.canvas.height / 2;
         const offX = this.tempImgObject.left - cx; 
         const offY = this.tempImgObject.top - cy;
-        return { 
-            src: this.tempImgObject.getSrc(), 
-            cropInfo: { left: offX, top: offY, scale: this.tempImgObject.scaleX, slotPixelSize: this.activeSlot.w, angle: this.angle } 
-        };
+        return { src: this.tempImgObject.getSrc(), cropInfo: { left: offX, top: offY, scale: this.tempImgObject.scaleX, slotPixelSize: this.activeSlot.w, angle: this.angle } };
     }
 };
