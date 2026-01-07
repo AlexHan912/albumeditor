@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MALEVICH | Configurator V58 (Final Fix)</title>
+    <title>MALEVICH | Configurator V67</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
@@ -24,7 +24,7 @@
         <div class="loader-sub">EST. 2025</div>
     </div>
 
-<div id="workspace">
+    <div id="workspace">
         <canvas id="c"></canvas>
         
         <div id="photoTrigger" class="hidden" onclick="triggerAssetLoader()"></div>
@@ -69,7 +69,7 @@
         </div>
 
         <div class="section">
-            <label>2. Размер книги и шрифт</label>
+            <h2>2. Размер книги и шрифт</h2>
             <div class="format-selector">
                 <div class="format-card f-30 active" onclick="setBookSize(30, this)"><span>30x30</span></div>
                 <div class="format-card f-25" onclick="setBookSize(25, this)"><span>25x25</span></div>
@@ -169,6 +169,14 @@
         <div id="debugInfo" style="font-size:9px; color:#555; text-align:center;"></div>
     </div>
 
+    <div id="mobilePreview" class="hidden">
+        <div id="panzoomContainer">
+            <img id="mobilePreviewImg" src="" alt="Preview">
+        </div>
+        <button id="closePreviewBtn">Вернуться в редактор</button>
+        <div class="preview-hint">Свайп для зума</div>
+    </div>
+
     <div id="cropperModal" class="modal-overlay hidden">
         <div class="modal-content">
             <div class="modal-header">Кадрирование</div>
@@ -216,28 +224,8 @@
         </div>
     </div>
 
-    <script src="cover-engine.js"></script>
-    <script src="app.js"></script>
-
-
-<div id="mobilePreview" class="hidden">
-        <div id="panzoomContainer">
-            <img id="mobilePreviewImg" src="" alt="Preview">
-        </div>
-        
-        <button id="closePreviewBtn">Вернуться в редактор</button>
-        
-        <div class="preview-hint">Свайп для зума</div>
-    </div>
-
     <script src="https://unpkg.com/@panzoom/panzoom@4.5.1/dist/panzoom.min.js"></script>
-
     <script src="cover-engine.js"></script>
     <script src="app.js"></script>
-
-    
 </body>
 </html>
-
-
-
