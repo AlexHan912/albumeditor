@@ -1,4 +1,4 @@
-/* app.js - UI Controller & State Management V61 */
+/* app.js - UI Controller & State Management V63 */
 
 let state = {
     bookSize: 30, layout: 'text_icon', ppi: 10, slotSize: { w: 6, h: 6 }, maskType: 'rect',
@@ -21,13 +21,12 @@ window.onload = () => {
     initListeners();
     initMobilePreview(); 
     
-    // Set default text
     const input1 = document.getElementById('inputLine1');
     if (input1) input1.value = "THE VISUAL DIARY";
     
     setTimeout(() => {
         refresh();
-        checkOrientation(); // Check orientation on load
+        checkOrientation();
     }, 500);
 };
 
@@ -74,7 +73,6 @@ function initMobilePreview() {
         container.parentElement.addEventListener('wheel', panzoomInstance.zoomWithWheel);
     }
 
-    // Close on button click
     if (closeBtn) {
         closeBtn.onclick = (e) => {
             e.stopPropagation();
@@ -84,29 +82,25 @@ function initMobilePreview() {
 }
 
 function checkOrientation() {
-    // Check if mobile device
     const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 900;
     
     if (isMobileDevice) {
         if (window.innerWidth > window.innerHeight) {
-            // Landscape -> Open Preview
             if (document.getElementById('mobilePreview').classList.contains('hidden')) {
                 openMobilePreview();
             }
         } else {
-            // Portrait -> Close Preview
             closeMobilePreview();
         }
     }
 }
 
 window.openMobilePreview = () => {
-    if (window.innerWidth > 1024 && window.innerHeight > 800) return; // Skip on desktop
+    if (window.innerWidth > 1024 && window.innerHeight > 800) return; 
 
     const modal = document.getElementById('mobilePreview');
     const img = document.getElementById('mobilePreviewImg');
     
-    // Generate high quality image
     const dataUrl = CoverEngine.canvas.toDataURL({ format: 'png', multiplier: 2.5 });
     img.src = dataUrl;
     
@@ -124,20 +118,19 @@ window.closeMobilePreview = () => {
     document.getElementById('mobilePreview').classList.add('hidden');
 };
 
-// --- IMAGE PROCESSOR (HEIC Support) ---
+// --- IMAGE PROCESSOR (HEIC FIX) ---
 function processAndResizeImage(file, maxSize, outputType, callback) {
-    // HEIC Handling
     if (file.type === "image/heic" || file.name.toLowerCase().endsWith(".heic")) {
         if(window.heic2any) {
-            heic2any({ blob: file, toType: "image/jpeg" })
+            heic2any({ blob: file, toType: "image/jpeg", quality: 0.8 })
                 .then((conversionResult) => {
                     const blob = Array.isArray(conversionResult) ? conversionResult[0] : conversionResult;
                     const newFile = new File([blob], file.name.replace(/\.heic$/i, ".jpg"), { type: "image/jpeg" });
                     processAndResizeImage(newFile, maxSize, outputType, callback);
                 })
                 .catch((e) => {
-                    alert("Ошибка конвертации HEIC. Попробуйте JPG.");
-                    console.error(e);
+                    console.error("HEIC Error:", e);
+                    alert("Ошибка обработки HEIC. Попробуйте обычный JPG.");
                 });
             return;
         }
@@ -177,8 +170,6 @@ function updateCropperUI() {
     if (state.layout === 'magazine') controls.style.display = 'none'; 
     else controls.style.display = 'flex'; 
 }
-
-// --- GLOBAL UI HANDLERS ---
 
 window.toggleCase = (i) => { state.text.lines[i-1].upper = !state.text.lines[i-1].upper; document.getElementById(`btnTt${i}`).classList.toggle('active'); refresh(); };
 window.showRow = (i) => document.getElementById(`row${i}`).classList.remove('hidden');
@@ -306,7 +297,6 @@ function initListeners() {
                     document.getElementById('cropperModal').classList.remove('hidden');
                     updateCropperUI();
                     
-                    // Force reset slot size to default if in Photo+Text
                     if(state.layout === 'photo_text') {
                         state.slotSize = { w: 6, h: 6 };
                     }
