@@ -1,4 +1,4 @@
-/* cover-engine.js - Logic for Rendering & Cropping V63 */
+/* cover-engine.js - Logic for Rendering & Cropping V64 */
 
 const CONFIG = {
     dpi: 300, cmToInch: 2.54, spineWidthCm: 1.5, renderScale: 3.0,
@@ -12,7 +12,9 @@ const CoverEngine = {
     init: function(canvasId) {
         this.canvas = new fabric.Canvas(canvasId, { backgroundColor: '#fff', selection: false, enableRetinaScaling: false });
         
-        // 1. Mouse Down: Handle Interactive Objects
+        // Только обработка кликов по объектам.
+        // УДАЛЕНО: Обработка mouse:up для открытия превью (теперь через кнопку).
+        
         this.canvas.on('mouse:down', (e) => {
             if(e.target) {
                 if(e.target.isMain || e.target.isPlaceholder) {
@@ -21,25 +23,6 @@ const CoverEngine = {
                 else if (e.target.isIcon) {
                     if(window.openGallery) window.openGallery('symbols', 'global');
                 }
-            }
-        });
-
-        // 2. Mouse Up: Handle Mobile Preview (Background Tap Only)
-        this.canvas.on('mouse:up', (e) => {
-            const isMobile = window.innerWidth <= 900;
-            
-            // Проверяем:
-            // 1. Это мобилка
-            // 2. Это был клик (не свайп)
-            // 3. e.target === null (кликнули В ПУСТОТУ) ИЛИ объект не интерактивный
-            // Если кликнули на фото/иконку/плюс - превью НЕ открываем.
-            
-            const hitInteractive = e.target && (e.target.isMain || e.target.isPlaceholder || e.target.isIcon);
-            
-            if (isMobile && e.isClick && !hitInteractive) {
-                setTimeout(() => {
-                    if(window.openMobilePreview) window.openMobilePreview();
-                }, 100);
             }
         });
     },
@@ -272,7 +255,11 @@ const CoverEngine = {
 
 /* --- CROPPER TOOL --- */
 const CropperTool = {
-    canvas: null, tempImgObject: null, activeSlot: { w: 0, h: 0 }, maskType: 'rect', angle: 0, 
+    canvas: null,
+    tempImgObject: null,
+    activeSlot: { w: 0, h: 0 },
+    maskType: 'rect',
+    angle: 0, 
     
     init: function() {
         if(!this.canvas) {
@@ -315,7 +302,7 @@ const CropperTool = {
         const cy = this.canvas.height / 2;
         img.set({ left: cx, top: cy });
         
-        // FIX: Force coords update so movement boundaries work immediately
+        // FIX: Force coords update
         img.setCoords();
 
         const slider = document.getElementById('zoomSlider');
