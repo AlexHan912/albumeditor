@@ -7,6 +7,7 @@ const CONFIG = {
     renderScale: 3.0,
     globalOpacity: 1.0, 
     typo: { baseTitle: 1.2, baseDetails: 0.5, baseCopy: 0.35 },
+    // НОВАЯ ШКАЛА: 50% - 75% - 100% - 125% - 150%
     scales: [0.5, 0.75, 1.0, 1.25, 1.5]
 };
 
@@ -27,11 +28,15 @@ const CoverEngine = {
             }
         });
 
+        // Mobile Preview Tap Handler
         this.canvas.on('mouse:up', (e) => {
             const isMobile = window.innerWidth <= 900;
             const hitInteractive = e.target && (e.target.isMain || e.target.isPlaceholder || e.target.isIcon);
+            
             if (isMobile && e.isClick && !hitInteractive) {
-                setTimeout(() => { if(window.openMobilePreview) window.openMobilePreview(); }, 100);
+                setTimeout(() => {
+                    if(window.openMobilePreview) window.openMobilePreview();
+                }, 100);
             }
         });
     },
@@ -89,11 +94,13 @@ const CoverEngine = {
         const x2 = (bookSize + 1.5) * state.ppi;
         
         const c = { 
-            h: h, spineX: x1 + ((x2 - x1) / 2), 
+            h: h, 
+            spineX: x1 + ((x2 - x1) / 2), 
             frontCenter: x2 + (bookSize * state.ppi / 2), 
             backCenter: (bookSize * state.ppi) / 2, 
             bottomBase: h - (1.5 * state.ppi), 
-            centerY: h / 2, gap: 2.0 * state.ppi 
+            centerY: h / 2, 
+            gap: 2.0 * state.ppi 
         };
 
         this._drawGuides(x1, x2, h, state);
@@ -125,11 +132,11 @@ const CoverEngine = {
             let yPos = c.bottomBase; 
             if(state.spine.symbol && state.images.icon) yPos -= (1.8 * state.ppi);
             
-            // FIX: Tenor Sans + Letter Spacing 100 for Spine
+            // FIX: Фиксированный шрифт Tenor Sans и размер (без scale)
             const fontSize = CONFIG.typo.baseDetails * state.ppi; 
             
             this.canvas.add(new fabric.Text(spineStr, { 
-                fontFamily: 'Tenor Sans', // Hardcoded for safety
+                fontFamily: 'Tenor Sans', // Всегда Tenor Sans
                 fontSize: fontSize, 
                 fill: state.text.color, 
                 opacity: CONFIG.globalOpacity, 
@@ -139,27 +146,27 @@ const CoverEngine = {
                 top: yPos, 
                 angle: -90, 
                 selectable: false,
-                letterSpacing: 100 // Increased spacing
+                letterSpacing: 100 // Увеличенная разрядка для красоты
             }));
         }
     },
 
     _renderBackCover: function(c, state) {
         if(state.text.copyright) {
-            // FIX: Tenor Sans + Letter Spacing 80 for Copyright
+            // FIX: Фиксированный шрифт Tenor Sans и размер (без scale)
             const fontSize = CONFIG.typo.baseCopy * state.ppi;
             
             this.canvas.add(new fabric.Text(state.text.copyright, { 
                 left: c.backCenter, 
                 top: c.bottomBase, 
                 fontSize: fontSize, 
-                fontFamily: 'Tenor Sans', // Hardcoded for safety
+                fontFamily: 'Tenor Sans', // Всегда Tenor Sans
                 fill: state.text.color, 
                 opacity: CONFIG.globalOpacity * 0.7, 
                 originX: 'center', 
                 originY: 'bottom', 
                 selectable: false, 
-                letterSpacing: 80 // Increased spacing
+                letterSpacing: 80 // Увеличенная разрядка
             }));
         }
         if(state.qr.enabled && state.qr.url) {
@@ -206,6 +213,7 @@ const CoverEngine = {
                 else this._renderImageSlot(x, imgY, state);
             } 
             else {
+                // PHOTO + TEXT
                 const zoom = state.text.scale || 1.0;
                 const w = state.slotSize.w * state.ppi * zoom;
                 const h = state.slotSize.h * state.ppi * zoom;
@@ -237,7 +245,7 @@ const CoverEngine = {
         const finalSize = baseSize * state.ppi * state.text.scale;
         
         const tObj = new fabric.Text(renderTxt, { 
-            fontFamily: state.text.font, // Main title uses selected font
+            fontFamily: state.text.font, // Main title uses User Selected Font
             fontSize: finalSize, 
             textAlign: 'center', 
             lineHeight: 1.3, 
@@ -245,9 +253,10 @@ const CoverEngine = {
             opacity: opacity, 
             selectable: false, 
             originX: 'center', 
-            originY: 'center' 
+            originY: 'center',
+            hoverCursor: 'default' // No move cursor
         });
-        const group = new fabric.Group([tObj], { originX: 'center', originY: 'center' });
+        const group = new fabric.Group([tObj], { originX: 'center', originY: 'center', hoverCursor: 'default' });
         
         if(state.text.date) { 
             const dateStr = state.text.date; 
@@ -261,7 +270,8 @@ const CoverEngine = {
                 opacity: dateOp, 
                 originX: 'center', 
                 originY: 'top', 
-                top: (tObj.height / 2) + gap 
+                top: (tObj.height / 2) + gap,
+                hoverCursor: 'default'
             });
             group.addWithUpdate(dObj);
         }
@@ -292,12 +302,13 @@ const CoverEngine = {
                 fill: state.text.color, 
                 selectable: false, 
                 evented: false, 
-                shadow: shadow 
+                shadow: shadow,
+                hoverCursor: 'default'
             }));
             return;
         }
         const group = this._createTextBlockObj(compact, state); 
-        group.set({ left: x, top: y, originY: verticalOrigin }); 
+        group.set({ left: x, top: y, originY: verticalOrigin, hoverCursor: 'default' }); 
         this.canvas.add(group);
     },
 
@@ -312,15 +323,20 @@ const CoverEngine = {
         let w, h;
         if (customSize) { w = customSize.w; h = customSize.h; } 
         else { const zoom = state.text.scale || 1.0; w = state.slotSize.w * state.ppi * zoom; h = state.slotSize.h * state.ppi * zoom; }
+        
         let shape;
         const commonOpts = { fill: 'transparent', stroke: '#aaaaaa', strokeWidth: 1.5, strokeDashArray: [10, 10], left: x, top: y, originX: 'center', originY: 'center', selectable: false, evented: true, hoverCursor: 'pointer', isPlaceholder: true };
+        
         if(state.maskType === 'circle') shape = new fabric.Circle({ radius: w/2, ...commonOpts });
         else shape = new fabric.Rect({ width: w, height: h, ...commonOpts });
         this.canvas.add(shape);
+
         const centerIconSize = 1.5 * state.ppi; 
         const btnCircle = new fabric.Circle({ radius: centerIconSize / 2, fill: 'transparent', stroke: '#aaaaaa', strokeWidth: 1.5, originX: 'center', originY: 'center', left: x, top: y, selectable: false, evented: false });
         this.canvas.add(btnCircle);
-        const plusLen = centerIconSize * 0.5; const plusThick = 1.5 * (state.ppi / 30); 
+
+        const plusLen = centerIconSize * 0.5; 
+        const plusThick = 1.5 * (state.ppi / 30); 
         const vLine = new fabric.Rect({ width: plusThick, height: plusLen, fill: '#aaaaaa', originX: 'center', originY: 'center', left: x, top: y, selectable: false, evented: false });
         const hLine = new fabric.Rect({ width: plusLen, height: plusThick, fill: '#aaaaaa', originX: 'center', originY: 'center', left: x, top: y, selectable: false, evented: false });
         this.canvas.add(vLine);
@@ -336,6 +352,7 @@ const CoverEngine = {
                 const baseScale = Math.min(scaleX, scaleY);
                 const userZoom = state.text.scale || 1.0;
                 const finalScale = baseScale * userZoom;
+
                 img.set({ left: x, top: y, originX: 'center', originY: 'center', scaleX: finalScale, scaleY: finalScale, opacity: CONFIG.globalOpacity, selectable: false, evented: true, hoverCursor: 'pointer', isMain: true });
                 const filter = new fabric.Image.filters.BlendColor({ color: state.text.color, mode: 'tint', alpha: 1 }); 
                 img.filters.push(filter); img.applyFilters();
@@ -350,7 +367,8 @@ const CoverEngine = {
             img.scaleToWidth(width);
             img.set({ left: x, top: y, originX: 'center', originY: 'center', selectable: false, opacity: CONFIG.globalOpacity, ...opts });
             if(opts.color) { img.filters.push(new fabric.Image.filters.BlendColor({ color: opts.color, mode: 'tint', alpha: 1 })); img.applyFilters(); }
-            this.canvas.add(img); if(opts.sendBack) this.canvas.sendToBack(img);
+            this.canvas.add(img); 
+            if(opts.sendBack) this.canvas.sendToBack(img);
         });
     },
 
@@ -359,157 +377,9 @@ const CoverEngine = {
         fabric.Image.fromURL(imgData.src, (img) => {
             const info = imgData.cropInfo; 
             const scaleFactor = w / info.slotPixelSize;
+            
             if(isBack) {
-                const coverW = w; const scale = Math.max(coverW / img.width, h / img.height);
+                const coverW = w; 
+                const scale = Math.max(coverW / img.width, h / img.height);
                 img.set({ scaleX: scale, scaleY: scale, left: x, top: h/2, originX: 'center', originY: 'center', selectable: false, evented: true, hoverCursor: 'pointer', isMain: true });
-                img.clipPath = new fabric.Rect({ width: coverW/scale, height: h/scale, left: -coverW/2/scale, top: -h/2/scale });
-                this.canvas.add(img); this.canvas.sendToBack(img);
-            } else {
-                let clip; const absoluteOpts = { left: x, top: y, originX: 'center', originY: 'center', absolutePositioned: true };
-                if(maskType === 'circle') { clip = new fabric.Circle({ radius: w/2, ...absoluteOpts }); } 
-                else { clip = new fabric.Rect({ width: w, height: h, ...absoluteOpts }); }
-                const imgLeft = x + (info.left * scaleFactor); const imgTop = y + (info.top * scaleFactor);
-                const totalScale = info.scale * scaleFactor;
-                img.set({ left: imgLeft, top: imgTop, scaleX: totalScale, scaleY: totalScale, angle: info.angle || 0, originX: 'center', originY: 'center', selectable: false, evented: true, hoverCursor: 'pointer', isMain: true, clipPath: clip });
-                this.canvas.add(img); img.sendToBack(); 
-            }
-        });
-    },
-    
-    download: function(state) {
-        const mult = (CONFIG.dpi / CONFIG.cmToInch) / state.ppi;
-        this.canvas.getObjects('line').forEach(o => o.opacity = 0);
-        const data = this.canvas.toDataURL({ format: 'png', multiplier: mult, quality: 1 });
-        this.canvas.getObjects('line').forEach(o => o.opacity = 0.3);
-        const a = document.createElement('a'); a.download = `malevich_cover_${state.bookSize}.png`; a.href = data; a.click();
-    }
-};
-
-/* --- CROPPER TOOL --- */
-const CropperTool = {
-    canvas: null, tempImgObject: null, activeSlot: { w: 0, h: 0 }, maskType: 'rect', angle: 0, 
-    
-    init: function() {
-        if(!this.canvas) {
-            const size = Math.min(500, window.innerWidth - 40);
-            this.canvas = new fabric.Canvas('cropCanvas', { width: size, height: size, backgroundColor: '#111', selection: false, preserveObjectStacking: true });
-            this.canvas.on('object:moving', (e) => { if(e.target === this.tempImgObject) this.constrainImage(e.target); });
-        } else {
-            const size = Math.min(500, window.innerWidth - 40);
-            this.canvas.setDimensions({width: size, height: size});
-        }
-        this.canvas.clear(); 
-        this.canvas.setBackgroundColor('#111', this.canvas.renderAll.bind(this.canvas));
-    },
-
-    rotate: function() {
-        if(!this.tempImgObject) return;
-        this.angle = (this.angle + 90) % 360;
-        this.tempImgObject.rotate(this.angle);
-        this.recalcMinZoomAndCenter();
-        this.canvas.requestRenderAll();
-    },
-
-    recalcMinZoomAndCenter: function() {
-        if(!this.tempImgObject) return;
-        const img = this.tempImgObject;
-        const ang = this.angle || 0;
-        const isRotated = (Math.abs(ang % 180) === 90);
-        const effectiveW = isRotated ? img.height : img.width;
-        const effectiveH = isRotated ? img.width : img.height;
-        const minScaleX = this.activeSlot.w / effectiveW;
-        const minScaleY = this.activeSlot.h / effectiveH;
-        const minCoverScale = Math.max(minScaleX, minScaleY);
-        img.scale(minCoverScale);
-        const cx = this.canvas.width / 2;
-        const cy = this.canvas.height / 2;
-        img.set({ left: cx, top: cy });
-        img.setCoords();
-        const slider = document.getElementById('zoomSlider');
-        slider.min = minCoverScale;
-        slider.max = minCoverScale * 4;
-        slider.step = minCoverScale * 0.01;
-        slider.value = minCoverScale;
-        this.constrainImage(img);
-    },
-
-    constrainImage: function(img) {
-        const cropW = this.activeSlot.w;
-        const cropH = this.activeSlot.h;
-        const cx = this.canvas.width / 2;
-        const cy = this.canvas.height / 2;
-        const ang = img.angle || 0;
-        const isRotated = (Math.abs(ang % 180) === 90);
-        const imgDisplayW = (isRotated ? img.height : img.width) * img.scaleX;
-        const imgDisplayH = (isRotated ? img.width : img.height) * img.scaleY;
-        const frameLeft = cx - cropW/2;
-        const frameTop = cy - cropH/2;
-        const frameRight = cx + cropW/2;
-        const frameBottom = cy + cropH/2;
-        const maxLeft = frameLeft + imgDisplayW/2;
-        const minLeft = frameRight - imgDisplayW/2;
-        const maxTop = frameTop + imgDisplayH/2;
-        const minTop = frameBottom - imgDisplayH/2;
-        if (imgDisplayW >= cropW - 1) img.left = Math.min(Math.max(img.left, minLeft), maxLeft);
-        else img.left = cx; 
-        if (imgDisplayH >= cropH - 1) img.top = Math.min(Math.max(img.top, minTop), maxTop);
-        else img.top = cy;
-    },
-
-    start: function(url, slotW, slotH, maskType) {
-        this.init();
-        this.tempImgObject = null;
-        this.maskType = maskType;
-        this.angle = 0; 
-        this.drawOverlay(slotW, slotH);
-        fabric.Image.fromURL(url, (img) => {
-            if(!img) return;
-            this.tempImgObject = img;
-            this.tempImgObject.originX = 'center';
-            this.tempImgObject.originY = 'center';
-            this.tempImgObject.hasControls = false;
-            this.tempImgObject.hasBorders = false;
-            this.canvas.add(img);
-            this.canvas.setActiveObject(img);
-            this.canvas.sendToBack(img);
-            this.recalcMinZoomAndCenter();
-            const slider = document.getElementById('zoomSlider');
-            slider.oninput = () => { img.scale(parseFloat(slider.value)); this.constrainImage(img); this.canvas.requestRenderAll(); };
-            this.canvas.requestRenderAll();
-        });
-    },
-
-    drawOverlay: function(slotW, slotH) {
-        this.canvas.getObjects().forEach(o => { if(o !== this.tempImgObject) this.canvas.remove(o); });
-        let aspect = slotW / slotH;
-        let pW, pH;
-        const maxSize = Math.min(400, this.canvas.width * 0.8);
-        if(this.maskType === 'circle') { pW = maxSize; pH = maxSize; }
-        else if(aspect >= 1) { pW = maxSize; pH = maxSize / aspect; } 
-        else { pH = maxSize; pW = maxSize * aspect; }
-        this.activeSlot = { w: pW, h: pH };
-        const cx = this.canvas.width / 2;
-        const cy = this.canvas.height / 2;
-        if(this.tempImgObject) { this.canvas.sendToBack(this.tempImgObject); this.recalcMinZoomAndCenter(); }
-        let pathStr = `M 0 0 H ${this.canvas.width} V ${this.canvas.height} H 0 Z`; 
-        if(this.maskType === 'circle') {
-            const r = pW/2;
-            pathStr += ` M ${cx} ${cy-r} A ${r} ${r} 0 1 0 ${cx} ${cy+r} A ${r} ${r} 0 1 0 ${cx} ${cy-r} Z`;
-            this.canvas.add(new fabric.Circle({ radius: r, left: cx, top: cy, originX:'center', originY:'center', fill: 'transparent', stroke: '#fff', strokeWidth: 1, selectable: false, evented: false }));
-        } else {
-            pathStr += ` M ${cx-pW/2} ${cy-pH/2} H ${cx+pW/2} V ${cy+pH/2} H ${cx-pW/2} Z`;
-            this.canvas.add(new fabric.Rect({ left: cx, top: cy, width: pW, height: pH, fill: 'transparent', stroke: '#fff', strokeWidth: 1, originX: 'center', originY: 'center', selectable: false, evented: false }));
-        }
-        this.canvas.add(new fabric.Path(pathStr, { fill: 'rgba(0,0,0,0.7)', selectable: false, evented: false, fillRule: 'evenodd' }));
-        this.canvas.requestRenderAll();
-    },
-
-    apply: function() {
-        if(!this.tempImgObject) return null;
-        const cx = this.canvas.width / 2;
-        const cy = this.canvas.height / 2;
-        const offX = this.tempImgObject.left - cx; 
-        const offY = this.tempImgObject.top - cy;
-        return { src: this.tempImgObject.getSrc(), cropInfo: { left: offX, top: offY, scale: this.tempImgObject.scaleX, slotPixelSize: this.activeSlot.w, angle: this.angle } };
-    }
-};
+                img.clipPath = new fabric.Rect({ width: coverW/scale,
