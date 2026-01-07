@@ -1,39 +1,129 @@
-/* ... (ВСЕ ШРИФТЫ И БАЗОВЫЕ СТИЛИ ОСТАВЛЯЕМ КАК БЫЛО В V76) ... */
-
 /* --- FONTS --- */
-@font-face { font-family: 'Tenor Sans'; src: url('fonts/TenorSans.ttf') format('truetype'); font-weight: normal; font-style: normal; font-display: swap; }
-@font-face { font-family: 'Bodoni Moda'; src: url('fonts/BodoniModa.ttf') format('truetype'); font-weight: 400 900; font-style: normal; font-display: swap; }
+@font-face { 
+    font-family: 'Tenor Sans'; 
+    src: url('fonts/TenorSans.ttf') format('truetype'); 
+    font-weight: normal; 
+    font-style: normal; 
+    font-display: swap; 
+}
+@font-face { 
+    font-family: 'Bodoni Moda'; 
+    src: url('fonts/BodoniModa.ttf') format('truetype'); 
+    font-weight: 400 900; 
+    font-style: normal; 
+    font-display: swap; 
+}
 
 /* --- VARIABLES --- */
 :root { 
-    --bg-canvas: #e0e0e0; --bg-panel: #1a1a1a; --text-panel: #e5e5e5; --accent-gold: #D4AF37; --border-color: #333; --input-bg: #252525; --card-bg: #222; --card-hover: #2a2a2a; 
-    --graphic-max-size-cm: 12; --graphic-offset-y-cm: 2;
+    --bg-canvas: #e0e0e0; 
+    --bg-panel: #1a1a1a; 
+    --text-panel: #e5e5e5; 
+    --accent-gold: #D4AF37; 
+    --border-color: #333; 
+    --input-bg: #252525; 
+    --card-bg: #222; 
+    --card-hover: #2a2a2a; 
+    --graphic-max-size-cm: 12; 
+    --graphic-offset-y-cm: 2;
 }
+
 * { box-sizing: border-box; margin: 0; padding: 0; outline: none; -webkit-tap-highlight-color: transparent; }
 
-body { font-family: 'Roboto', sans-serif; background-color: var(--bg-canvas); height: 100vh; display: flex; color: #333; overflow: hidden; }
+/* --- LAYOUT --- */
+body { 
+    font-family: 'Roboto', sans-serif; 
+    background-color: var(--bg-canvas); 
+    height: 100vh; 
+    display: flex; 
+    color: #333; 
+    overflow: hidden; 
+}
+
 #workspace { 
-    flex: 1; display: flex; justify-content: center; align-items: center; position: relative; 
-    background-color: var(--bg-canvas); background-image: linear-gradient(#ccc 1px, transparent 1px), linear-gradient(90deg, #ccc 1px, transparent 1px); background-size: 50px 50px; overflow: hidden; 
+    flex: 1; 
+    display: flex; 
+    justify-content: center; 
+    align-items: center; 
+    position: relative; 
+    background-color: var(--bg-canvas); 
+    background-image: linear-gradient(#ccc 1px, transparent 1px), linear-gradient(90deg, #ccc 1px, transparent 1px); 
+    background-size: 50px 50px; 
+    overflow: hidden; 
     cursor: zoom-in;
 }
 
-.canvas-container { box-shadow: 0 40px 100px rgba(0,0,0,0.4); border: none; background: #fff; margin: auto; transition: opacity 0.3s; }
-#cropperModal .canvas-container { background: #111 !important; box-shadow: none; }
+.canvas-container { 
+    box-shadow: 0 40px 100px rgba(0,0,0,0.4); 
+    border: none; 
+    background: #fff; 
+    margin: auto; 
+    transition: opacity 0.3s; 
+}
 
-#controls { width: 400px; background: var(--bg-panel); color: var(--text-panel); padding: 30px; overflow-y: auto; display: flex; flex-direction: column; gap: 30px; box-shadow: -10px 0 30px rgba(0,0,0,0.2); z-index: 100; flex-shrink: 0; }
+#cropperModal .canvas-container { 
+    background: #111 !important; 
+    box-shadow: none; 
+}
 
-h1 { font-family: 'Bodoni Moda', serif; font-weight: 400; font-size: 24px; color: #fff; letter-spacing: 3px; margin-bottom: 10px; text-align: center; }
-h2 { font-family: 'Roboto', sans-serif; font-weight: 500; font-size: 13px; color: var(--accent-gold); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 12px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-top: 5px; }
-label { display: block; margin-bottom: 8px; font-size: 10px; font-weight: bold; color: #888; text-transform: uppercase; letter-spacing: 1px; font-family: 'Roboto', sans-serif; }
+#controls { 
+    width: 400px; 
+    background: var(--bg-panel); 
+    color: var(--text-panel); 
+    padding: 30px; 
+    overflow-y: auto; 
+    display: flex; 
+    flex-direction: column; 
+    gap: 30px; 
+    box-shadow: -10px 0 30px rgba(0,0,0,0.2); 
+    z-index: 100; 
+    flex-shrink: 0; 
+}
 
-/* FIX V77: High Contrast Plus Button */
+/* --- TYPOGRAPHY --- */
+h1 { 
+    font-family: 'Bodoni Moda', serif; 
+    font-weight: 400; 
+    font-size: 24px; 
+    color: #fff; 
+    letter-spacing: 3px; 
+    margin-bottom: 10px; 
+    text-align: center; 
+}
+
+h2 { 
+    font-family: 'Roboto', sans-serif; 
+    font-weight: 500; 
+    font-size: 13px; 
+    color: var(--accent-gold); 
+    text-transform: uppercase; 
+    letter-spacing: 1.5px; 
+    margin-bottom: 12px; 
+    border-bottom: 1px solid var(--border-color); 
+    padding-bottom: 8px; 
+    margin-top: 5px; 
+}
+
+label { 
+    display: block; 
+    margin-bottom: 8px; 
+    font-size: 10px; 
+    font-weight: bold; 
+    color: #888; 
+    text-transform: uppercase; 
+    letter-spacing: 1px; 
+    font-family: 'Roboto', sans-serif; 
+}
+
+/* --- UI COMPONENTS --- */
+
+/* Кнопка + (скрытая системная, но стиль нужен для JS создания кнопки на холсте) */
 #photoTrigger { 
     position: absolute; width: 50px; height: 50px; 
     background: rgba(255,255,255,0.95); 
     border-radius: 50%; 
     display: flex; justify-content: center; align-items: center; 
-    color: #000; /* Black Icon */
+    color: #000; 
     font-size: 28px; 
     cursor: pointer; 
     box-shadow: 0 4px 15px rgba(0,0,0,0.3); 
@@ -43,9 +133,67 @@ label { display: block; margin-bottom: 8px; font-size: 10px; font-weight: bold; 
 #photoTrigger:hover { transform: scale(1.1); background: #fff; } 
 #photoTrigger::after { content: '+'; font-weight: 300; }
 
-@keyframes pulse-white { 0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.5); } 70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(255, 255, 255, 0); } 100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); } }
+@keyframes pulse-white { 
+    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.5); } 
+    70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(255, 255, 255, 0); } 
+    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); } 
+}
 
-/* ... (FORMAT, COLOR, LAYOUT STYLES - KEEP SAME) ... */
+/* CANVAS ACTIONS (Нижняя панель кнопок) */
+#canvasActions { 
+    position: absolute; 
+    bottom: 20px; 
+    left: 0; 
+    width: 100%; 
+    display: flex; 
+    justify-content: center; 
+    align-items: center; 
+    gap: 15px; 
+    z-index: 90; 
+    pointer-events: none; /* Пропускаем клики мимо контейнера */
+}
+
+/* Кнопки "Загрузить фото" / "Галерея" */
+.action-pill { 
+    pointer-events: auto; 
+    background: rgba(255, 255, 255, 0.9); 
+    border: 1px solid #ccc; 
+    color: #333; 
+    padding: 8px 16px; 
+    border-radius: 20px; 
+    font-size: 12px; 
+    text-transform: uppercase; 
+    font-weight: bold; 
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15); 
+    transition: transform 0.2s, background 0.2s, color 0.2s; 
+    cursor: pointer; 
+    font-family: 'Roboto', sans-serif; 
+}
+
+.action-pill:hover { 
+    background: #fff; 
+    color: #000; /* Текст остается черным */
+    transform: translateY(-2px); 
+}
+.action-pill:active { transform: scale(0.95); }
+
+/* Кнопка "На весь экран" */
+#fullscreenBtn { 
+    position: static; 
+    width: 36px; height: 36px; 
+    background: rgba(255, 255, 255, 0.9); 
+    border-radius: 50%; 
+    display: flex !important; 
+    justify-content: center; align-items: center; 
+    color: #333; 
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15); 
+    cursor: pointer; 
+    pointer-events: auto; 
+    transition: transform 0.2s; 
+}
+#fullscreenBtn:hover { background: #fff; transform: scale(1.1); }
+
+/* --- CONTROLS SECTION STYLES --- */
 .format-selector { display: flex; gap: 10px; justify-content: flex-start; align-items: flex-end; margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #333; overflow-x: auto; padding-top: 5px; }
 .format-card { aspect-ratio: 1; width: 60px; height: auto; border: 1px solid #444; background: var(--card-bg); cursor: pointer; display: flex; justify-content: center; align-items: center; transition: all 0.2s; position: relative; flex-shrink: 0; }
 .format-card:hover { border-color: #777; background: var(--card-hover); }
@@ -137,146 +285,72 @@ button.secondary { background: transparent; border: 1px solid #555; color: #ccc;
 @keyframes glow { 0% { box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.4); border-color: #777; } 50% { box-shadow: 0 0 10px 0 rgba(212, 175, 55, 0.8); border-color: var(--accent-gold); } 100% { box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.4); border-color: #777; } }
 .pulse-attention { animation: glow 2s infinite; }
 
-/* CANVAS ACTIONS (BOTTOM BUTTONS) */
-#canvasActions { position: absolute; bottom: 20px; left: 0; width: 100%; display: flex; justify-content: center; align-items: center; gap: 15px; z-index: 90; pointer-events: none; }
-.action-pill { pointer-events: auto; background: rgba(255, 255, 255, 0.9); border: 1px solid #ccc; color: #333; padding: 8px 16px; border-radius: 20px; font-size: 12px; text-transform: uppercase; font-weight: bold; box-shadow: 0 4px 10px rgba(0,0,0,0.15); transition: transform 0.2s, background 0.2s; cursor: pointer; font-family: 'Roboto', sans-serif; }
-/* FIX V77: High contrast hover text */
-.action-pill:hover { background: #fff; color: #000; transform: translateY(-2px); }
-.action-pill:active { transform: scale(0.95); }
+/* --- MOBILE PREVIEW (V78 FIXES) --- */
+#mobilePreview { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #111; z-index: 10000; display: flex; justify-content: center; align-items: center; overflow: hidden; touch-action: none; }
 
-#fullscreenBtn { position: static; width: 36px; height: 36px; background: rgba(255, 255, 255, 0.9); border-radius: 50%; display: flex !important; justify-content: center; align-items: center; color: #333; box-shadow: 0 4px 10px rgba(0,0,0,0.15); cursor: pointer; pointer-events: auto; transition: transform 0.2s; }
-#fullscreenBtn:hover { background: #fff; transform: scale(1.1); }
-
-/* DESKTOP PANZOOM */
-#panzoomContainer { cursor: grab; }
+/* Default: Desktop & Landscape Mobile - No Rotation */
+#panzoomContainer { 
+    display: flex; justify-content: center; align-items: center; 
+    width: 100%; height: 100%; 
+    transform: none; 
+    cursor: grab; 
+    transform-origin: center;
+}
 #panzoomContainer:active { cursor: grabbing; }
 
-/* MOBILE PREVIEW */
-#mobilePreview { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #111; z-index: 10000; display: flex; justify-content: center; align-items: center; overflow: hidden; touch-action: none; }
-#panzoomContainer { display: flex; justify-content: center; align-items: center; width: 100vh; height: 100vw; transform: rotate(90deg); transition: transform 0.3s; }
 #mobilePreviewImg { max-width: 95%; max-height: 95%; object-fit: contain; box-shadow: 0 0 50px rgba(0,0,0,0.8); }
 
-/* V77: PREVIEW TOOLBAR (Zoom + Return) */
+/* V78: Controls Bar at Bottom (Always Horizontal) */
 .preview-toolbar { 
     position: absolute; bottom: 20px; left: 0; width: 100%; 
     display: flex; flex-direction: column; align-items: center; gap: 15px; 
-    pointer-events: none; /* Let clicks pass through empty areas */
-    transform: rotate(90deg); /* Rotate for Portrait Mode */
+    pointer-events: none; z-index: 10002;
 }
 
-/* V77: Zoom Actions Container */
-.zoom-actions {
-    display: flex; gap: 10px;
+.zoom-actions { 
+    display: flex; gap: 10px; 
     background: rgba(0, 0, 0, 0.6); 
-    padding: 5px 10px; border-radius: 20px;
-    backdrop-filter: blur(4px);
-    pointer-events: auto;
+    padding: 5px 10px; border-radius: 20px; 
+    backdrop-filter: blur(4px); 
+    pointer-events: auto; 
 }
-
-.zoom-actions button {
-    background: transparent; color: #fff; border: none; 
-    padding: 5px 10px; font-size: 14px; cursor: pointer;
-}
+.zoom-actions button { background: transparent; color: #fff; border: none; padding: 5px 10px; font-size: 14px; cursor: pointer; font-family: 'Roboto', sans-serif; font-weight: bold; }
 .zoom-actions button:hover { color: var(--accent-gold); }
 
 #closePreviewBtn { 
-    pointer-events: auto;
-    background: rgba(0, 0, 0, 0.6); border: 1px solid rgba(255, 255, 255, 0.5); 
+    pointer-events: auto; 
+    background: rgba(0, 0, 0, 0.6); 
+    border: 1px solid rgba(255, 255, 255, 0.5); 
     color: #fff; padding: 10px 20px; border-radius: 30px; 
     font-size: 12px; font-family: 'Roboto', sans-serif; 
     backdrop-filter: blur(4px); cursor: pointer; text-transform: uppercase; 
+    transition: opacity 0.3s;
 }
 
-/* MOBILE MEDIA QUERY */
+/* MOBILE MEDIA QUERY (Portrait) */
 @media (max-width: 900px) {
-    body { flex-direction: column; overflow: hidden; }
-    #workspace { height: 35vh; min-height: 250px; flex: none; width: 100%; border-bottom: 1px solid #ccc; background-size: 20px 20px; }
-    #controls { width: 100%; flex: 1; box-shadow: 0 -10px 30px rgba(0,0,0,0.1); padding: 20px 15px; padding-bottom: 80px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
-    
-    .layout-grid { grid-template-columns: repeat(3, 1fr); }
-    .pairs-grid { grid-template-columns: repeat(6, 1fr); gap: 6px; }
-    .format-card { height: auto; }
-    .layout-card { height: auto; aspect-ratio: 1; }
-    
-    h1 { font-size: 20px; letter-spacing: 2px; } h2 { font-size: 12px; margin-top: 15px; }
-    #photoTrigger { width: 60px; height: 60px; font-size: 30px; }
-    .modal-content { width: 95%; max-width: 95%; padding: 20px; max-height: 90vh; }
-    
-    #canvasActions { bottom: 15px; }
+    /* V78: Buttons slightly lower */
+    #canvasActions { bottom: 10px; } 
     
     body.keyboard-open #workspace { display: none !important; }
     body.keyboard-open #controls { height: 100vh; flex: 1; padding-bottom: 0; }
 }
 
-@media screen and (orientation: landscape) and (max-height: 900px) {
-    #panzoomContainer { transform: rotate(0deg); width: 100vw; height: 100vh; }
-    .preview-toolbar { display: none !important; }
-    #fullscreenBtn { display: none; }
-    #canvasActions { display: none; }
-}
-
-
-/* ... (ВСЕ ПРЕДЫДУЩИЕ ШРИФТЫ И БАЗОВЫЕ СТИЛИ ОСТАЮТСЯ) ... */
-
-/* ... */
-
-/* --- CANVAS ACTIONS (BOTTOM BUTTONS) --- */
-#canvasActions { position: absolute; bottom: 20px; left: 0; width: 100%; display: flex; justify-content: center; align-items: center; gap: 15px; z-index: 90; pointer-events: none; }
-.action-pill { pointer-events: auto; background: rgba(255, 255, 255, 0.9); border: 1px solid #ccc; color: #333; padding: 8px 16px; border-radius: 20px; font-size: 12px; text-transform: uppercase; font-weight: bold; box-shadow: 0 4px 10px rgba(0,0,0,0.15); transition: transform 0.2s, background 0.2s; cursor: pointer; font-family: 'Roboto', sans-serif; }
-.action-pill:hover { background: #fff; color: #000; transform: translateY(-2px); }
-.action-pill:active { transform: scale(0.95); }
-
-#fullscreenBtn { position: static; width: 36px; height: 36px; background: rgba(255, 255, 255, 0.9); border-radius: 50%; display: flex !important; justify-content: center; align-items: center; color: #333; box-shadow: 0 4px 10px rgba(0,0,0,0.15); cursor: pointer; pointer-events: auto; transition: transform 0.2s; }
-#fullscreenBtn:hover { background: #fff; transform: scale(1.1); }
-
-/* --- MOBILE PREVIEW (V78 ROTATION FIX) --- */
-#mobilePreview { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #111; z-index: 10000; display: flex; justify-content: center; align-items: center; overflow: hidden; touch-action: none; }
-
-/* Desktop/Default: NO ROTATION */
-#panzoomContainer { display: flex; justify-content: center; align-items: center; width: 100%; height: 100%; transform: none; cursor: grab; }
-#panzoomContainer:active { cursor: grabbing; }
-
-#mobilePreviewImg { max-width: 95%; max-height: 95%; object-fit: contain; box-shadow: 0 0 50px rgba(0,0,0,0.8); }
-
-.preview-toolbar { 
-    position: absolute; bottom: 20px; left: 0; width: 100%; 
-    display: flex; flex-direction: column; align-items: center; gap: 15px; 
-    pointer-events: none; 
-}
-
-.zoom-actions { display: flex; gap: 10px; background: rgba(0, 0, 0, 0.6); padding: 5px 10px; border-radius: 20px; backdrop-filter: blur(4px); pointer-events: auto; }
-.zoom-actions button { background: transparent; color: #fff; border: none; padding: 5px 10px; font-size: 14px; cursor: pointer; }
-.zoom-actions button:hover { color: var(--accent-gold); }
-
-#closePreviewBtn { pointer-events: auto; background: rgba(0, 0, 0, 0.6); border: 1px solid rgba(255, 255, 255, 0.5); color: #fff; padding: 10px 20px; border-radius: 30px; font-size: 12px; font-family: 'Roboto', sans-serif; backdrop-filter: blur(4px); cursor: pointer; text-transform: uppercase; }
-
-/* MOBILE MEDIA QUERY */
-@media (max-width: 900px) {
-    /* V78 FIX: Lower buttons further down */
-    #canvasActions { bottom: 5px; } 
-    
-    body.keyboard-open #workspace { display: none !important; }
-    body.keyboard-open #controls { height: 100vh; flex: 1; padding-bottom: 0; }
-}
-
-/* ONLY ROTATE ON MOBILE PORTRAIT */
+/* ONLY ROTATE CONTAINER ON MOBILE PORTRAIT */
 @media screen and (max-width: 900px) and (orientation: portrait) {
     #panzoomContainer {
         width: 100vh; height: 100vw;
         transform: rotate(90deg);
     }
-    .preview-toolbar {
-        transform: rotate(90deg);
-        /* Adjust positioning for rotated toolbar */
-        bottom: 50%; right: 10px; left: auto;
-        width: auto;
-        flex-direction: row-reverse;
-    }
+    /* Toolbar stays horizontal, no rotation */
 }
 
 /* LANDSCAPE MOBILE */
 @media screen and (orientation: landscape) and (max-height: 900px) {
+    /* Hide specific mobile controls in landscape if needed */
     .preview-toolbar { display: none !important; }
     #fullscreenBtn { display: none; }
     #canvasActions { display: none; }
+    /* Ensure container is normal */
+    #panzoomContainer { transform: none; width: 100vw; height: 100vh; }
 }
