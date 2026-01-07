@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MALEVICH | Configurator V77</title>
+    <title>MALEVICH | Configurator V79</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
@@ -26,7 +26,6 @@
 
     <div id="workspace">
         <canvas id="c"></canvas>
-        
         <div id="photoTrigger" class="hidden" onclick="triggerAssetLoader()"></div>
         
         <div id="canvasActions">
@@ -179,13 +178,14 @@
             <img id="mobilePreviewImg" src="" alt="Preview">
         </div>
         
-        <div class="preview-toolbar">
+        <div id="previewControls">
+            <button id="closePreviewBtn">←</button>
+            <div class="divider"></div>
             <div class="zoom-actions">
                 <button id="btnZoomOut">−</button>
                 <button id="btnZoomFit">100%</button>
                 <button id="btnZoomIn">+</button>
             </div>
-            <button id="closePreviewBtn">Вернуться в редактор</button>
         </div>
     </div>
 
