@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MALEVICH | Configurator V74</title>
+    <title>MALEVICH | Configurator V77</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
@@ -178,8 +178,16 @@
         <div id="panzoomContainer">
             <img id="mobilePreviewImg" src="" alt="Preview">
         </div>
-        <button id="closePreviewBtn">Вернуться в редактор</button>
+        
+        <div class="preview-toolbar">
+            <div class="zoom-actions">
+                <button id="btnZoomOut">−</button>
+                <button id="btnZoomFit">100%</button>
+                <button id="btnZoomIn">+</button>
+            </div>
+            <button id="closePreviewBtn">Вернуться в редактор</button>
         </div>
+    </div>
 
     <div id="cropperModal" class="modal-overlay hidden">
         <div class="modal-content">
