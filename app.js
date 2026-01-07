@@ -96,13 +96,17 @@ function initColors() {
 function updateActionButtons() {
     const btnGallery = document.getElementById('btnActionGallery');
     const btnUpload = document.getElementById('btnActionUpload');
+    
     btnGallery.classList.add('hidden');
     btnUpload.classList.add('hidden');
     
-    if (state.images.main) return;
-
-    if (state.layout === 'graphic') btnGallery.classList.remove('hidden');
-    else if (state.layout === 'photo_text' || state.layout === 'magazine') btnUpload.classList.remove('hidden');
+    // Logic: Always show button based on layout type (even if image exists)
+    if (state.layout === 'graphic') {
+        btnGallery.classList.remove('hidden');
+    } 
+    else if (state.layout === 'photo_text' || state.layout === 'magazine') {
+        btnUpload.classList.remove('hidden');
+    }
 }
 
 window.openGallery = (type, target) => {
