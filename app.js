@@ -1,4 +1,4 @@
-/* app.js - UI Controller & State Management V79 */
+/* app.js - UI Controller & State Management V80 */
 
 let state = {
     bookSize: 30, layout: 'text_icon', ppi: 10, slotSize: { w: 6, h: 6 }, maskType: 'rect',
@@ -74,6 +74,11 @@ function finishInit() {
 // Random Color from Kinfolk
 function initColors() {
     const collectionName = 'Kinfolk - Cinema';
+    
+    // FIX V80: Set Dropdown Value
+    const selector = document.getElementById('paletteSelector');
+    if(selector) selector.value = collectionName;
+
     if(typeof DESIGNER_PALETTES !== 'undefined' && DESIGNER_PALETTES[collectionName]) {
         changeCollection(collectionName);
         const palette = DESIGNER_PALETTES[collectionName];
@@ -81,6 +86,7 @@ function initColors() {
         const btns = document.querySelectorAll('#pairsGrid .pair-btn');
         if (btns[randomIdx]) btns[randomIdx].click();
     }
+    
     const bgPicker = document.getElementById('customCoverPicker');
     const textPicker = document.getElementById('customTextPicker');
     if(bgPicker) bgPicker.oninput = (e) => { state.coverColor = e.target.value; refresh(); };
@@ -215,6 +221,7 @@ function initListeners() {
 
             processAndResizeImage(e.target.files[0], limit, type, (resizedUrl) => {
                 document.getElementById('galleryModal').classList.add('hidden'); 
+                
                 if(state.layout === 'graphic') {
                     state.images.main = { src: resizedUrl, natural: true };
                     refresh();
@@ -254,6 +261,7 @@ function initMobilePreview() {
     const container = document.getElementById('panzoomContainer');
     const closeBtn = document.getElementById('closePreviewBtn');
     
+    // FIX V80: Apply Panzoom to the container inside the wrapper
     if(window.Panzoom && container) {
         panzoomInstance = Panzoom(container, {
             maxScale: 4,
@@ -270,7 +278,13 @@ function initMobilePreview() {
 
     document.getElementById('btnZoomIn').onclick = (e) => { e.stopPropagation(); panzoomInstance.zoomIn(); };
     document.getElementById('btnZoomOut').onclick = (e) => { e.stopPropagation(); panzoomInstance.zoomOut(); };
-    document.getElementById('btnZoomFit').onclick = (e) => { e.stopPropagation(); panzoomInstance.reset(); };
+    
+    // FIX V80: Reset Zoom AND Position to Center
+    document.getElementById('btnZoomFit').onclick = (e) => { 
+        e.stopPropagation(); 
+        panzoomInstance.zoom(1, { animate: true });
+        panzoomInstance.pan(0, 0, { animate: true });
+    };
 }
 
 function checkOrientation() {
@@ -288,7 +302,14 @@ window.openMobilePreview = () => {
     const dataUrl = CoverEngine.canvas.toDataURL({ format: 'png', multiplier: 2.5 });
     img.src = dataUrl;
     modal.classList.remove('hidden');
-    if(panzoomInstance) { setTimeout(() => { panzoomInstance.reset(); panzoomInstance.zoom(1, { animate: false }); }, 50); }
+    if(panzoomInstance) { 
+        setTimeout(() => { 
+            panzoomInstance.reset(); 
+            // Force Center on Open
+            panzoomInstance.zoom(1, { animate: false });
+            panzoomInstance.pan(0, 0, { animate: false });
+        }, 50); 
+    }
 };
 window.closeMobilePreview = () => { document.getElementById('mobilePreview').classList.add('hidden'); };
 function processAndResizeImage(file, maxSize, outputType, callback) {
