@@ -250,14 +250,14 @@ function initColors() {
 }
 
 function initListeners() {
-    // Список всех текстовых полей
+    // Список всех текстовых полей, при нажатии на которые нужно скрывать обложку
     const inputs = ['inputLine1', 'inputLine2', 'inputLine3', 'dateLine', 'copyrightInput', 'qrLinkInput'];
     
     inputs.forEach(id => {
         const el = document.getElementById(id);
         if (!el) return;
 
-        // 1. Обработка ввода текста
+        // 1. Стандартная обработка ввода (обновление модели)
         el.oninput = () => {
             userModifiedText = true;
             if(id === 'inputLine1') state.text.lines[0].text = el.value;
@@ -265,37 +265,36 @@ function initListeners() {
             if(id === 'inputLine3') state.text.lines[2].text = el.value;
             if(id === 'dateLine') state.text.date = el.value;
             if(id === 'copyrightInput') state.text.copyright = el.value;
-            // QR link обновляется только по кнопке, но флаг userModifiedText ставим
             refresh();
         };
 
-        // 2. FOCUS (Клавиатура открыта) - Скрываем холст на мобильных
+        // 2. FOCUS: Клавиатура открывается -> Скрываем обложку (только моб)
         el.addEventListener('focus', () => {
-            if (window.innerWidth <= 900) {
-                document.getElementById('workspace').classList.add('hidden-on-keyboard');
-                document.getElementById('controls').classList.add('expanded-on-keyboard');
-                
-                // Прокручиваем к активному полю, чтобы его было видно
+            if (window.innerWidth < 900) {
+                document.body.classList.add('keyboard-open');
+                // Прокручиваем к полю ввода, чтобы его было видно
                 setTimeout(() => {
-                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }, 300); // Задержка для открытия клавиатуры
+                    el.scrollIntoView({ behavior: "smooth", block: "center" });
+                }, 300); 
             }
         });
 
-        // 3. BLUR (Клавиатура закрыта) - Возвращаем холст
+        // 3. BLUR: Клавиатура закрывается -> Возвращаем обложку
         el.addEventListener('blur', () => {
-            if (window.innerWidth <= 900) {
-                // Небольшая задержка, чтобы клик по кнопке "Применить" (если есть) успел сработать
+            if (window.innerWidth < 900) {
+                // Небольшая задержка, чтобы проверить, не перешли ли мы в другое поле
                 setTimeout(() => {
-                    document.getElementById('workspace').classList.remove('hidden-on-keyboard');
-                    document.getElementById('controls').classList.remove('expanded-on-keyboard');
-                    refresh(); // Перерисовать на всякий случай
+                    // Если активный элемент больше не инпут - возвращаем обложку
+                    if (document.activeElement.tagName !== 'INPUT') {
+                        document.body.classList.remove('keyboard-open');
+                        refresh(); // Перерисовываем на всякий случай
+                    }
                 }, 100);
             }
         });
     });
     
-    // ... (остальные слушатели кнопок fontSelector, saveBtn и т.д. оставляем без изменений)
+    // Остальные слушатели (шрифты, сохранение, загрузка...)
     document.getElementById('fontSelector').addEventListener('change', (e) => { state.text.font = e.target.value; refresh(); });
     document.getElementById('saveBtn').onclick = () => CoverEngine.download(state);
 
@@ -362,7 +361,7 @@ function initListeners() {
     if(rotBtn) { rotBtn.onclick = () => CropperTool.rotate(); }
 
     document.getElementById('cancelCropBtn').onclick = () => document.getElementById('cropperModal').classList.add('hidden');
-};
+}
 
 function loadGal(type, cat, target) {
     const grid = document.getElementById('galleryGrid'); grid.innerHTML = '';
