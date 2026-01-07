@@ -1,12 +1,8 @@
 /* cover-engine.js - Logic for Rendering & Cropping */
 
 const CONFIG = {
-    dpi: 300, 
-    cmToInch: 2.54, 
-    spineWidthCm: 1.5, 
-    renderScale: 3.0,
-    globalOpacity: 1.0, 
-    typo: { baseTitle: 1.2, baseDetails: 0.5, baseCopy: 0.35 },
+    dpi: 300, cmToInch: 2.54, spineWidthCm: 1.5, renderScale: 3.0,
+    globalOpacity: 1.0, typo: { baseTitle: 1.2, baseDetails: 0.5, baseCopy: 0.35 },
     scales: [0.7, 0.85, 1.0, 1.15, 1.3]
 };
 
@@ -16,7 +12,7 @@ const CoverEngine = {
     init: function(canvasId) {
         this.canvas = new fabric.Canvas(canvasId, { backgroundColor: '#fff', selection: false, enableRetinaScaling: false });
         
-        // 1. Обработка кликов по объектам (Загрузка фото / Галерея иконок)
+        // 1. Clicks on objects
         this.canvas.on('mouse:down', (e) => {
             if(e.target) {
                 if(e.target.isMain || e.target.isPlaceholder) {
@@ -28,19 +24,11 @@ const CoverEngine = {
             }
         });
 
-        // 2. Детектор Тапа для Мобильного Превью (V60 FIX)
+        // 2. Tap detection for Mobile Preview (Fix V60)
         this.canvas.on('mouse:up', (e) => {
             const isMobile = window.innerWidth <= 900;
-            
-            // isClick=true означает, что это был чистый клик, а не свайп/драг.
-            // Также проверяем, что мы не кликнули по кнопке загрузки (она обрабатывается в mouse:down или DOM)
             if (isMobile && e.isClick) {
-                // Если клик был по объекту, который обрабатывается в mouse:down, превью открывать не надо.
-                // Но так как #photoTrigger лежит поверх canvas в DOM, события canvas mouse:up 
-                // срабатывают только если кликнули МИМО кнопки загрузки.
-                
                 setTimeout(() => {
-                    // Вызываем глобальную функцию открытия превью
                     if(window.openMobilePreview) window.openMobilePreview();
                 }, 100);
             }
@@ -58,7 +46,6 @@ const CoverEngine = {
         if(!container || container.clientWidth === 0) return;
         const isMobile = window.innerWidth < 900;
         const margin = isMobile ? 10 : 20; 
-        
         const curBookSize = parseFloat(state.bookSize);
         const curW = curBookSize * 2 + CONFIG.spineWidthCm; 
         const curH = curBookSize;
@@ -72,14 +59,10 @@ const CoverEngine = {
             const MAX_REF_SIZE = 30; 
             const maxRefW = MAX_REF_SIZE * 2 + CONFIG.spineWidthCm; 
             const maxRefH = MAX_REF_SIZE;
-            basePPI = Math.max(5, Math.min(
-                (container.clientWidth - margin*2) / maxRefW, 
-                (container.clientHeight - margin*2) / maxRefH
-            ));
+            basePPI = Math.max(5, Math.min((container.clientWidth - margin*2) / maxRefW, (container.clientHeight - margin*2) / maxRefH));
         }
 
         state.ppi = basePPI * CONFIG.renderScale;
-        
         this.canvas.setWidth(curW * state.ppi); 
         this.canvas.setHeight(curH * state.ppi);
         this.canvas.wrapperEl.style.width = `${curW * basePPI}px`; 
@@ -101,13 +84,11 @@ const CoverEngine = {
         const x2 = (bookSize + 1.5) * state.ppi;
         
         const c = { 
-            h: h, 
-            spineX: x1 + ((x2 - x1) / 2), 
+            h: h, spineX: x1 + ((x2 - x1) / 2), 
             frontCenter: x2 + (bookSize * state.ppi / 2), 
             backCenter: (bookSize * state.ppi) / 2, 
             bottomBase: h - (1.5 * state.ppi), 
-            centerY: h / 2, 
-            gap: 2.0 * state.ppi 
+            centerY: h / 2, gap: 2.0 * state.ppi 
         };
 
         this._drawGuides(x1, x2, h, state);
@@ -180,7 +161,6 @@ const CoverEngine = {
         } 
         else if (layout === 'graphic' || layout === 'photo_text') {
             let imgY = c.centerY; 
-            
             if(layout === 'graphic') {
                 const style = getComputedStyle(document.documentElement);
                 const offsetCm = parseFloat(style.getPropertyValue('--graphic-offset-y-cm')) || 2;
@@ -193,28 +173,19 @@ const CoverEngine = {
                 const w = state.slotSize.w * state.ppi * zoom;
                 const h = state.slotSize.h * state.ppi * zoom;
                 imgY = c.centerY - (2.0 * state.ppi); 
-                
-                if(state.images.main) {
-                    this._placeClippedImage(state.images.main, x, imgY, w, h, state.maskType, false, state);
-                } else {
-                    this._renderImageSlot(x, imgY, state, {w: w, h: h});
-                }
+                if(state.images.main) this._placeClippedImage(state.images.main, x, imgY, w, h, state.maskType, false, state);
+                else this._renderImageSlot(x, imgY, state, {w: w, h: h});
                 const textY = imgY + (h / 2) + (1.5 * state.ppi);
                 this._renderTextBlock(x, textY, true, false, state, 'top'); 
             }
         }
-        else if (layout === 'text') { 
-            const tObj = this._createTextBlockObj(false, state); 
-            tObj.set({ left: x, top: c.centerY }); 
-            this.canvas.add(tObj); 
-        } 
+        else if (layout === 'text') { const tObj = this._createTextBlockObj(false, state); tObj.set({ left: x, top: c.centerY }); this.canvas.add(tObj); } 
     },
 
     _createTextBlockObj: function(compact, state) {
         const rawLines = state.text.lines.map(l => l.text); 
         const processedLines = rawLines.map((txt, i) => { return state.text.lines[i].upper ? txt.toUpperCase() : txt; });
         const hasText = rawLines.some(t => t.length > 0);
-        
         let renderTxt = hasText ? processedLines.filter(Boolean).join("\n") : "THE VISUAL DIARY\n\n\n";
         let opacity = hasText ? CONFIG.globalOpacity : 0.3;
         const baseSize = compact ? 0.8 : CONFIG.typo.baseTitle; 
@@ -238,15 +209,7 @@ const CoverEngine = {
             const dateOp = CONFIG.globalOpacity; 
             const dateSize = CONFIG.typo.baseDetails * state.ppi * state.text.scale;
             const gap = (compact ? 1.0 : 2.0) * state.ppi;
-            const dObj = new fabric.Text(dateStr, { 
-                fontFamily: state.text.font, 
-                fontSize: dateSize, 
-                fill: state.text.color, 
-                opacity: dateOp, 
-                originX: 'center', 
-                originY: 'top', 
-                top: (tObj.height / 2) + gap 
-            });
+            const dObj = new fabric.Text(dateStr, { fontFamily: state.text.font, fontSize: dateSize, fill: state.text.color, opacity: dateOp, originX: 'center', originY: 'top', top: (tObj.height / 2) + gap });
             group.addWithUpdate(dObj);
         }
         return group;
@@ -403,7 +366,6 @@ const CropperTool = {
     
     init: function() {
         if(!this.canvas) {
-            // FIX: Dynamic size for mobile
             const size = Math.min(500, window.innerWidth - 40);
             this.canvas = new fabric.Canvas('cropCanvas', { 
                 width: size, height: size, backgroundColor: '#111', selection: false, preserveObjectStacking: true 
@@ -443,6 +405,9 @@ const CropperTool = {
         const cy = this.canvas.height / 2;
         img.set({ left: cx, top: cy });
         
+        // FIX: Force coords update so movement boundaries work immediately
+        img.setCoords();
+
         const slider = document.getElementById('zoomSlider');
         slider.min = minCoverScale;
         slider.max = minCoverScale * 4;
@@ -489,7 +454,7 @@ const CropperTool = {
             this.tempImgObject.hasControls = false;
             this.tempImgObject.hasBorders = false;
             this.canvas.add(img);
-            // FIX: Активный объект для перетаскивания сразу
+            // FIX: Set active to enable drag immediately
             this.canvas.setActiveObject(img);
             this.canvas.sendToBack(img);
             this.recalcMinZoomAndCenter();
