@@ -1,3 +1,5 @@
+/* ... (ВСЕ ШРИФТЫ И БАЗОВЫЕ СТИЛИ ОСТАВЛЯЕМ КАК БЫЛО В V76) ... */
+
 /* --- FONTS --- */
 @font-face { font-family: 'Tenor Sans'; src: url('fonts/TenorSans.ttf') format('truetype'); font-weight: normal; font-style: normal; font-display: swap; }
 @font-face { font-family: 'Bodoni Moda'; src: url('fonts/BodoniModa.ttf') format('truetype'); font-weight: 400 900; font-style: normal; font-display: swap; }
@@ -9,7 +11,6 @@
 }
 * { box-sizing: border-box; margin: 0; padding: 0; outline: none; -webkit-tap-highlight-color: transparent; }
 
-/* --- LAYOUT --- */
 body { font-family: 'Roboto', sans-serif; background-color: var(--bg-canvas); height: 100vh; display: flex; color: #333; overflow: hidden; }
 #workspace { 
     flex: 1; display: flex; justify-content: center; align-items: center; position: relative; 
@@ -26,10 +27,25 @@ h1 { font-family: 'Bodoni Moda', serif; font-weight: 400; font-size: 24px; color
 h2 { font-family: 'Roboto', sans-serif; font-weight: 500; font-size: 13px; color: var(--accent-gold); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 12px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-top: 5px; }
 label { display: block; margin-bottom: 8px; font-size: 10px; font-weight: bold; color: #888; text-transform: uppercase; letter-spacing: 1px; font-family: 'Roboto', sans-serif; }
 
-#photoTrigger { position: absolute; width: 50px; height: 50px; background: rgba(255,255,255,0.9); border-radius: 50%; display: flex; justify-content: center; align-items: center; color: #333; font-size: 24px; cursor: pointer; box-shadow: 0 0 0 0 rgba(255,255,255, 0.7); animation: pulse-white 2s infinite; z-index: 10; pointer-events: auto; transition: transform 0.2s; }
-#photoTrigger:hover { transform: scale(1.1); background: #fff; } #photoTrigger::after { content: '+'; }
-@keyframes pulse-white { 0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7); } 70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(255, 255, 255, 0); } 100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); } }
+/* FIX V77: High Contrast Plus Button */
+#photoTrigger { 
+    position: absolute; width: 50px; height: 50px; 
+    background: rgba(255,255,255,0.95); 
+    border-radius: 50%; 
+    display: flex; justify-content: center; align-items: center; 
+    color: #000; /* Black Icon */
+    font-size: 28px; 
+    cursor: pointer; 
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3); 
+    animation: pulse-white 2s infinite; 
+    z-index: 10; pointer-events: auto; transition: transform 0.2s; 
+}
+#photoTrigger:hover { transform: scale(1.1); background: #fff; } 
+#photoTrigger::after { content: '+'; font-weight: 300; }
 
+@keyframes pulse-white { 0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.5); } 70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(255, 255, 255, 0); } 100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); } }
+
+/* ... (FORMAT, COLOR, LAYOUT STYLES - KEEP SAME) ... */
 .format-selector { display: flex; gap: 10px; justify-content: flex-start; align-items: flex-end; margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #333; overflow-x: auto; padding-top: 5px; }
 .format-card { aspect-ratio: 1; width: 60px; height: auto; border: 1px solid #444; background: var(--card-bg); cursor: pointer; display: flex; justify-content: center; align-items: center; transition: all 0.2s; position: relative; flex-shrink: 0; }
 .format-card:hover { border-color: #777; background: var(--card-hover); }
@@ -124,7 +140,7 @@ button.secondary { background: transparent; border: 1px solid #555; color: #ccc;
 /* CANVAS ACTIONS (BOTTOM BUTTONS) */
 #canvasActions { position: absolute; bottom: 20px; left: 0; width: 100%; display: flex; justify-content: center; align-items: center; gap: 15px; z-index: 90; pointer-events: none; }
 .action-pill { pointer-events: auto; background: rgba(255, 255, 255, 0.9); border: 1px solid #ccc; color: #333; padding: 8px 16px; border-radius: 20px; font-size: 12px; text-transform: uppercase; font-weight: bold; box-shadow: 0 4px 10px rgba(0,0,0,0.15); transition: transform 0.2s, background 0.2s; cursor: pointer; font-family: 'Roboto', sans-serif; }
-/* FIX: Dark text on white background on hover */
+/* FIX V77: High contrast hover text */
 .action-pill:hover { background: #fff; color: #000; transform: translateY(-2px); }
 .action-pill:active { transform: scale(0.95); }
 
@@ -140,8 +156,36 @@ button.secondary { background: transparent; border: 1px solid #555; color: #ccc;
 #panzoomContainer { display: flex; justify-content: center; align-items: center; width: 100vh; height: 100vw; transform: rotate(90deg); transition: transform 0.3s; }
 #mobilePreviewImg { max-width: 95%; max-height: 95%; object-fit: contain; box-shadow: 0 0 50px rgba(0,0,0,0.8); }
 
-/* FIX: Button lowered to avoid spine */
-#closePreviewBtn { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); background: rgba(0, 0, 0, 0.6); border: 1px solid rgba(255, 255, 255, 0.5); color: #fff; padding: 10px 20px; border-radius: 30px; font-size: 14px; font-family: 'Roboto', sans-serif; backdrop-filter: blur(4px); cursor: pointer; z-index: 10001; text-transform: uppercase; letter-spacing: 1px; }
+/* V77: PREVIEW TOOLBAR (Zoom + Return) */
+.preview-toolbar { 
+    position: absolute; bottom: 20px; left: 0; width: 100%; 
+    display: flex; flex-direction: column; align-items: center; gap: 15px; 
+    pointer-events: none; /* Let clicks pass through empty areas */
+    transform: rotate(90deg); /* Rotate for Portrait Mode */
+}
+
+/* V77: Zoom Actions Container */
+.zoom-actions {
+    display: flex; gap: 10px;
+    background: rgba(0, 0, 0, 0.6); 
+    padding: 5px 10px; border-radius: 20px;
+    backdrop-filter: blur(4px);
+    pointer-events: auto;
+}
+
+.zoom-actions button {
+    background: transparent; color: #fff; border: none; 
+    padding: 5px 10px; font-size: 14px; cursor: pointer;
+}
+.zoom-actions button:hover { color: var(--accent-gold); }
+
+#closePreviewBtn { 
+    pointer-events: auto;
+    background: rgba(0, 0, 0, 0.6); border: 1px solid rgba(255, 255, 255, 0.5); 
+    color: #fff; padding: 10px 20px; border-radius: 30px; 
+    font-size: 12px; font-family: 'Roboto', sans-serif; 
+    backdrop-filter: blur(4px); cursor: pointer; text-transform: uppercase; 
+}
 
 /* MOBILE MEDIA QUERY */
 @media (max-width: 900px) {
@@ -166,7 +210,7 @@ button.secondary { background: transparent; border: 1px solid #555; color: #ccc;
 
 @media screen and (orientation: landscape) and (max-height: 900px) {
     #panzoomContainer { transform: rotate(0deg); width: 100vw; height: 100vh; }
-    #closePreviewBtn { display: none !important; }
+    .preview-toolbar { display: none !important; }
     #fullscreenBtn { display: none; }
     #canvasActions { display: none; }
 }
