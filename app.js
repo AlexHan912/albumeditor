@@ -48,56 +48,51 @@ function finishInit() {
     refresh();
 }
 
-// --- MOBILE PREVIEW LOGIC (NEW) ---
+// --- MOBILE PREVIEW LOGIC (UPDATED V60) ---
 function initMobilePreview() {
-    const workspace = document.getElementById('workspace');
     const modal = document.getElementById('mobilePreview');
-    const img = document.getElementById('mobilePreviewImg');
     const container = document.getElementById('panzoomContainer');
 
     // Инициализация Panzoom
-    if(window.Panzoom) {
+    if(window.Panzoom && container) {
         panzoomInstance = Panzoom(container, {
             maxScale: 4,
             minScale: 0.8,
             contain: 'outside'
         });
+        // Включаем зум колесиком (для тестов на ПК) и жесты
+        container.parentElement.addEventListener('wheel', panzoomInstance.zoomWithWheel);
     }
 
-    // Открытие по клику на Workspace
-    workspace.addEventListener('click', (e) => {
-        // Проверяем, мобильная ли версия
-        if (window.innerWidth > 900) return;
-
-        // Игнорируем клик, если нажали на кнопку загрузки фото
-        if (e.target.id === 'photoTrigger' || e.target.classList.contains('canvas-container') === false) {
-            // Если клик не по самому контейнеру (а например по кнопке внутри),
-            // то проверяем, не является ли цель кнопкой загрузки.
-            // Но проще: Trigger лежит поверх канваса. Если кликнули на Trigger, событие workspace сработает (bubbling).
-            // Поэтому проверяем ID.
-            if (e.target.id === 'photoTrigger') return;
-        }
-
-        // Генерируем картинку высокого качества
-        const dataUrl = CoverEngine.canvas.toDataURL({ format: 'png', multiplier: 3 });
-        img.src = dataUrl;
-        
-        modal.classList.remove('hidden');
-        
-        // Сброс зума при открытии
-        if(panzoomInstance) setTimeout(() => panzoomInstance.reset(), 50);
-    });
-
-    // Закрытие по клику на модалку
+    // Закрытие по клику
     modal.addEventListener('click', () => {
         modal.classList.add('hidden');
     });
-
-    // Включаем жесты для Panzoom внутри модалки
-    if(container) {
-        container.parentElement.addEventListener('wheel', panzoomInstance.zoomWithWheel);
-    }
 }
+
+// Глобальная функция, которую вызывает CoverEngine при тапе
+window.openMobilePreview = () => {
+    // Проверка: работаем только на мобильных (< 900px)
+    if (window.innerWidth > 900) return;
+
+    const modal = document.getElementById('mobilePreview');
+    const img = document.getElementById('mobilePreviewImg');
+    
+    // Генерируем картинку
+    // multiplier: 2 для хорошего качества на ретине
+    const dataUrl = CoverEngine.canvas.toDataURL({ format: 'png', multiplier: 2.5 });
+    img.src = dataUrl;
+    
+    modal.classList.remove('hidden');
+    
+    // Сброс зума
+    if(panzoomInstance) {
+        setTimeout(() => {
+            panzoomInstance.reset();
+            panzoomInstance.zoom(1, { animate: false });
+        }, 50);
+    }
+};
 
 // --- IMAGE PROCESSOR (HEIC FIX) ---
 function processAndResizeImage(file, maxSize, outputType, callback) {
