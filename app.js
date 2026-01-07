@@ -1,4 +1,4 @@
-/* app.js - UI Controller & State Management V74 */
+/* app.js - UI Controller & State Management V75 */
 
 let state = {
     bookSize: 30, layout: 'text_icon', ppi: 10, slotSize: { w: 6, h: 6 }, maskType: 'rect',
@@ -18,13 +18,13 @@ window.onload = () => {
     CoverEngine.init('c');
     loadDefaultAssets();
     
-    // 1. Установка текущего года
+    // Auto Year
     const currentYear = new Date().getFullYear().toString();
     state.text.date = currentYear;
     const dateInput = document.getElementById('dateLine');
     if(dateInput) dateInput.value = currentYear;
 
-    initColors(); // Рандомный цвет внутри
+    initColors();
     initListeners();
     initMobilePreview(); 
     
@@ -36,7 +36,7 @@ window.onload = () => {
     setTimeout(() => {
         refresh();
         checkOrientation();
-        updateActionButtons(); // Обновить кнопки при старте
+        updateActionButtons();
     }, 500);
 };
 
@@ -71,55 +71,34 @@ function finishInit() {
     refresh();
 }
 
-// --- RANDOM COLOR LOGIC (V74) ---
+// Random Color
 function initColors() {
-    // Выбираем коллекцию
     const collectionName = 'Kinfolk - Cinema';
-    
     if(typeof DESIGNER_PALETTES !== 'undefined' && DESIGNER_PALETTES[collectionName]) {
-        // Строим сетку кнопок
         changeCollection(collectionName);
-        
-        // Выбираем случайный индекс
         const palette = DESIGNER_PALETTES[collectionName];
         const randomIdx = Math.floor(Math.random() * palette.length);
-        
-        // Находим кнопку в DOM и кликаем по ней
         const btns = document.querySelectorAll('#pairsGrid .pair-btn');
-        if (btns[randomIdx]) {
-            btns[randomIdx].click();
-        }
+        if (btns[randomIdx]) btns[randomIdx].click();
     }
-    
     const bgPicker = document.getElementById('customCoverPicker');
     const textPicker = document.getElementById('customTextPicker');
-    
     if(bgPicker) bgPicker.oninput = (e) => { state.coverColor = e.target.value; refresh(); };
     if(textPicker) textPicker.oninput = (e) => { state.text.color = e.target.value; updateSymbolUI(); refresh(); };
 }
 
-// --- ACTION BUTTONS LOGIC (V74) ---
 function updateActionButtons() {
     const btnGallery = document.getElementById('btnActionGallery');
     const btnUpload = document.getElementById('btnActionUpload');
-    
-    // Сначала скрываем обе
     btnGallery.classList.add('hidden');
     btnUpload.classList.add('hidden');
     
-    // Если картинка уже есть - не показываем кнопки
     if (state.images.main) return;
 
-    // Показываем в зависимости от макета
-    if (state.layout === 'graphic') {
-        btnGallery.classList.remove('hidden');
-    } 
-    else if (state.layout === 'photo_text' || state.layout === 'magazine') {
-        btnUpload.classList.remove('hidden');
-    }
+    if (state.layout === 'graphic') btnGallery.classList.remove('hidden');
+    else if (state.layout === 'photo_text' || state.layout === 'magazine') btnUpload.classList.remove('hidden');
 }
 
-// ... (Функции галереи без изменений) ...
 window.openGallery = (type, target) => {
     document.getElementById('globalSymbolBtn').classList.remove('pulse-attention');
     document.getElementById('galleryModal').classList.remove('hidden');
@@ -168,11 +147,7 @@ function loadGal(type, cat, target) {
                 final = final || previewUrl;
                 document.getElementById('galleryModal').classList.add('hidden');
                 if(target === 'global') { state.images.icon = final; updateSymbolUI(); refresh(); }
-                else if(type === 'graphics') { 
-                    state.images.main = { src: final, natural: true }; 
-                    refresh(); 
-                    updateActionButtons(); // Скрыть кнопку
-                }
+                else if(type === 'graphics') { state.images.main = { src: final, natural: true }; refresh(); updateActionButtons(); }
             });
         };
         grid.appendChild(item);
@@ -196,12 +171,24 @@ function initListeners() {
             if(id === 'copyrightInput') state.text.copyright = el.value;
             refresh();
         };
+
+        // FIX V75: Enter key closes keyboard
+        el.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                el.blur();
+            }
+        });
+
+        // Mobile Focus
         el.addEventListener('focus', () => {
             if (window.innerWidth < 900) {
                 document.body.classList.add('keyboard-open');
                 setTimeout(() => { el.scrollIntoView({ behavior: "smooth", block: "center" }); }, 300); 
             }
         });
+
+        // Mobile Blur
         el.addEventListener('blur', () => {
             if (window.innerWidth < 900) {
                 setTimeout(() => {
@@ -267,25 +254,32 @@ function initListeners() {
         state.images.main = CropperTool.apply();
         refresh();
         document.getElementById('cropperModal').classList.add('hidden');
-        updateActionButtons(); // Скрыть кнопку после применения
+        updateActionButtons();
     };
     const rotBtn = document.getElementById('rotateBtn');
     if(rotBtn) { rotBtn.onclick = () => CropperTool.rotate(); }
     document.getElementById('cancelCropBtn').onclick = () => document.getElementById('cropperModal').classList.add('hidden');
 }
 
+// FIX V75: Enable mouse drag on desktop
 function initMobilePreview() {
     const modal = document.getElementById('mobilePreview');
     const container = document.getElementById('panzoomContainer');
     const closeBtn = document.getElementById('closePreviewBtn');
     if(window.Panzoom && container) {
-        panzoomInstance = Panzoom(container, { maxScale: 4, minScale: 0.8, contain: 'outside' });
+        panzoomInstance = Panzoom(container, {
+            maxScale: 4,
+            minScale: 0.8,
+            contain: 'outside',
+            canvas: true // Enable mouse panning
+        });
         container.parentElement.addEventListener('wheel', panzoomInstance.zoomWithWheel);
     }
     if (closeBtn) {
         closeBtn.onclick = (e) => { e.stopPropagation(); closeMobilePreview(); };
     }
 }
+
 function checkOrientation() {
     if (document.activeElement.tagName === 'INPUT' || document.body.classList.contains('keyboard-open')) return;
     const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 900;
@@ -296,7 +290,7 @@ function checkOrientation() {
     }
 }
 window.openMobilePreview = () => {
-    // В V74 убираем ограничение > 1024, чтобы работало и на ПК
+    // V75: Allow on desktop too
     const modal = document.getElementById('mobilePreview');
     const img = document.getElementById('mobilePreviewImg');
     const dataUrl = CoverEngine.canvas.toDataURL({ format: 'png', multiplier: 2.5 });
@@ -354,7 +348,7 @@ window.setLayout = (l, btn) => {
     else if(l==='graphic') { state.maskType='rect'; state.slotSize={w:12,h:12}; } 
     else { state.maskType='rect'; state.slotSize={w:6,h:6}; } 
     refresh(); 
-    updateActionButtons(); // Update buttons when layout changes
+    updateActionButtons(); 
 };
 window.handleCanvasClick = (objType) => { if (objType === 'mainImage' || objType === 'placeholder') { if (state.layout === 'graphic') openGallery('graphics', 'main'); else if (state.layout === 'photo_text' || state.layout === 'magazine') document.getElementById('imageLoader').click(); } };
 window.setBookSize = (s, btn) => { state.bookSize = s; document.querySelectorAll('.format-card').forEach(b => b.classList.remove('active')); btn.classList.add('active'); if (state.layout === 'magazine') state.slotSize = { w: s, h: s }; refresh(); };
