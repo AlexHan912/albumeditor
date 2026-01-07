@@ -24,9 +24,16 @@
         <div class="loader-sub">EST. 2025</div>
     </div>
 
-    <div id="workspace">
+<div id="workspace">
         <canvas id="c"></canvas>
+        
         <div id="photoTrigger" class="hidden" onclick="triggerAssetLoader()"></div>
+        
+        <div id="fullscreenBtn" onclick="openMobilePreview()" title="На весь экран">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>
+            </svg>
+        </div>
     </div>
 
     <div id="controls">
@@ -231,5 +238,6 @@
     
 </body>
 </html>
+
 
 
