@@ -1,4 +1,4 @@
-/* style.css - V86 Stable Fix (Desktop Rigidity & S21 Support) */
+/* style.css - V87 Fixed Layout */
 
 /* --- FONTS --- */
 @font-face { 
@@ -37,7 +37,7 @@ body {
 }
 
 #workspace { 
-    flex: 1; /* Занимает все оставшееся место */
+    flex: 1; 
     display: flex; 
     justify-content: center; 
     align-items: center; 
@@ -59,11 +59,11 @@ body {
 
 #cropperModal .canvas-container { background: #111 !important; box-shadow: none; }
 
-/* FIX V86: Жесткая ширина панели на ПК */
+/* FIX V87: Жесткая фиксация ширины панели на ПК */
 #controls { 
     width: 400px; 
-    min-width: 400px; /* Запрет сжатия */
-    flex: 0 0 400px;  /* Запрет растягивания во Flexbox */
+    min-width: 400px; /* Не даем сжиматься */
+    flex: 0 0 400px;  /* Не даем растягиваться */
     background: var(--bg-panel); 
     color: var(--text-panel); 
     padding: 30px; 
@@ -94,8 +94,8 @@ label { display: block; margin-bottom: 8px; font-size: 10px; font-weight: bold; 
 #fullscreenBtn { position: static; width: 36px; height: 36px; background: rgba(255, 255, 255, 0.9); border-radius: 50%; display: flex !important; justify-content: center; align-items: center; color: #333; box-shadow: 0 4px 10px rgba(0,0,0,0.15); cursor: pointer; pointer-events: auto; transition: transform 0.2s; }
 #fullscreenBtn:hover { background: #fff; transform: scale(1.1); }
 
-/* --- CONTROLS SECTION --- */
-/* FIX V86: Input Fields Layout */
+/* --- CONTROLS SECTION (INPUTS FIX) --- */
+/* FIX V87: Input Fields Layout - Prevents squashing */
 .text-row { 
     display: flex; 
     gap: 5px; 
@@ -107,13 +107,13 @@ label { display: block; margin-bottom: 8px; font-size: 10px; font-weight: bold; 
 .text-row input { 
     margin-bottom: 0; 
     flex-grow: 1; 
-    width: 0; /* Critical for Flexbox to prevent overflow */
+    width: 0; /* ВАЖНО: Разрешает input сжиматься, если нужно, не ломая flex */
     min-width: 0;
     height: 100%; 
 }
 .tool-btn { 
-    width: 38px; min-width: 38px; /* Fixed Button Width */
-    flex: 0 0 38px; /* Do not shrink */
+    width: 38px; min-width: 38px; 
+    flex: 0 0 38px; /* Запрещает кнопкам сжиматься */
     height: 100%; 
     border: 1px solid #444; 
     background: var(--input-bg); color: #777; 
@@ -128,7 +128,21 @@ label { display: block; margin-bottom: 8px; font-size: 10px; font-weight: bold; 
 .icon-trigger-btn { width: 46px; min-width: 46px; border: 1px solid #444; background: var(--input-bg); display: grid; place-items: center; cursor: pointer; transition: 0.3s; color: #555; font-size: 18px; background-size: 60%; background-position: center; background-repeat: no-repeat; flex-shrink: 0; height: 100%; font-family: 'Roboto', sans-serif; }
 .icon-trigger-btn:hover { border-color: #777; color: #999; } .icon-trigger-btn.active { border-color: var(--accent-gold); } 
 
-select, input[type="text"] { font-family: 'Roboto', sans-serif; width: 100%; padding: 0 12px; margin-bottom: 15px; background: var(--input-bg); border: 1px solid var(--border-color); color: #fff; border-radius: 2px; font-size: 14px; transition: border 0.3s; height: 38px; line-height: 38px;}
+/* Сброс ширины для input, чтобы они слушались flex-контейнера */
+select, input[type="text"] { 
+    font-family: 'Roboto', sans-serif; 
+    width: 100%; 
+    padding: 0 12px; 
+    margin-bottom: 15px; 
+    background: var(--input-bg); 
+    border: 1px solid var(--border-color); 
+    color: #fff; 
+    border-radius: 2px; 
+    font-size: 14px; 
+    transition: border 0.3s; 
+    height: 38px; 
+    line-height: 38px;
+}
 select:focus, input:focus { border-color: var(--accent-gold); outline: none; }
 button { background-color: #fff; color: #000; cursor: pointer; border: none; padding: 12px; font-weight: bold; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; transition: all 0.3s; font-family: 'Roboto', sans-serif; }
 button:hover { background-color: var(--accent-gold); color: #fff; }
@@ -145,7 +159,7 @@ button.secondary { background: transparent; border: 1px solid #555; color: #ccc;
 
 .typo-row { display: flex; gap: 15px; align-items: center; } .typo-col { flex: 1; display: flex; flex-direction: column; gap: 5px; }
 .scale-control { display: flex; justify-content: space-between; align-items: center; background: var(--input-bg); border: 1px solid var(--border-color); height: 38px; padding: 0 10px; border-radius: 2px; }
-.scale-label { font-size: 10px; color: #777; cursor: pointer; font-weight: bold; font-family: 'Roboto', sans-serif; } 
+.scale-label { font-size: 10px; color: #777; cursor: pointer; font-weight: bold; font-family: 'Roboto', sans-serif; } .scale-label:hover { color: #ccc; }
 .scale-track { flex-grow: 1; margin: 0 10px; height: 2px; background: #444; position: relative; }
 input[type=range] { -webkit-appearance: none; width: 100px; background: transparent; cursor: pointer; margin: 0 0px; transform: translateY(-13px); }
 input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 2px; background: #555; border-radius: 2px; border: none; }
@@ -214,7 +228,7 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 16px
 .pulse-attention { animation: glow 2s infinite; }
 
 /* MOBILE PREVIEW */
-#mobilePreview { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #111; z-index: 10000; overflow: hidden; touch-action: none; }
+#mobilePreview { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #111; z-index: 10000; overflow: hidden; touch-action: none; display: flex; justify-content: center; align-items: center; }
 #panzoomContainer { display: flex; justify-content: center; align-items: center; width: 100%; height: 100%; cursor: grab; transform-origin: center; }
 #panzoomContainer:active { cursor: grabbing; }
 #mobilePreviewImg { width: 95%; height: auto; max-height: 80vh; object-fit: contain; box-shadow: 0 0 50px rgba(0,0,0,0.8); }
@@ -227,8 +241,7 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 16px
 .zoom-actions button:hover { color: var(--accent-gold); }
 #btnZoomFit { font-size: 12px; font-weight: normal; }
 
-/* MEDIA QUERIES */
-/* FIX V86: Strict Mobile Breakpoint 1024px */
+/* MEDIA QUERIES (FIX: Mobile up to 1024px) */
 @media (max-width: 1024px) {
     body { flex-direction: column; overflow: hidden; }
     
@@ -243,11 +256,10 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 16px
     
     #controls { 
         width: 100%; 
-        min-width: 0; /* Reset desktop min-width */
+        min-width: 0; /* Reset desktop width constraint */
         flex: 1; 
         max-width: 100%; 
-        /* FIX V86: Smaller padding for narrow screens (S21) */
-        padding: 20px 15px; 
+        padding: 20px 15px; /* Compact padding for S21 */
         padding-bottom: 80px; 
         overflow-y: auto; 
         -webkit-overflow-scrolling: touch; 
