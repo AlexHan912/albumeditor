@@ -1,4 +1,4 @@
-/* cover-engine.js - Logic for Rendering & Cropping V75 */
+/* cover-engine.js - Logic for Rendering & Cropping V76 */
 
 const CONFIG = {
     dpi: 300, 
@@ -7,7 +7,6 @@ const CONFIG = {
     renderScale: 3.0,
     globalOpacity: 1.0, 
     typo: { baseTitle: 1.2, baseDetails: 0.5, baseCopy: 0.35 },
-    // ШКАЛА МАСШТАБА: 50% - 150%
     scales: [0.5, 0.75, 1.0, 1.25, 1.5]
 };
 
@@ -17,7 +16,6 @@ const CoverEngine = {
     init: function(canvasId) {
         this.canvas = new fabric.Canvas(canvasId, { backgroundColor: '#fff', selection: false, enableRetinaScaling: false });
         
-        // 1. Клики по интерактивным объектам
         this.canvas.on('mouse:down', (e) => {
             if(e.target) {
                 if(e.target.isMain || e.target.isPlaceholder) {
@@ -29,7 +27,7 @@ const CoverEngine = {
             }
         });
 
-        // 2. Детектор Тапа для Мобильного Превью (только если клик по пустому месту)
+        // Mobile Preview Tap (Only on background)
         this.canvas.on('mouse:up', (e) => {
             const isMobile = window.innerWidth <= 900;
             const hitInteractive = e.target && (e.target.isMain || e.target.isPlaceholder || e.target.isIcon);
@@ -133,11 +131,12 @@ const CoverEngine = {
             let yPos = c.bottomBase; 
             if(state.spine.symbol && state.images.icon) yPos -= (1.8 * state.ppi);
             
-            // FIX: Фиксированный размер шрифта (не зависит от зума)
+            // FIX V76: Lift text slightly to avoid edge clipping (1.5 ppi margin)
+            const textYPos = yPos - (0.5 * state.ppi);
+
             const fontSize = CONFIG.typo.baseDetails * state.ppi; 
             
-            // FIX V75: Используем fabric.Text (не Textbox), чтобы не было переноса строк
-            const textObj = new fabric.Text(spineStr, { 
+            this.canvas.add(new fabric.Text(spineStr, { 
                 fontFamily: 'Tenor Sans', 
                 fontSize: fontSize, 
                 fill: state.text.color, 
@@ -145,20 +144,17 @@ const CoverEngine = {
                 originX: 'left', 
                 originY: 'center', 
                 left: c.spineX, 
-                top: yPos, 
+                top: textYPos, 
                 angle: -90, 
                 selectable: false,
-                letterSpacing: 100 // Разрядка
-            });
-            this.canvas.add(textObj);
+                letterSpacing: 100 
+            }));
         }
     },
 
     _renderBackCover: function(c, state) {
         if(state.text.copyright) {
-            // FIX: Фиксированный размер шрифта
             const fontSize = CONFIG.typo.baseCopy * state.ppi;
-            
             this.canvas.add(new fabric.Text(state.text.copyright, { 
                 left: c.backCenter, 
                 top: c.bottomBase, 
@@ -248,7 +244,7 @@ const CoverEngine = {
         const finalSize = baseSize * state.ppi * state.text.scale;
         
         const tObj = new fabric.Text(renderTxt, { 
-            fontFamily: state.text.font, 
+            fontFamily: state.text.font, // Main title uses selected font
             fontSize: finalSize, 
             textAlign: 'center', 
             lineHeight: 1.3, 
@@ -257,7 +253,7 @@ const CoverEngine = {
             selectable: false, 
             originX: 'center', 
             originY: 'center',
-            hoverCursor: 'default' // No move cursor
+            hoverCursor: 'default'
         });
         const group = new fabric.Group([tObj], { originX: 'center', originY: 'center', hoverCursor: 'default' });
         
@@ -491,8 +487,6 @@ const CropperTool = {
         const cx = this.canvas.width / 2;
         const cy = this.canvas.height / 2;
         img.set({ left: cx, top: cy });
-        
-        // FIX: Force coords update so movement boundaries work immediately
         img.setCoords();
 
         const slider = document.getElementById('zoomSlider');
