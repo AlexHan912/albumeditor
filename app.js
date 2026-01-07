@@ -1,4 +1,4 @@
-/* app.js - UI Controller & State Management V76 */
+/* app.js - UI Controller & State Management V77 */
 
 let state = {
     bookSize: 30, layout: 'text_icon', ppi: 10, slotSize: { w: 6, h: 6 }, maskType: 'rect',
@@ -71,9 +71,14 @@ function finishInit() {
     refresh();
 }
 
-// Random Color from Kinfolk
+// FIX V77: Set Correct Dropdown Value + Random Color
 function initColors() {
     const collectionName = 'Kinfolk - Cinema';
+    
+    // Update Dropdown
+    const selector = document.getElementById('paletteSelector');
+    if(selector) selector.value = collectionName;
+
     if(typeof DESIGNER_PALETTES !== 'undefined' && DESIGNER_PALETTES[collectionName]) {
         changeCollection(collectionName);
         const palette = DESIGNER_PALETTES[collectionName];
@@ -81,6 +86,7 @@ function initColors() {
         const btns = document.querySelectorAll('#pairsGrid .pair-btn');
         if (btns[randomIdx]) btns[randomIdx].click();
     }
+    
     const bgPicker = document.getElementById('customCoverPicker');
     const textPicker = document.getElementById('customTextPicker');
     if(bgPicker) bgPicker.oninput = (e) => { state.coverColor = e.target.value; refresh(); };
@@ -139,10 +145,10 @@ function loadGal(type, cat, target) {
         item.appendChild(img);
         item.onclick = () => {
             if (item.classList.contains('broken-file')) { alert("Файл отсутствует."); return; }
-            // FIX V76: DO NOT CLEAR TEXT
-            if(type === 'graphics' && !userModifiedText) {
-                // state.text.lines[0].text = ""; // REMOVED
-            }
+            
+            // FIX V77: Remove text clearing logic
+            // if(type === 'graphics' && !userModifiedText) { ... } removed
+
             CoverEngine.loadSimpleImage(printUrl, (final) => {
                 final = final || previewUrl;
                 document.getElementById('galleryModal').classList.add('hidden');
@@ -172,7 +178,6 @@ function initListeners() {
             refresh();
         };
 
-        // FIX V75: Enter key closes keyboard
         el.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
                 e.preventDefault();
@@ -180,7 +185,6 @@ function initListeners() {
             }
         });
 
-        // Mobile Focus
         el.addEventListener('focus', () => {
             if (window.innerWidth < 900) {
                 document.body.classList.add('keyboard-open');
@@ -188,7 +192,6 @@ function initListeners() {
             }
         });
 
-        // Mobile Blur
         el.addEventListener('blur', () => {
             if (window.innerWidth < 900) {
                 setTimeout(() => {
@@ -224,11 +227,8 @@ function initListeners() {
             processAndResizeImage(e.target.files[0], limit, type, (resizedUrl) => {
                 document.getElementById('galleryModal').classList.add('hidden'); 
                 
-                // FIX V76: DO NOT CLEAR TEXT
-                if (!userModifiedText && (state.layout === 'magazine' || state.layout === 'photo_text' || state.layout === 'graphic')) {
-                    // state.text.lines[0].text = ""; // REMOVED
-                }
-
+                // FIX V77: Remove text clearing logic
+                
                 if(state.layout === 'graphic') {
                     state.images.main = { src: resizedUrl, natural: true };
                     refresh();
@@ -263,23 +263,30 @@ function initListeners() {
     document.getElementById('cancelCropBtn').onclick = () => document.getElementById('cropperModal').classList.add('hidden');
 }
 
-// FIX V76: No constraints on panzoom
+// FIX V77: New Zoom Logic
 function initMobilePreview() {
     const modal = document.getElementById('mobilePreview');
     const container = document.getElementById('panzoomContainer');
     const closeBtn = document.getElementById('closePreviewBtn');
+    
     if(window.Panzoom && container) {
         panzoomInstance = Panzoom(container, {
             maxScale: 4,
             minScale: 0.8,
-            contain: null, // Allow dragging anywhere
+            contain: null, // FIX: Allow dragging anywhere
             canvas: true 
         });
         container.parentElement.addEventListener('wheel', panzoomInstance.zoomWithWheel);
     }
+    
     if (closeBtn) {
         closeBtn.onclick = (e) => { e.stopPropagation(); closeMobilePreview(); };
     }
+
+    // Zoom Buttons
+    document.getElementById('btnZoomIn').onclick = (e) => { e.stopPropagation(); panzoomInstance.zoomIn(); };
+    document.getElementById('btnZoomOut').onclick = (e) => { e.stopPropagation(); panzoomInstance.zoomOut(); };
+    document.getElementById('btnZoomFit').onclick = (e) => { e.stopPropagation(); panzoomInstance.reset(); };
 }
 
 function checkOrientation() {
