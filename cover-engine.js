@@ -382,4 +382,193 @@ const CoverEngine = {
                 const coverW = w; 
                 const scale = Math.max(coverW / img.width, h / img.height);
                 img.set({ scaleX: scale, scaleY: scale, left: x, top: h/2, originX: 'center', originY: 'center', selectable: false, evented: true, hoverCursor: 'pointer', isMain: true });
-                img.clipPath = new fabric.Rect({ width: coverW/scale,
+                img.clipPath = new fabric.Rect({ width: coverW/scale, height: h/scale, left: -coverW/2/scale, top: -h/2/scale });
+                this.canvas.add(img); 
+                this.canvas.sendToBack(img);
+            } else {
+                let clip;
+                const absoluteOpts = { left: x, top: y, originX: 'center', originY: 'center', absolutePositioned: true };
+
+                if(maskType === 'circle') { clip = new fabric.Circle({ radius: w/2, ...absoluteOpts }); } 
+                else { clip = new fabric.Rect({ width: w, height: h, ...absoluteOpts }); }
+
+                const imgLeft = x + (info.left * scaleFactor);
+                const imgTop = y + (info.top * scaleFactor);
+                const totalScale = info.scale * scaleFactor;
+
+                img.set({ 
+                    left: imgLeft, top: imgTop, scaleX: totalScale, scaleY: totalScale, 
+                    angle: info.angle || 0, originX: 'center', originY: 'center', 
+                    selectable: false, evented: true, hoverCursor: 'pointer', isMain: true,
+                    clipPath: clip 
+                });
+                
+                this.canvas.add(img);
+                img.sendToBack(); 
+            }
+        });
+    },
+    
+    download: function(state) {
+        const mult = (CONFIG.dpi / CONFIG.cmToInch) / state.ppi;
+        this.canvas.getObjects('line').forEach(o => o.opacity = 0);
+        const data = this.canvas.toDataURL({ format: 'png', multiplier: mult, quality: 1 });
+        this.canvas.getObjects('line').forEach(o => o.opacity = 0.3);
+        const a = document.createElement('a'); a.download = `malevich_cover_${state.bookSize}.png`; a.href = data; a.click();
+    }
+};
+
+/* --- CROPPER TOOL --- */
+const CropperTool = {
+    canvas: null,
+    tempImgObject: null,
+    activeSlot: { w: 0, h: 0 },
+    maskType: 'rect',
+    angle: 0, 
+    
+    init: function() {
+        if(!this.canvas) {
+            const size = Math.min(500, window.innerWidth - 40);
+            this.canvas = new fabric.Canvas('cropCanvas', { 
+                width: size, height: size, backgroundColor: '#111', selection: false, preserveObjectStacking: true 
+            });
+            this.canvas.on('object:moving', (e) => {
+                if(e.target === this.tempImgObject) this.constrainImage(e.target);
+            });
+        } else {
+            const size = Math.min(500, window.innerWidth - 40);
+            this.canvas.setDimensions({width: size, height: size});
+        }
+        this.canvas.clear(); 
+        this.canvas.setBackgroundColor('#111', this.canvas.renderAll.bind(this.canvas));
+    },
+
+    rotate: function() {
+        if(!this.tempImgObject) return;
+        this.angle = (this.angle + 90) % 360;
+        this.tempImgObject.rotate(this.angle);
+        this.recalcMinZoomAndCenter();
+        this.canvas.requestRenderAll();
+    },
+
+    recalcMinZoomAndCenter: function() {
+        if(!this.tempImgObject) return;
+        const img = this.tempImgObject;
+        const ang = this.angle || 0;
+        const isRotated = (Math.abs(ang % 180) === 90);
+        const effectiveW = isRotated ? img.height : img.width;
+        const effectiveH = isRotated ? img.width : img.height;
+        const minScaleX = this.activeSlot.w / effectiveW;
+        const minScaleY = this.activeSlot.h / effectiveH;
+        const minCoverScale = Math.max(minScaleX, minScaleY);
+        img.scale(minCoverScale);
+        
+        const cx = this.canvas.width / 2;
+        const cy = this.canvas.height / 2;
+        img.set({ left: cx, top: cy });
+        img.setCoords();
+
+        const slider = document.getElementById('zoomSlider');
+        slider.min = minCoverScale;
+        slider.max = minCoverScale * 4;
+        slider.step = minCoverScale * 0.01;
+        slider.value = minCoverScale;
+        this.constrainImage(img);
+    },
+
+    constrainImage: function(img) {
+        const cropW = this.activeSlot.w;
+        const cropH = this.activeSlot.h;
+        const cx = this.canvas.width / 2;
+        const cy = this.canvas.height / 2;
+        const ang = img.angle || 0;
+        const isRotated = (Math.abs(ang % 180) === 90);
+        const imgDisplayW = (isRotated ? img.height : img.width) * img.scaleX;
+        const imgDisplayH = (isRotated ? img.width : img.height) * img.scaleY;
+        const frameLeft = cx - cropW/2;
+        const frameTop = cy - cropH/2;
+        const frameRight = cx + cropW/2;
+        const frameBottom = cy + cropH/2;
+        const maxLeft = frameLeft + imgDisplayW/2;
+        const minLeft = frameRight - imgDisplayW/2;
+        const maxTop = frameTop + imgDisplayH/2;
+        const minTop = frameBottom - imgDisplayH/2;
+        if (imgDisplayW >= cropW - 1) img.left = Math.min(Math.max(img.left, minLeft), maxLeft);
+        else img.left = cx; 
+        if (imgDisplayH >= cropH - 1) img.top = Math.min(Math.max(img.top, minTop), maxTop);
+        else img.top = cy;
+    },
+
+    start: function(url, slotW, slotH, maskType) {
+        this.init();
+        this.tempImgObject = null;
+        this.maskType = maskType;
+        this.angle = 0; 
+        this.drawOverlay(slotW, slotH);
+        fabric.Image.fromURL(url, (img) => {
+            if(!img) return;
+            this.tempImgObject = img;
+            this.tempImgObject.originX = 'center';
+            this.tempImgObject.originY = 'center';
+            this.tempImgObject.hasControls = false;
+            this.tempImgObject.hasBorders = false;
+            this.canvas.add(img);
+            this.canvas.setActiveObject(img);
+            this.canvas.sendToBack(img);
+            this.recalcMinZoomAndCenter();
+            const slider = document.getElementById('zoomSlider');
+            slider.oninput = () => { 
+                img.scale(parseFloat(slider.value)); 
+                this.constrainImage(img); 
+                this.canvas.requestRenderAll(); 
+            };
+            this.canvas.requestRenderAll();
+        });
+    },
+
+    drawOverlay: function(slotW, slotH) {
+        this.canvas.getObjects().forEach(o => { 
+            if(o !== this.tempImgObject) this.canvas.remove(o); 
+        });
+        let aspect = slotW / slotH;
+        let pW, pH;
+        const maxSize = Math.min(400, this.canvas.width * 0.8);
+        
+        if(this.maskType === 'circle') { pW = maxSize; pH = maxSize; }
+        else if(aspect >= 1) { pW = maxSize; pH = maxSize / aspect; } 
+        else { pH = maxSize; pW = maxSize * aspect; }
+        
+        this.activeSlot = { w: pW, h: pH };
+        const cx = this.canvas.width / 2;
+        const cy = this.canvas.height / 2;
+        
+        if(this.tempImgObject) {
+            this.canvas.sendToBack(this.tempImgObject);
+            this.recalcMinZoomAndCenter();
+        }
+        
+        let pathStr = `M 0 0 H ${this.canvas.width} V ${this.canvas.height} H 0 Z`; 
+        if(this.maskType === 'circle') {
+            const r = pW/2;
+            pathStr += ` M ${cx} ${cy-r} A ${r} ${r} 0 1 0 ${cx} ${cy+r} A ${r} ${r} 0 1 0 ${cx} ${cy-r} Z`;
+            this.canvas.add(new fabric.Circle({ radius: r, left: cx, top: cy, originX:'center', originY:'center', fill: 'transparent', stroke: '#fff', strokeWidth: 1, selectable: false, evented: false }));
+        } else {
+            pathStr += ` M ${cx-pW/2} ${cy-pH/2} H ${cx+pW/2} V ${cy+pH/2} H ${cx-pW/2} Z`;
+            this.canvas.add(new fabric.Rect({ left: cx, top: cy, width: pW, height: pH, fill: 'transparent', stroke: '#fff', strokeWidth: 1, originX: 'center', originY: 'center', selectable: false, evented: false }));
+        }
+        this.canvas.add(new fabric.Path(pathStr, { fill: 'rgba(0,0,0,0.7)', selectable: false, evented: false, fillRule: 'evenodd' }));
+        this.canvas.requestRenderAll();
+    },
+
+    apply: function() {
+        if(!this.tempImgObject) return null;
+        const cx = this.canvas.width / 2;
+        const cy = this.canvas.height / 2;
+        const offX = this.tempImgObject.left - cx; 
+        const offY = this.tempImgObject.top - cy;
+        return { 
+            src: this.tempImgObject.getSrc(), 
+            cropInfo: { left: offX, top: offY, scale: this.tempImgObject.scaleX, slotPixelSize: this.activeSlot.w, angle: this.angle } 
+        };
+    }
+};
