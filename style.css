@@ -11,23 +11,30 @@
 
 /* --- LAYOUT --- */
 body { font-family: 'Tenor Sans', sans-serif; background-color: var(--bg-canvas); height: 100vh; display: flex; color: #333; overflow: hidden; }
-#workspace { flex: 1; display: flex; justify-content: center; align-items: center; position: relative; background-color: var(--bg-canvas); background-image: linear-gradient(#ccc 1px, transparent 1px), linear-gradient(90deg, #ccc 1px, transparent 1px); background-size: 50px 50px; overflow: hidden; cursor: zoom-in; }
 
-/* FIX: Canvas Background Issues */
+/* WORKSPACE: Added cursor zoom-in */
+#workspace { 
+    flex: 1; display: flex; justify-content: center; align-items: center; position: relative; 
+    background-color: var(--bg-canvas); background-image: linear-gradient(#ccc 1px, transparent 1px), linear-gradient(90deg, #ccc 1px, transparent 1px); background-size: 50px 50px; overflow: hidden; 
+    cursor: zoom-in;
+}
+
 .canvas-container { box-shadow: 0 40px 100px rgba(0,0,0,0.4); border: none; background: #fff; margin: auto; transition: opacity 0.3s; }
-/* Override for cropper modal to prevent white bar */
 #cropperModal .canvas-container { background: #111 !important; box-shadow: none; }
 
 #controls { width: 400px; background: var(--bg-panel); color: var(--text-panel); padding: 30px; overflow-y: auto; display: flex; flex-direction: column; gap: 30px; box-shadow: -10px 0 30px rgba(0,0,0,0.2); z-index: 100; flex-shrink: 0; }
 
+/* --- TYPOGRAPHY --- */
 h1 { font-family: 'Bodoni Moda', serif; font-size: 24px; color: #fff; letter-spacing: 3px; margin-bottom: 10px; text-align: center; font-weight: 400; }
 h2 { font-family: 'Bodoni Moda', serif; font-size: 13px; color: var(--accent-gold); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 12px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-top: 5px; }
 label { display: block; margin-bottom: 8px; font-size: 10px; font-weight: bold; color: #888; text-transform: uppercase; letter-spacing: 1px; }
 
+/* --- PHOTO TRIGGER --- */
 #photoTrigger { position: absolute; width: 50px; height: 50px; background: rgba(255,255,255,0.9); border-radius: 50%; display: flex; justify-content: center; align-items: center; color: #333; font-size: 24px; cursor: pointer; box-shadow: 0 0 0 0 rgba(255,255,255, 0.7); animation: pulse-white 2s infinite; z-index: 10; pointer-events: auto; transition: transform 0.2s; }
 #photoTrigger:hover { transform: scale(1.1); background: #fff; } #photoTrigger::after { content: '+'; }
 @keyframes pulse-white { 0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7); } 70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(255, 255, 255, 0); } 100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); } }
 
+/* --- UI COMPONENTS --- */
 .format-selector { display: flex; gap: 10px; justify-content: flex-start; align-items: flex-end; margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #333; overflow-x: auto; padding-top: 5px; }
 .format-card { aspect-ratio: 1; width: 60px; height: auto; border: 1px solid #444; background: var(--card-bg); cursor: pointer; display: flex; justify-content: center; align-items: center; transition: all 0.2s; position: relative; flex-shrink: 0; }
 .format-card:hover { border-color: #777; background: var(--card-hover); }
@@ -95,18 +102,13 @@ button.secondary { background: transparent; border: 1px solid #555; color: #ccc;
 .gallery-tab.active { color: #fff; border: 1px solid var(--accent-gold); background: rgba(212, 175, 55, 0.1); }
 #galUploadBtn { background: transparent; border: none; color: #555; text-decoration: underline; font-size: 10px; cursor: pointer; padding: 5px; text-transform: none; letter-spacing: 0.5px; } #galUploadBtn:hover { color: #999; }
 
-/* FIX: CROPPER ICONS (CLEAN GEOMETRIC) */
+/* CROPPER ICONS */
 .crop-controls { display: flex; gap: 15px; justify-content: center; margin-bottom: 20px; align-items: center; }
-/* Remove default button border, only show shape */
 .crop-btn { background: transparent; border: none; padding: 10px; cursor: pointer; transition: all 0.2s; border-radius: 4px; display: flex; align-items: center; justify-content: center; }
 .crop-btn:hover { background: #222; }
 .crop-btn:focus, .crop-btn.active { background: #333; }
-
-/* Geometric Shapes - White Border */
 .crop-shape { border: 2px solid #fff; box-sizing: border-box; }
-/* Active state styling for shape */
 .crop-btn.active .crop-shape { border-color: var(--accent-gold); box-shadow: 0 0 5px rgba(212,175,55,0.5); }
-
 .crop-shape.shape-sq { width: 20px; height: 20px; }
 .crop-shape.shape-v { width: 16px; height: 24px; }
 .crop-shape.shape-h { width: 24px; height: 16px; }
@@ -124,7 +126,15 @@ button.secondary { background: transparent; border: 1px solid #555; color: #ccc;
 @keyframes glow { 0% { box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.4); border-color: #777; } 50% { box-shadow: 0 0 10px 0 rgba(212, 175, 55, 0.8); border-color: var(--accent-gold); } 100% { box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.4); border-color: #777; } }
 .pulse-attention { animation: glow 2s infinite; }
 
-/* Mobile */
+/* MOBILE PREVIEW (ROTATED) */
+#mobilePreview { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #111; z-index: 10000; display: flex; justify-content: center; align-items: center; overflow: hidden; touch-action: none; }
+#panzoomContainer { display: flex; justify-content: center; align-items: center; width: 100vh; height: 100vw; transform: rotate(90deg); transition: transform 0.3s; }
+#mobilePreviewImg { max-width: 95%; max-height: 95%; object-fit: contain; box-shadow: 0 0 50px rgba(0,0,0,0.8); }
+
+#closePreviewBtn { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); background: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255, 255, 255, 0.3); color: #fff; padding: 10px 20px; border-radius: 30px; font-size: 14px; font-family: 'Tenor Sans', sans-serif; backdrop-filter: blur(5px); cursor: pointer; z-index: 10001; text-transform: uppercase; letter-spacing: 1px; }
+.preview-hint { position: absolute; top: 50%; right: 10px; color: rgba(255,255,255,0.3); font-size: 10px; pointer-events: none; transform: rotate(90deg); }
+
+/* MOBILE MEDIA QUERY */
 @media (max-width: 900px) {
     body { flex-direction: column; overflow: hidden; }
     #workspace { height: 35vh; min-height: 250px; flex: none; width: 100%; border-bottom: 1px solid #ccc; background-size: 20px 20px; }
@@ -137,130 +147,9 @@ button.secondary { background: transparent; border: 1px solid #555; color: #ccc;
     .modal-content { width: 95%; max-width: 95%; padding: 20px; max-height: 90vh; }
 }
 
-/* --- MOBILE PREVIEW (ROTATED) --- */
-#mobilePreview {
-    position: fixed;
-    top: 0; left: 0; width: 100vw; height: 100vh;
-    background: #000;
-    z-index: 10000; /* Поверх всего */
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    overflow: hidden;
-    touch-action: none; /* Важно для зума */
-}
-
-#panzoomContainer {
-    /* Контейнер будет повернут */
-    width: 100vh; /* Высота экрана становится шириной */
-    height: 100vw; /* Ширина экрана становится высотой */
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    transform: rotate(90deg);
-}
-
-#mobilePreviewImg {
-    max-width: 95%;
-    max-height: 95%;
-    object-fit: contain;
-    box-shadow: 0 0 50px rgba(0,0,0,0.8);
-}
-
-.preview-hint {
-    position: absolute;
-    bottom: 20px;
-    left: 0;
-    width: 100%;
-    text-align: center;
-    color: rgba(255,255,255,0.3);
-    font-size: 10px;
-    pointer-events: none;
-    transform: rotate(90deg); /* Тоже поворачиваем текст */
-    right: -45%; /* Центрирование повернутого текста сложное, подбираем */
-    bottom: 50%;
-}
-
-
-/* --- MOBILE PREVIEW STYLES (V61) --- */
-#mobilePreview {
-    position: fixed;
-    top: 0; left: 0; width: 100vw; height: 100vh;
-    background: #111;
-    z-index: 10000; /* Поверх всего */
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    overflow: hidden;
-    touch-action: none;
-}
-
-#panzoomContainer {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    /* По умолчанию (для вертикального телефона) поворачиваем контейнер */
-    width: 100vh; 
-    height: 100vw;
-    transform: rotate(90deg);
-    transition: transform 0.3s;
-}
-
-#mobilePreviewImg {
-    max-width: 95%;
-    max-height: 95%;
-    object-fit: contain;
-    box-shadow: 0 0 50px rgba(0,0,0,0.8);
-}
-
-/* Кнопка возврата */
-#closePreviewBtn {
-    position: absolute;
-    bottom: 30px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(255, 255, 255, 0.15);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    color: #fff;
-    padding: 10px 20px;
-    border-radius: 30px;
-    font-size: 14px;
-    font-family: 'Tenor Sans', sans-serif;
-    backdrop-filter: blur(5px);
-    cursor: pointer;
-    z-index: 10001;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-}
-
-.preview-hint {
-    position: absolute;
-    top: 50%;
-    right: 10px;
-    color: rgba(255,255,255,0.3);
-    font-size: 10px;
-    pointer-events: none;
-    transform: rotate(90deg);
-}
-
-/* --- ВАЖНО: Если телефон РЕАЛЬНО повернули (Landscape) --- */
+/* REAL LANDSCAPE MODE: Hide buttons, remove rotation */
 @media screen and (orientation: landscape) and (max-height: 900px) {
-    #panzoomContainer {
-        /* Убираем поворот, так как экран уже широкий */
-        transform: rotate(0deg); 
-        width: 100vw; 
-        height: 100vh; 
-    }
-    
-    .preview-hint {
-        display: none;
-    }
-    
-    /* Кнопку можно сдвинуть в угол, чтобы не мешала */
-    #closePreviewBtn {
-        bottom: 20px;
-        right: 20px;
-        left: auto;
-        transform: none;
-    }
+    #panzoomContainer { transform: rotate(0deg); width: 100vw; height: 100vh; }
+    .preview-hint { display: none; }
+    #closePreviewBtn { display: none !important; }
 }
