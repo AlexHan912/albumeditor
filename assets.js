@@ -19,6 +19,13 @@ const ASSETS_DB = {
 
 // 3. ДИЗАЙНЕРСКИЕ ПАЛИТРЫ (Тренды) - Без изменений
 const DESIGNER_PALETTES = {
+    
+    'Kinfolk - Cinema': [
+        { bg: '#556B2F', text: '#F5F5DC' }, { bg: '#8B4513', text: '#FAEBD7' },
+        { bg: '#2F4F4F', text: '#FFFAFA' }, { bg: '#708090', text: '#E6E6FA' },
+        { bg: '#A0522D', text: '#FFF8DC' }, { bg: '#483D8B', text: '#E6E6FA' },
+        { bg: '#696969', text: '#F0F8FF' }, { bg: '#BC8F8F', text: '#FFF5EE' }
+    ],
     'Wedding Trends': [
         { bg: '#FDFBF7', text: '#3A3A3A' }, { bg: '#F2E8E3', text: '#5D4037' },
         { bg: '#D8D0C5', text: '#2C3E50' }, { bg: '#BCC6CC', text: '#1A252F' },
@@ -37,12 +44,6 @@ const DESIGNER_PALETTES = {
         { bg: '#939597', text: '#F5DF4D' }, { bg: '#0F4C81', text: '#FFFFFF' },
         { bg: '#FF6F61', text: '#FFFFFF' }, { bg: '#5F4B8B', text: '#FFFFFF' }
     ],
-    'Kinfolk - Cinema': [
-        { bg: '#556B2F', text: '#F5F5DC' }, { bg: '#8B4513', text: '#FAEBD7' },
-        { bg: '#2F4F4F', text: '#FFFAFA' }, { bg: '#708090', text: '#E6E6FA' },
-        { bg: '#A0522D', text: '#FFF8DC' }, { bg: '#483D8B', text: '#E6E6FA' },
-        { bg: '#696969', text: '#F0F8FF' }, { bg: '#BC8F8F', text: '#FFF5EE' }
-    ],
     'Fashion Magazine': [
         { bg: '#000000', text: '#FFFFFF' }, { bg: '#FFFFFF', text: '#000000' },
         { bg: '#FF0000', text: '#FFFFFF' }, { bg: '#1A1A1A', text: '#D4AF37' },
@@ -56,6 +57,7 @@ const DESIGNER_PALETTES = {
         { bg: '#FF0000', text: '#00FFFF' }, { bg: '#FFFFFF', text: '#FF0000' }
     ]
 };
+
 
 
 
