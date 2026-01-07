@@ -1,4 +1,4 @@
-/* app.js - UI Controller & State Management V77 */
+/* app.js - UI Controller & State Management V79 */
 
 let state = {
     bookSize: 30, layout: 'text_icon', ppi: 10, slotSize: { w: 6, h: 6 }, maskType: 'rect',
@@ -71,14 +71,9 @@ function finishInit() {
     refresh();
 }
 
-// FIX V77: Set Correct Dropdown Value + Random Color
+// Random Color from Kinfolk
 function initColors() {
     const collectionName = 'Kinfolk - Cinema';
-    
-    // Update Dropdown
-    const selector = document.getElementById('paletteSelector');
-    if(selector) selector.value = collectionName;
-
     if(typeof DESIGNER_PALETTES !== 'undefined' && DESIGNER_PALETTES[collectionName]) {
         changeCollection(collectionName);
         const palette = DESIGNER_PALETTES[collectionName];
@@ -86,7 +81,6 @@ function initColors() {
         const btns = document.querySelectorAll('#pairsGrid .pair-btn');
         if (btns[randomIdx]) btns[randomIdx].click();
     }
-    
     const bgPicker = document.getElementById('customCoverPicker');
     const textPicker = document.getElementById('customTextPicker');
     if(bgPicker) bgPicker.oninput = (e) => { state.coverColor = e.target.value; refresh(); };
@@ -96,17 +90,12 @@ function initColors() {
 function updateActionButtons() {
     const btnGallery = document.getElementById('btnActionGallery');
     const btnUpload = document.getElementById('btnActionUpload');
-    
     btnGallery.classList.add('hidden');
     btnUpload.classList.add('hidden');
     
-    // Logic: Always show button based on layout type (even if image exists)
-    if (state.layout === 'graphic') {
-        btnGallery.classList.remove('hidden');
-    } 
-    else if (state.layout === 'photo_text' || state.layout === 'magazine') {
-        btnUpload.classList.remove('hidden');
-    }
+    // Always show action buttons for relevant layouts (even if image exists)
+    if (state.layout === 'graphic') btnGallery.classList.remove('hidden');
+    else if (state.layout === 'photo_text' || state.layout === 'magazine') btnUpload.classList.remove('hidden');
 }
 
 window.openGallery = (type, target) => {
@@ -149,10 +138,6 @@ function loadGal(type, cat, target) {
         item.appendChild(img);
         item.onclick = () => {
             if (item.classList.contains('broken-file')) { alert("Файл отсутствует."); return; }
-            
-            // FIX V77: Remove text clearing logic
-            // if(type === 'graphics' && !userModifiedText) { ... } removed
-
             CoverEngine.loadSimpleImage(printUrl, (final) => {
                 final = final || previewUrl;
                 document.getElementById('galleryModal').classList.add('hidden');
@@ -230,9 +215,6 @@ function initListeners() {
 
             processAndResizeImage(e.target.files[0], limit, type, (resizedUrl) => {
                 document.getElementById('galleryModal').classList.add('hidden'); 
-                
-                // FIX V77: Remove text clearing logic
-                
                 if(state.layout === 'graphic') {
                     state.images.main = { src: resizedUrl, natural: true };
                     refresh();
@@ -267,7 +249,6 @@ function initListeners() {
     document.getElementById('cancelCropBtn').onclick = () => document.getElementById('cropperModal').classList.add('hidden');
 }
 
-// FIX V77: New Zoom Logic
 function initMobilePreview() {
     const modal = document.getElementById('mobilePreview');
     const container = document.getElementById('panzoomContainer');
@@ -277,7 +258,7 @@ function initMobilePreview() {
         panzoomInstance = Panzoom(container, {
             maxScale: 4,
             minScale: 0.8,
-            contain: null, // FIX: Allow dragging anywhere
+            contain: null, 
             canvas: true 
         });
         container.parentElement.addEventListener('wheel', panzoomInstance.zoomWithWheel);
@@ -287,7 +268,6 @@ function initMobilePreview() {
         closeBtn.onclick = (e) => { e.stopPropagation(); closeMobilePreview(); };
     }
 
-    // Zoom Buttons
     document.getElementById('btnZoomIn').onclick = (e) => { e.stopPropagation(); panzoomInstance.zoomIn(); };
     document.getElementById('btnZoomOut').onclick = (e) => { e.stopPropagation(); panzoomInstance.zoomOut(); };
     document.getElementById('btnZoomFit').onclick = (e) => { e.stopPropagation(); panzoomInstance.reset(); };
