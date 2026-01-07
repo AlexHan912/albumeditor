@@ -1,32 +1,200 @@
 /* --- FONTS --- */
-@font-face { font-family: 'Tenor Sans'; src: url('fonts/TenorSans.ttf') format('truetype'); font-weight: normal; font-style: normal; font-display: swap; }
-@font-face { font-family: 'Bodoni Moda'; src: url('fonts/BodoniModa.ttf') format('truetype'); font-weight: 400 900; font-style: normal; font-display: swap; }
+@font-face { 
+    font-family: 'Tenor Sans'; 
+    src: url('fonts/TenorSans.ttf') format('truetype'); 
+    font-weight: normal; 
+    font-style: normal; 
+    font-display: swap; 
+}
+@font-face { 
+    font-family: 'Bodoni Moda'; 
+    src: url('fonts/BodoniModa.ttf') format('truetype'); 
+    font-weight: 400 900; 
+    font-style: normal; 
+    font-display: swap; 
+}
 
 /* --- VARIABLES --- */
 :root { 
-    --bg-canvas: #e0e0e0; --bg-panel: #1a1a1a; --text-panel: #e5e5e5; --accent-gold: #D4AF37; --border-color: #333; --input-bg: #252525; --card-bg: #222; --card-hover: #2a2a2a; 
-    --graphic-max-size-cm: 12; --graphic-offset-y-cm: 2;
+    --bg-canvas: #e0e0e0; 
+    --bg-panel: #1a1a1a; 
+    --text-panel: #e5e5e5; 
+    --accent-gold: #D4AF37; 
+    --border-color: #333; 
+    --input-bg: #252525; 
+    --card-bg: #222; 
+    --card-hover: #2a2a2a; 
+    --graphic-max-size-cm: 12; 
+    --graphic-offset-y-cm: 2;
 }
+
 * { box-sizing: border-box; margin: 0; padding: 0; outline: none; -webkit-tap-highlight-color: transparent; }
 
-body { font-family: 'Roboto', sans-serif; background-color: var(--bg-canvas); height: 100vh; display: flex; color: #333; overflow: hidden; }
-#workspace { flex: 1; display: flex; justify-content: center; align-items: center; position: relative; background-color: var(--bg-canvas); background-image: linear-gradient(#ccc 1px, transparent 1px), linear-gradient(90deg, #ccc 1px, transparent 1px); background-size: 50px 50px; overflow: hidden; cursor: zoom-in; }
+/* --- LAYOUT --- */
+body { 
+    font-family: 'Roboto', sans-serif; 
+    background-color: var(--bg-canvas); 
+    height: 100vh; 
+    display: flex; 
+    color: #333; 
+    overflow: hidden; 
+}
 
-.canvas-container { box-shadow: 0 40px 100px rgba(0,0,0,0.4); border: none; background: #fff; margin: auto; transition: opacity 0.3s; }
-#cropperModal .canvas-container { background: #111 !important; box-shadow: none; }
+#workspace { 
+    flex: 1; 
+    display: flex; 
+    justify-content: center; 
+    align-items: center; 
+    position: relative; 
+    background-color: var(--bg-canvas); 
+    background-image: linear-gradient(#ccc 1px, transparent 1px), linear-gradient(90deg, #ccc 1px, transparent 1px); 
+    background-size: 50px 50px; 
+    overflow: hidden; 
+    cursor: zoom-in;
+}
+
+.canvas-container { 
+    box-shadow: 0 40px 100px rgba(0,0,0,0.4); 
+    border: none; 
+    background: #fff; 
+    margin: auto; 
+    transition: opacity 0.3s; 
+}
+
+#cropperModal .canvas-container { 
+    background: #111 !important; 
+    box-shadow: none; 
+}
 
 /* Desktop Controls Width */
-#controls { width: 400px; background: var(--bg-panel); color: var(--text-panel); padding: 30px; overflow-y: auto; display: flex; flex-direction: column; gap: 30px; box-shadow: -10px 0 30px rgba(0,0,0,0.2); z-index: 100; flex-shrink: 0; }
+#controls { 
+    width: 400px; 
+    background: var(--bg-panel); 
+    color: var(--text-panel); 
+    padding: 30px; 
+    overflow-y: auto; 
+    display: flex; 
+    flex-direction: column; 
+    gap: 30px; 
+    box-shadow: -10px 0 30px rgba(0,0,0,0.2); 
+    z-index: 100; 
+    flex-shrink: 0; 
+}
 
-h1 { font-family: 'Bodoni Moda', serif; font-weight: 400; font-size: 24px; color: #fff; letter-spacing: 3px; margin-bottom: 10px; text-align: center; }
-h2 { font-family: 'Roboto', sans-serif; font-weight: 500; font-size: 13px; color: var(--accent-gold); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 12px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-top: 5px; }
-label { display: block; margin-bottom: 8px; font-size: 10px; font-weight: bold; color: #888; text-transform: uppercase; letter-spacing: 1px; font-family: 'Roboto', sans-serif; }
+/* --- TYPOGRAPHY --- */
+h1 { 
+    font-family: 'Bodoni Moda', serif; 
+    font-weight: 400; 
+    font-size: 24px; 
+    color: #fff; 
+    letter-spacing: 3px; 
+    margin-bottom: 10px; 
+    text-align: center; 
+}
 
-#photoTrigger { position: absolute; width: 50px; height: 50px; background: rgba(255,255,255,0.95); border-radius: 50%; display: flex; justify-content: center; align-items: center; color: #000; font-size: 28px; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.3); animation: pulse-white 2s infinite; z-index: 10; pointer-events: auto; transition: transform 0.2s; }
-#photoTrigger:hover { transform: scale(1.1); background: #fff; } #photoTrigger::after { content: '+'; font-weight: 300; }
-@keyframes pulse-white { 0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.5); } 70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(255, 255, 255, 0); } 100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); } }
+h2 { 
+    font-family: 'Roboto', sans-serif; 
+    font-weight: 500; 
+    font-size: 13px; 
+    color: var(--accent-gold); 
+    text-transform: uppercase; 
+    letter-spacing: 1.5px; 
+    margin-bottom: 12px; 
+    border-bottom: 1px solid var(--border-color); 
+    padding-bottom: 8px; 
+    margin-top: 5px; 
+}
 
-/* ... (FORMAT, TYPO, PALETTE STYLES - UNCHANGED) ... */
+label { 
+    display: block; 
+    margin-bottom: 8px; 
+    font-size: 10px; 
+    font-weight: bold; 
+    color: #888; 
+    text-transform: uppercase; 
+    letter-spacing: 1px; 
+    font-family: 'Roboto', sans-serif; 
+}
+
+/* --- UI COMPONENTS --- */
+
+/* Кнопка + (системная скрытая, стиль нужен для генерации JS кнопки на холсте) */
+#photoTrigger { 
+    position: absolute; width: 50px; height: 50px; 
+    background: rgba(255,255,255,0.95); 
+    border-radius: 50%; 
+    display: flex; justify-content: center; align-items: center; 
+    color: #000; 
+    font-size: 28px; 
+    cursor: pointer; 
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3); 
+    animation: pulse-white 2s infinite; 
+    z-index: 10; pointer-events: auto; transition: transform 0.2s; 
+}
+#photoTrigger:hover { transform: scale(1.1); background: #fff; } 
+#photoTrigger::after { content: '+'; font-weight: 300; }
+
+@keyframes pulse-white { 
+    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.5); } 
+    70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(255, 255, 255, 0); } 
+    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); } 
+}
+
+/* CANVAS ACTIONS (Нижняя панель кнопок на холсте) */
+#canvasActions { 
+    position: absolute; 
+    bottom: 20px; 
+    left: 0; 
+    width: 100%; 
+    display: flex; 
+    justify-content: center; 
+    align-items: center; 
+    gap: 15px; 
+    z-index: 90; 
+    pointer-events: none; /* Пропускаем клики мимо контейнера */
+}
+
+/* Кнопки "Загрузить фото" / "Галерея" */
+.action-pill { 
+    pointer-events: auto; 
+    background: rgba(255, 255, 255, 0.9); 
+    border: 1px solid #ccc; 
+    color: #333; 
+    padding: 8px 16px; 
+    border-radius: 20px; 
+    font-size: 12px; 
+    text-transform: uppercase; 
+    font-weight: bold; 
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15); 
+    transition: transform 0.2s, background 0.2s, color 0.2s; 
+    cursor: pointer; 
+    font-family: 'Roboto', sans-serif; 
+}
+
+.action-pill:hover { 
+    background: #fff; 
+    color: #000; 
+    transform: translateY(-2px); 
+}
+.action-pill:active { transform: scale(0.95); }
+
+/* Кнопка "На весь экран" */
+#fullscreenBtn { 
+    position: static; 
+    width: 36px; height: 36px; 
+    background: rgba(255, 255, 255, 0.9); 
+    border-radius: 50%; 
+    display: flex !important; 
+    justify-content: center; align-items: center; 
+    color: #333; 
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15); 
+    cursor: pointer; 
+    pointer-events: auto; 
+    transition: transform 0.2s; 
+}
+#fullscreenBtn:hover { background: #fff; transform: scale(1.1); }
+
+/* --- CONTROLS SECTION STYLES --- */
 .format-selector { display: flex; gap: 10px; justify-content: flex-start; align-items: flex-end; margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #333; overflow-x: auto; padding-top: 5px; }
 .format-card { aspect-ratio: 1; width: 60px; height: auto; border: 1px solid #444; background: var(--card-bg); cursor: pointer; display: flex; justify-content: center; align-items: center; transition: all 0.2s; position: relative; flex-shrink: 0; }
 .format-card:hover { border-color: #777; background: var(--card-hover); }
@@ -118,22 +286,39 @@ button.secondary { background: transparent; border: 1px solid #555; color: #ccc;
 @keyframes glow { 0% { box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.4); border-color: #777; } 50% { box-shadow: 0 0 10px 0 rgba(212, 175, 55, 0.8); border-color: var(--accent-gold); } 100% { box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.4); border-color: #777; } }
 .pulse-attention { animation: glow 2s infinite; }
 
-/* CANVAS ACTIONS */
-#canvasActions { position: absolute; bottom: 20px; left: 0; width: 100%; display: flex; justify-content: center; align-items: center; gap: 15px; z-index: 90; pointer-events: none; }
-.action-pill { pointer-events: auto; background: rgba(255, 255, 255, 0.9); border: 1px solid #ccc; color: #333; padding: 8px 16px; border-radius: 20px; font-size: 12px; text-transform: uppercase; font-weight: bold; box-shadow: 0 4px 10px rgba(0,0,0,0.15); transition: transform 0.2s, background 0.2s; cursor: pointer; font-family: 'Roboto', sans-serif; }
-.action-pill:hover { background: #fff; color: #000; transform: translateY(-2px); }
-.action-pill:active { transform: scale(0.95); }
-
-#fullscreenBtn { position: static; width: 36px; height: 36px; background: rgba(255, 255, 255, 0.9); border-radius: 50%; display: flex !important; justify-content: center; align-items: center; color: #333; box-shadow: 0 4px 10px rgba(0,0,0,0.15); cursor: pointer; pointer-events: auto; transition: transform 0.2s; }
-#fullscreenBtn:hover { background: #fff; transform: scale(1.1); }
-
-/* MOBILE PREVIEW */
+/* --- MOBILE PREVIEW (V81) --- */
 #mobilePreview { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #111; z-index: 10000; overflow: hidden; touch-action: none; }
-#panzoomContainer { display: flex; justify-content: center; align-items: center; width: 100%; height: 100%; cursor: grab; transform-origin: center; }
-#panzoomContainer:active { cursor: grabbing; }
-#mobilePreviewImg { width: 95%; height: auto; max-height: 80vh; object-fit: contain; box-shadow: 0 0 50px rgba(0,0,0,0.8); }
 
-#previewControls { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 15px; background: rgba(0, 0, 0, 0.6); padding: 5px 15px; border-radius: 30px; backdrop-filter: blur(5px); border: 1px solid rgba(255,255,255,0.3); z-index: 10002; pointer-events: auto; }
+#panzoomContainer { 
+    display: flex; justify-content: center; align-items: center; 
+    width: 100%; height: 100%; 
+    cursor: grab;
+    transform-origin: center; 
+}
+#panzoomContainer:active { cursor: grabbing; }
+
+/* FIX V81: Prevent image from disappearing by simplifying sizing */
+#mobilePreviewImg { 
+    width: 95%; /* Responsive width */
+    height: auto; 
+    max-height: 80vh; /* Don't cover buttons */
+    object-fit: contain; 
+    box-shadow: 0 0 50px rgba(0,0,0,0.8); 
+}
+
+/* PREVIEW CONTROLS */
+#previewControls {
+    position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+    display: flex; align-items: center; gap: 15px;
+    background: rgba(0, 0, 0, 0.6);
+    padding: 5px 15px;
+    border-radius: 30px;
+    backdrop-filter: blur(5px);
+    border: 1px solid rgba(255,255,255,0.3);
+    z-index: 10002;
+    pointer-events: auto;
+}
+
 #closePreviewBtn { background: transparent; border: none; color: #fff; font-size: 18px; cursor: pointer; padding: 0 5px; }
 .divider { width: 1px; height: 20px; background: rgba(255,255,255,0.3); }
 .zoom-actions { display: flex; align-items: center; gap: 10px; }
@@ -141,7 +326,7 @@ button.secondary { background: transparent; border: 1px solid #555; color: #ccc;
 .zoom-actions button:hover { color: var(--accent-gold); }
 #btnZoomFit { font-size: 12px; font-weight: normal; }
 
-/* FIX V82: Increased Breakpoint to 1024px to prevent side-by-side on narrow screens */
+/* MOBILE MEDIA QUERY */
 @media (max-width: 1024px) {
     body { flex-direction: column; overflow: hidden; }
     
