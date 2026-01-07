@@ -10,9 +10,7 @@
 * { box-sizing: border-box; margin: 0; padding: 0; outline: none; -webkit-tap-highlight-color: transparent; }
 
 /* --- LAYOUT --- */
-/* ROBOTO for Interface */
 body { font-family: 'Roboto', sans-serif; background-color: var(--bg-canvas); height: 100vh; display: flex; color: #333; overflow: hidden; }
-
 #workspace { 
     flex: 1; display: flex; justify-content: center; align-items: center; position: relative; 
     background-color: var(--bg-canvas); background-image: linear-gradient(#ccc 1px, transparent 1px), linear-gradient(90deg, #ccc 1px, transparent 1px); background-size: 50px 50px; overflow: hidden; 
@@ -24,12 +22,13 @@ body { font-family: 'Roboto', sans-serif; background-color: var(--bg-canvas); he
 
 #controls { width: 400px; background: var(--bg-panel); color: var(--text-panel); padding: 30px; overflow-y: auto; display: flex; flex-direction: column; gap: 30px; box-shadow: -10px 0 30px rgba(0,0,0,0.2); z-index: 100; flex-shrink: 0; }
 
-/* --- TYPOGRAPHY (Interface updated to Roboto) --- */
-h1 { font-family: 'Roboto', sans-serif; font-weight: 700; font-size: 24px; color: #fff; letter-spacing: 3px; margin-bottom: 10px; text-align: center; }
+/* FIX: MALEVICH Header - Bodoni */
+h1 { font-family: 'Bodoni Moda', serif; font-weight: 400; font-size: 24px; color: #fff; letter-spacing: 3px; margin-bottom: 10px; text-align: center; }
+/* H2 is Roboto */
 h2 { font-family: 'Roboto', sans-serif; font-weight: 500; font-size: 13px; color: var(--accent-gold); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 12px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-top: 5px; }
 label { display: block; margin-bottom: 8px; font-size: 10px; font-weight: bold; color: #888; text-transform: uppercase; letter-spacing: 1px; font-family: 'Roboto', sans-serif; }
 
-/* --- UI COMPONENTS --- */
+/* ... (ВЕСЬ ОСТАЛЬНОЙ CSS ОСТАВЛЯЕМ БЕЗ ИЗМЕНЕНИЙ ИЗ V72) ... */
 #fullscreenBtn { position: absolute; bottom: 15px; right: 15px; width: 36px; height: 36px; background: rgba(255, 255, 255, 0.9); border-radius: 4px; display: none; justify-content: center; align-items: center; color: #333; box-shadow: 0 2px 10px rgba(0,0,0,0.1); cursor: pointer; z-index: 90; transition: transform 0.2s; }
 #fullscreenBtn:active { transform: scale(0.95); background: #fff; }
 
