@@ -1,4 +1,4 @@
-/* cover-engine.js - Logic for Rendering & Cropping V72 */
+/* cover-engine.js - Logic for Rendering & Cropping V75 */
 
 const CONFIG = {
     dpi: 300, 
@@ -7,7 +7,7 @@ const CONFIG = {
     renderScale: 3.0,
     globalOpacity: 1.0, 
     typo: { baseTitle: 1.2, baseDetails: 0.5, baseCopy: 0.35 },
-    // НОВАЯ ШКАЛА: 50% - 75% - 100% - 125% - 150%
+    // ШКАЛА МАСШТАБА: 50% - 150%
     scales: [0.5, 0.75, 1.0, 1.25, 1.5]
 };
 
@@ -17,6 +17,7 @@ const CoverEngine = {
     init: function(canvasId) {
         this.canvas = new fabric.Canvas(canvasId, { backgroundColor: '#fff', selection: false, enableRetinaScaling: false });
         
+        // 1. Клики по интерактивным объектам
         this.canvas.on('mouse:down', (e) => {
             if(e.target) {
                 if(e.target.isMain || e.target.isPlaceholder) {
@@ -28,7 +29,7 @@ const CoverEngine = {
             }
         });
 
-        // Mobile Preview Tap Handler
+        // 2. Детектор Тапа для Мобильного Превью (только если клик по пустому месту)
         this.canvas.on('mouse:up', (e) => {
             const isMobile = window.innerWidth <= 900;
             const hitInteractive = e.target && (e.target.isMain || e.target.isPlaceholder || e.target.isIcon);
@@ -132,11 +133,12 @@ const CoverEngine = {
             let yPos = c.bottomBase; 
             if(state.spine.symbol && state.images.icon) yPos -= (1.8 * state.ppi);
             
-            // FIX: Фиксированный шрифт Tenor Sans и размер (без scale)
+            // FIX: Фиксированный размер шрифта (не зависит от зума)
             const fontSize = CONFIG.typo.baseDetails * state.ppi; 
             
-            this.canvas.add(new fabric.Text(spineStr, { 
-                fontFamily: 'Tenor Sans', // Всегда Tenor Sans
+            // FIX V75: Используем fabric.Text (не Textbox), чтобы не было переноса строк
+            const textObj = new fabric.Text(spineStr, { 
+                fontFamily: 'Tenor Sans', 
                 fontSize: fontSize, 
                 fill: state.text.color, 
                 opacity: CONFIG.globalOpacity, 
@@ -146,27 +148,28 @@ const CoverEngine = {
                 top: yPos, 
                 angle: -90, 
                 selectable: false,
-                letterSpacing: 100 // Увеличенная разрядка для красоты
-            }));
+                letterSpacing: 100 // Разрядка
+            });
+            this.canvas.add(textObj);
         }
     },
 
     _renderBackCover: function(c, state) {
         if(state.text.copyright) {
-            // FIX: Фиксированный шрифт Tenor Sans и размер (без scale)
+            // FIX: Фиксированный размер шрифта
             const fontSize = CONFIG.typo.baseCopy * state.ppi;
             
             this.canvas.add(new fabric.Text(state.text.copyright, { 
                 left: c.backCenter, 
                 top: c.bottomBase, 
                 fontSize: fontSize, 
-                fontFamily: 'Tenor Sans', // Всегда Tenor Sans
+                fontFamily: 'Tenor Sans', 
                 fill: state.text.color, 
                 opacity: CONFIG.globalOpacity * 0.7, 
                 originX: 'center', 
                 originY: 'bottom', 
                 selectable: false, 
-                letterSpacing: 80 // Увеличенная разрядка
+                letterSpacing: 80 
             }));
         }
         if(state.qr.enabled && state.qr.url) {
@@ -245,7 +248,7 @@ const CoverEngine = {
         const finalSize = baseSize * state.ppi * state.text.scale;
         
         const tObj = new fabric.Text(renderTxt, { 
-            fontFamily: state.text.font, // Main title uses User Selected Font
+            fontFamily: state.text.font, 
             fontSize: finalSize, 
             textAlign: 'center', 
             lineHeight: 1.3, 
@@ -283,14 +286,19 @@ const CoverEngine = {
         if(isMag) {
             let l1 = String(state.text.lines[0].text || "");
             let l2 = String(state.text.lines[1].text || "");
+            let l3 = String(state.text.lines[2].text || ""); 
+            
             if(state.text.lines[0].upper) l1 = l1.toUpperCase();
             if(state.text.lines[1].upper) l2 = l2.toUpperCase();
-            let txtParts = [l1, l2].filter(t => t.length > 0);
+            if(state.text.lines[2].upper) l3 = l3.toUpperCase();
+            
+            let txtParts = [l1, l2, l3].filter(t => t.length > 0);
             if (txtParts.length === 0) return;
             let txt = txtParts.join("\n");
             
             const shadow = new fabric.Shadow({ color: 'rgba(0,0,0,0.15)', blur: 4, offsetX: 0, offsetY: 0 });
-            this.canvas.add(new fabric.Text(txt, { 
+            
+            const mainTextObj = new fabric.Text(txt, { 
                 fontFamily: state.text.font, 
                 fontSize: 2.5 * state.ppi * state.text.scale, 
                 textAlign: 'center', 
@@ -304,7 +312,24 @@ const CoverEngine = {
                 evented: false, 
                 shadow: shadow,
                 hoverCursor: 'default'
-            }));
+            });
+            this.canvas.add(mainTextObj);
+
+            if(state.text.date) {
+                const dateObj = new fabric.Text(state.text.date, {
+                    fontFamily: state.text.font,
+                    fontSize: 0.8 * state.ppi * state.text.scale, 
+                    fill: state.text.color,
+                    originX: 'center',
+                    originY: 'top',
+                    left: x,
+                    top: y + mainTextObj.height + (1.0 * state.ppi), 
+                    selectable: false,
+                    evented: false,
+                    hoverCursor: 'default'
+                });
+                this.canvas.add(dateObj);
+            }
             return;
         }
         const group = this._createTextBlockObj(compact, state); 
@@ -466,6 +491,8 @@ const CropperTool = {
         const cx = this.canvas.width / 2;
         const cy = this.canvas.height / 2;
         img.set({ left: cx, top: cy });
+        
+        // FIX: Force coords update so movement boundaries work immediately
         img.setCoords();
 
         const slider = document.getElementById('zoomSlider');
