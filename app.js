@@ -250,19 +250,52 @@ function initColors() {
 }
 
 function initListeners() {
-    ['inputLine1','inputLine2','inputLine3','dateLine','copyrightInput'].forEach(id => {
+    // Список всех текстовых полей
+    const inputs = ['inputLine1', 'inputLine2', 'inputLine3', 'dateLine', 'copyrightInput', 'qrLinkInput'];
+    
+    inputs.forEach(id => {
         const el = document.getElementById(id);
-        if(el) el.oninput = () => {
+        if (!el) return;
+
+        // 1. Обработка ввода текста
+        el.oninput = () => {
             userModifiedText = true;
             if(id === 'inputLine1') state.text.lines[0].text = el.value;
             if(id === 'inputLine2') state.text.lines[1].text = el.value;
             if(id === 'inputLine3') state.text.lines[2].text = el.value;
             if(id === 'dateLine') state.text.date = el.value;
             if(id === 'copyrightInput') state.text.copyright = el.value;
+            // QR link обновляется только по кнопке, но флаг userModifiedText ставим
             refresh();
         };
+
+        // 2. FOCUS (Клавиатура открыта) - Скрываем холст на мобильных
+        el.addEventListener('focus', () => {
+            if (window.innerWidth <= 900) {
+                document.getElementById('workspace').classList.add('hidden-on-keyboard');
+                document.getElementById('controls').classList.add('expanded-on-keyboard');
+                
+                // Прокручиваем к активному полю, чтобы его было видно
+                setTimeout(() => {
+                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 300); // Задержка для открытия клавиатуры
+            }
+        });
+
+        // 3. BLUR (Клавиатура закрыта) - Возвращаем холст
+        el.addEventListener('blur', () => {
+            if (window.innerWidth <= 900) {
+                // Небольшая задержка, чтобы клик по кнопке "Применить" (если есть) успел сработать
+                setTimeout(() => {
+                    document.getElementById('workspace').classList.remove('hidden-on-keyboard');
+                    document.getElementById('controls').classList.remove('expanded-on-keyboard');
+                    refresh(); // Перерисовать на всякий случай
+                }, 100);
+            }
+        });
     });
     
+    // ... (остальные слушатели кнопок fontSelector, saveBtn и т.д. оставляем без изменений)
     document.getElementById('fontSelector').addEventListener('change', (e) => { state.text.font = e.target.value; refresh(); });
     document.getElementById('saveBtn').onclick = () => CoverEngine.download(state);
 
@@ -327,32 +360,8 @@ function initListeners() {
     
     const rotBtn = document.getElementById('rotateBtn');
     if(rotBtn) { rotBtn.onclick = () => CropperTool.rotate(); }
-    document.getElementById('cancelCropBtn').onclick = () => document.getElementById('cropperModal').classList.add('hidden');
-}
 
-window.openGallery = (type, target) => {
-    document.getElementById('globalSymbolBtn').classList.remove('pulse-attention');
-    document.getElementById('galleryModal').classList.remove('hidden');
-    const upBtn = document.getElementById('galUploadBtn');
-    const galTitle = document.getElementById('galleryTitle');
-    let db;
-    if(type === 'symbols') {
-        db = ASSETS_DB.symbols; galTitle.innerText = "Галерея символов";
-        upBtn.innerText = "Загрузить свой символ"; 
-        upBtn.onclick = () => document.getElementById('iconLoader').click();
-    } else {
-        db = ASSETS_DB.graphics; galTitle.innerText = "Галерея графики";
-        upBtn.innerText = "Загрузить свою графику"; 
-        upBtn.onclick = () => document.getElementById('imageLoader').click();
-    }
-    const tabs = document.getElementById('galleryTabs'); tabs.innerHTML = '';
-    if(!db) return;
-    Object.keys(db).forEach((cat, i) => {
-        const t = document.createElement('div'); t.className = `gallery-tab ${i===0?'active':''}`; t.innerText = cat;
-        t.onclick = () => { document.querySelectorAll('.gallery-tab').forEach(x=>x.classList.remove('active')); t.classList.add('active'); loadGal(type, cat, target); };
-        tabs.appendChild(t);
-    });
-    if(Object.keys(db).length) loadGal(type, Object.keys(db)[0], target);
+    document.getElementById('cancelCropBtn').onclick = () => document.getElementById('cropperModal').classList.add('hidden');
 };
 
 function loadGal(type, cat, target) {
