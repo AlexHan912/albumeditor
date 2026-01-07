@@ -1,4 +1,4 @@
-/* app.js - UI Controller & State Management V84 */
+/* app.js - UI Controller & State Management V80 */
 
 let state = {
     bookSize: 30, layout: 'text_icon', ppi: 10, slotSize: { w: 6, h: 6 }, maskType: 'rect',
@@ -18,7 +18,7 @@ window.onload = () => {
     CoverEngine.init('c');
     loadDefaultAssets();
     
-    // 1. Auto Year
+    // Auto Year
     const currentYear = new Date().getFullYear().toString();
     state.text.date = currentYear;
     const dateInput = document.getElementById('dateLine');
@@ -28,11 +28,9 @@ window.onload = () => {
     initListeners();
     initMobilePreview(); 
     
-    // 2. Default Title
     const input1 = document.getElementById('inputLine1');
     if (input1) input1.value = "THE VISUAL DIARY";
     
-    // 3. Sync UI buttons
     if(state.text.lines[0].upper) document.getElementById('btnTt1').classList.add('active');
     
     setTimeout(() => {
@@ -73,17 +71,17 @@ function finishInit() {
     refresh();
 }
 
-// --- COLOR LOGIC (Kinfolk Default) ---
+// Random Color from Kinfolk
 function initColors() {
     const collectionName = 'Kinfolk - Cinema';
     
+    // FIX V80: Set Dropdown Value
     const selector = document.getElementById('paletteSelector');
     if(selector) selector.value = collectionName;
 
     if(typeof DESIGNER_PALETTES !== 'undefined' && DESIGNER_PALETTES[collectionName]) {
         changeCollection(collectionName);
         const palette = DESIGNER_PALETTES[collectionName];
-        // Random color from palette
         const randomIdx = Math.floor(Math.random() * palette.length);
         const btns = document.querySelectorAll('#pairsGrid .pair-btn');
         if (btns[randomIdx]) btns[randomIdx].click();
@@ -101,12 +99,11 @@ function updateActionButtons() {
     btnGallery.classList.add('hidden');
     btnUpload.classList.add('hidden');
     
-    // Always show action buttons for relevant layouts
+    // Always show action buttons for relevant layouts (even if image exists)
     if (state.layout === 'graphic') btnGallery.classList.remove('hidden');
     else if (state.layout === 'photo_text' || state.layout === 'magazine') btnUpload.classList.remove('hidden');
 }
 
-// --- GALLERY ---
 window.openGallery = (type, target) => {
     document.getElementById('globalSymbolBtn').classList.remove('pulse-attention');
     document.getElementById('galleryModal').classList.remove('hidden');
@@ -147,7 +144,6 @@ function loadGal(type, cat, target) {
         item.appendChild(img);
         item.onclick = () => {
             if (item.classList.contains('broken-file')) { alert("Файл отсутствует."); return; }
-            
             CoverEngine.loadSimpleImage(printUrl, (final) => {
                 final = final || previewUrl;
                 document.getElementById('galleryModal').classList.add('hidden');
@@ -178,18 +174,21 @@ function initListeners() {
         };
 
         el.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') { e.preventDefault(); el.blur(); }
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                el.blur();
+            }
         });
 
         el.addEventListener('focus', () => {
-            if (window.innerWidth < 1024) {
+            if (window.innerWidth < 900) {
                 document.body.classList.add('keyboard-open');
                 setTimeout(() => { el.scrollIntoView({ behavior: "smooth", block: "center" }); }, 300); 
             }
         });
 
         el.addEventListener('blur', () => {
-            if (window.innerWidth < 1024) {
+            if (window.innerWidth < 900) {
                 setTimeout(() => {
                     if (document.activeElement.tagName !== 'INPUT') {
                         document.body.classList.remove('keyboard-open');
@@ -207,14 +206,17 @@ function initListeners() {
     document.getElementById('iconLoader').onchange = (e) => { 
         if(e.target.files[0]) {
             processAndResizeImage(e.target.files[0], 500, 'image/png', (resizedUrl) => {
-                state.images.icon = resizedUrl; updateSymbolUI(); refresh(); document.getElementById('galleryModal').classList.add('hidden'); 
+                state.images.icon = resizedUrl; 
+                updateSymbolUI(); refresh(); 
+                document.getElementById('galleryModal').classList.add('hidden'); 
             });
         }
     };
     
     document.getElementById('imageLoader').onchange = (e) => {
         if(e.target.files[0]) {
-            let limit = 2500; let type = 'image/jpeg';
+            let limit = 2500;
+            let type = 'image/jpeg';
             if (state.layout === 'graphic') { limit = 1417; type = 'image/png'; }
 
             processAndResizeImage(e.target.files[0], limit, type, (resizedUrl) => {
@@ -244,19 +246,22 @@ function initListeners() {
     };
     
     document.getElementById('applyCropBtn').onclick = () => {
-        state.images.main = CropperTool.apply(); refresh(); document.getElementById('cropperModal').classList.add('hidden'); updateActionButtons();
+        state.images.main = CropperTool.apply();
+        refresh();
+        document.getElementById('cropperModal').classList.add('hidden');
+        updateActionButtons();
     };
     const rotBtn = document.getElementById('rotateBtn');
     if(rotBtn) { rotBtn.onclick = () => CropperTool.rotate(); }
     document.getElementById('cancelCropBtn').onclick = () => document.getElementById('cropperModal').classList.add('hidden');
 }
 
-// --- MOBILE PREVIEW & PANZOOM ---
 function initMobilePreview() {
     const modal = document.getElementById('mobilePreview');
     const container = document.getElementById('panzoomContainer');
     const closeBtn = document.getElementById('closePreviewBtn');
     
+    // FIX V80: Apply Panzoom to the container inside the wrapper
     if(window.Panzoom && container) {
         panzoomInstance = Panzoom(container, {
             maxScale: 4,
@@ -273,6 +278,8 @@ function initMobilePreview() {
 
     document.getElementById('btnZoomIn').onclick = (e) => { e.stopPropagation(); panzoomInstance.zoomIn(); };
     document.getElementById('btnZoomOut').onclick = (e) => { e.stopPropagation(); panzoomInstance.zoomOut(); };
+    
+    // FIX V80: Reset Zoom AND Position to Center
     document.getElementById('btnZoomFit').onclick = (e) => { 
         e.stopPropagation(); 
         panzoomInstance.zoom(1, { animate: true });
@@ -282,33 +289,29 @@ function initMobilePreview() {
 
 function checkOrientation() {
     if (document.activeElement.tagName === 'INPUT' || document.body.classList.contains('keyboard-open')) return;
-    const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 1024;
+    const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 900;
     if (isMobileDevice) {
         if (window.innerWidth > window.innerHeight) {
             if (document.getElementById('mobilePreview').classList.contains('hidden')) openMobilePreview();
         } else { closeMobilePreview(); }
     }
 }
-
 window.openMobilePreview = () => {
     const modal = document.getElementById('mobilePreview');
     const img = document.getElementById('mobilePreviewImg');
-    // Optimization for mobile memory
-    const mult = window.innerWidth < 1024 ? 1.5 : 2.5;
-    const dataUrl = CoverEngine.canvas.toDataURL({ format: 'png', multiplier: mult });
+    const dataUrl = CoverEngine.canvas.toDataURL({ format: 'png', multiplier: 2.5 });
     img.src = dataUrl;
     modal.classList.remove('hidden');
     if(panzoomInstance) { 
         setTimeout(() => { 
             panzoomInstance.reset(); 
+            // Force Center on Open
             panzoomInstance.zoom(1, { animate: false });
             panzoomInstance.pan(0, 0, { animate: false });
         }, 50); 
     }
 };
 window.closeMobilePreview = () => { document.getElementById('mobilePreview').classList.add('hidden'); };
-
-// --- UTILS ---
 function processAndResizeImage(file, maxSize, outputType, callback) {
     if (file.type === "image/heic" || file.name.toLowerCase().endsWith(".heic")) {
         if(window.heic2any) {
@@ -344,44 +347,10 @@ function updateCropperUI() {
     const controls = document.querySelector('.crop-controls');
     if (state.layout === 'magazine') controls.style.display = 'none'; else controls.style.display = 'flex'; 
 }
-
-// --- GLOBAL UI HELPERS (V84 Updated) ---
-
-window.toggleCase = (i) => { 
-    state.text.lines[i-1].upper = !state.text.lines[i-1].upper; 
-    document.getElementById(`btnTt${i}`).classList.toggle('active'); 
-    refresh(); 
-};
-
-// NEW: Smart Add Logic (Sequential)
-window.addSmartRow = () => {
-    const row2 = document.getElementById('row2');
-    const row3 = document.getElementById('row3');
-
-    if (row2.classList.contains('hidden')) {
-        row2.classList.remove('hidden');
-    } else if (row3.classList.contains('hidden')) {
-        row3.classList.remove('hidden');
-    }
-};
-
+window.toggleCase = (i) => { state.text.lines[i-1].upper = !state.text.lines[i-1].upper; document.getElementById(`btnTt${i}`).classList.toggle('active'); refresh(); };
 window.showRow = (i) => document.getElementById(`row${i}`).classList.remove('hidden');
-
-window.hideRow = (i) => { 
-    document.getElementById(`row${i}`).classList.add('hidden'); 
-    const input = document.getElementById(`inputLine${i}`);
-    if(input) input.value = ''; 
-    state.text.lines[i-1].text = ''; 
-    refresh(); 
-};
-
-window.toggleSpinePart = (part) => { 
-    state.spine[part] = !state.spine[part]; 
-    const btnId = 'btnSpine' + part.charAt(0).toUpperCase() + part.slice(1);
-    document.getElementById(btnId).classList.toggle('active', state.spine[part]); 
-    refresh(); 
-};
-
+window.hideRow = (i) => { document.getElementById(`row${i}`).classList.add('hidden'); document.getElementById(`inputLine${i}`).value = ''; state.text.lines[i-1].text = ''; refresh(); };
+window.toggleSpinePart = (part) => { state.spine[part] = !state.spine[part]; document.getElementById('btnSpine'+part.charAt(0).toUpperCase()+part.slice(1)).classList.toggle('active', state.spine[part]); refresh(); };
 window.setLayout = (l, btn) => { 
     const isSame = state.layout===l; 
     state.layout=l; 
