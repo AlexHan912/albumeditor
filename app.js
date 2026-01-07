@@ -12,12 +12,14 @@ let state = {
 };
 
 let userModifiedText = false;
+let panzoomInstance = null; // Для зума на мобильном
 
 window.onload = () => {
     CoverEngine.init('c');
     loadDefaultAssets();
     initColors();
     initListeners();
+    initMobilePreview(); // <--- НОВАЯ ФУНКЦИЯ
     document.getElementById('inputLine1').value = "THE VISUAL DIARY";
     setTimeout(refresh, 500);
 };
@@ -46,21 +48,69 @@ function finishInit() {
     refresh();
 }
 
+// --- MOBILE PREVIEW LOGIC (NEW) ---
+function initMobilePreview() {
+    const workspace = document.getElementById('workspace');
+    const modal = document.getElementById('mobilePreview');
+    const img = document.getElementById('mobilePreviewImg');
+    const container = document.getElementById('panzoomContainer');
+
+    // Инициализация Panzoom
+    if(window.Panzoom) {
+        panzoomInstance = Panzoom(container, {
+            maxScale: 4,
+            minScale: 0.8,
+            contain: 'outside'
+        });
+    }
+
+    // Открытие по клику на Workspace
+    workspace.addEventListener('click', (e) => {
+        // Проверяем, мобильная ли версия
+        if (window.innerWidth > 900) return;
+
+        // Игнорируем клик, если нажали на кнопку загрузки фото
+        if (e.target.id === 'photoTrigger' || e.target.classList.contains('canvas-container') === false) {
+            // Если клик не по самому контейнеру (а например по кнопке внутри),
+            // то проверяем, не является ли цель кнопкой загрузки.
+            // Но проще: Trigger лежит поверх канваса. Если кликнули на Trigger, событие workspace сработает (bubbling).
+            // Поэтому проверяем ID.
+            if (e.target.id === 'photoTrigger') return;
+        }
+
+        // Генерируем картинку высокого качества
+        const dataUrl = CoverEngine.canvas.toDataURL({ format: 'png', multiplier: 3 });
+        img.src = dataUrl;
+        
+        modal.classList.remove('hidden');
+        
+        // Сброс зума при открытии
+        if(panzoomInstance) setTimeout(() => panzoomInstance.reset(), 50);
+    });
+
+    // Закрытие по клику на модалку
+    modal.addEventListener('click', () => {
+        modal.classList.add('hidden');
+    });
+
+    // Включаем жесты для Panzoom внутри модалки
+    if(container) {
+        container.parentElement.addEventListener('wheel', panzoomInstance.zoomWithWheel);
+    }
+}
+
 // --- IMAGE PROCESSOR (HEIC FIX) ---
 function processAndResizeImage(file, maxSize, outputType, callback) {
-    // 1. HEIC Handling
     if (file.type === "image/heic" || file.name.toLowerCase().endsWith(".heic")) {
         if(window.heic2any) {
             heic2any({ blob: file, toType: "image/jpeg" })
                 .then((conversionResult) => {
-                    // heic2any returns Blob or Blob[], handle array case
                     const blob = Array.isArray(conversionResult) ? conversionResult[0] : conversionResult;
-                    // Create a File-like object to pass recursively (keeping name/type)
                     const newFile = new File([blob], file.name.replace(/\.heic$/i, ".jpg"), { type: "image/jpeg" });
                     processAndResizeImage(newFile, maxSize, outputType, callback);
                 })
                 .catch((e) => {
-                    alert("Ошибка конвертации HEIC. Попробуйте JPG.");
+                    alert("Ошибка конвертации HEIC.");
                     console.error(e);
                 });
             return;
@@ -120,7 +170,6 @@ window.setLayout = (l, btn) => {
     btn.classList.add('active');
     if (!isSameMode) state.images.main = null; 
     
-    // Reset Slot Size defaults based on layout
     if(l === 'magazine') { state.maskType = 'rect'; }
     else if(l === 'graphic') { state.maskType = 'rect'; state.slotSize = { w: 12, h: 12 }; }
     else { state.maskType = 'rect'; state.slotSize = { w: 6, h: 6 }; }
@@ -228,17 +277,9 @@ function initListeners() {
                 } else {
                     document.getElementById('cropperModal').classList.remove('hidden');
                     updateCropperUI();
-                    
-                    // FIX: Force reset slot size to default 6x6 if in Photo+Text, to prevent shrinking loop
-                    if(state.layout === 'photo_text') {
-                        state.slotSize = { w: 6, h: 6 };
-                    }
-
-                    if (state.layout === 'magazine') {
-                        CropperTool.start(resizedUrl, 1, 1, 'rect'); 
-                    } else {
-                        CropperTool.start(resizedUrl, state.slotSize.w, state.slotSize.h, state.maskType);
-                    }
+                    if(state.layout === 'photo_text') { state.slotSize = { w: 6, h: 6 }; }
+                    if (state.layout === 'magazine') { CropperTool.start(resizedUrl, 1, 1, 'rect'); } 
+                    else { CropperTool.start(resizedUrl, state.slotSize.w, state.slotSize.h, state.maskType); }
                 }
             });
         }
@@ -300,6 +341,9 @@ function loadGal(type, cat, target) {
         const printUrl = `assets/${folder}/${f}`;
         img.src = previewUrl;
         img.onerror = () => { item.classList.add('broken-file'); item.title = "Ошибка: Нет файла иконки"; };
+        const checkPrint = new Image();
+        checkPrint.src = printUrl;
+        checkPrint.onerror = () => { item.classList.add('broken-file'); item.title = "Ошибка: Нет файла для печати"; };
         item.appendChild(img);
         item.onclick = () => {
             if (item.classList.contains('broken-file')) { alert("Файл отсутствует."); return; }
