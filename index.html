@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MALEVICH | Configurator V67</title>
+    <title>MALEVICH | Configurator V69</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
@@ -84,11 +84,11 @@
                 </div>
                 <div class="typo-col">
                     <div class="scale-control">
-                        <span class="scale-label" onclick="setScale(0.8, this)">S</span>
+                        <span class="scale-label" onclick="setScale(0.5, this)">S</span>
                         <div class="scale-track">
                             <input type="range" id="textScale" min="1" max="5" value="3" step="1" oninput="window.updateScaleFromSlider(this.value)">
                         </div>
-                        <span class="scale-label" onclick="setScale(1.6, this)">XL</span>
+                        <span class="scale-label" onclick="setScale(1.5, this)">XL</span>
                     </div>
                 </div>
             </div>
@@ -180,20 +180,20 @@
     <div id="cropperModal" class="modal-overlay hidden">
         <div class="modal-content">
             <div class="modal-header">Кадрирование</div>
-<div class="crop-controls">
-    <button class="crop-btn active" onclick="setCropMask(6,6)" title="Квадрат 1:1">
-        <div class="crop-shape shape-sq"></div>
-    </button>
-    <button class="crop-btn" onclick="setCropMask(4,6)" title="Портрет 2:3">
-        <div class="crop-shape shape-v"></div>
-    </button>
-    <button class="crop-btn" onclick="setCropMask(6,4)" title="Альбом 3:2">
-        <div class="crop-shape shape-h"></div>
-    </button>
-    <button class="crop-btn" onclick="setCropMask('circle')" title="Круг">
-        <div class="crop-shape shape-c"></div>
-    </button>
-</div>
+            <div class="crop-controls">
+                <button class="crop-btn active" onclick="setCropMask(6,6)" title="Квадрат 6x6">
+                    <div class="crop-shape shape-sq"></div>
+                </button>
+                <button class="crop-btn" onclick="setCropMask(4,6)" title="Портрет 4x6">
+                    <div class="crop-shape shape-v"></div>
+                </button>
+                <button class="crop-btn" onclick="setCropMask(6,4)" title="Альбом 6x4">
+                    <div class="crop-shape shape-h"></div>
+                </button>
+                <button class="crop-btn" onclick="setCropMask('circle')" title="Круг">
+                    <div class="crop-shape shape-c"></div>
+                </button>
+            </div>
             <div class="crop-area-wrapper"><canvas id="cropCanvas"></canvas></div>
             <div class="zoom-controls"><span>ZOOM</span><input type="range" id="zoomSlider" min="0.1" max="4" step="0.01" value="1"></div>
             <div style="display:flex; gap:10px; margin-top:10px;">
@@ -237,4 +237,3 @@
     <script src="app.js"></script>
 </body>
 </html>
-
