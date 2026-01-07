@@ -153,3 +153,13 @@ button.secondary { background: transparent; border: 1px solid #555; color: #ccc;
     .preview-hint { display: none; }
     #closePreviewBtn { display: none !important; }
 }
+
+/* ... (весь предыдущий код) ... */
+
+/* --- MOBILE PREVIEW FIX (V63) --- */
+/* Если телефон повернут горизонтально: убираем кнопку возврата */
+@media screen and (orientation: landscape) and (max-height: 900px) {
+    #closePreviewBtn {
+        display: none !important;
+    }
+}
