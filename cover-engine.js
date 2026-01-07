@@ -237,17 +237,15 @@ const CoverEngine = {
         if (customSize) { w = customSize.w; h = customSize.h; } 
         else { const zoom = state.text.scale || 1.0; w = state.slotSize.w * state.ppi * zoom; h = state.slotSize.h * state.ppi * zoom; }
         
-        // 1. Dotted Outline
         let shape;
         const commonOpts = { fill: 'transparent', stroke: '#aaaaaa', strokeWidth: 1.5, strokeDashArray: [10, 10], left: x, top: y, originX: 'center', originY: 'center', selectable: false, evented: true, hoverCursor: 'pointer', isPlaceholder: true };
         if(state.maskType === 'circle') shape = new fabric.Circle({ radius: w/2, ...commonOpts });
         else shape = new fabric.Rect({ width: w, height: h, ...commonOpts });
         this.canvas.add(shape);
 
-        // 2. White Circle Background with Shadow (Button Body)
-        // Similar to CSS: width: 36px/50px. Let's make it proportional but visible.
-        const btnRadius = 25 * (state.ppi / 30); // Approx 50px visual size adjusted for dpi
-        const btnShadow = new fabric.Shadow({ color: 'rgba(0,0,0,0.2)', blur: 10, offsetX: 0, offsetY: 4 });
+        // White Circle Button (matches HTML button style)
+        const btnRadius = 25 * (state.ppi / 30); 
+        const btnShadow = new fabric.Shadow({ color: 'rgba(0,0,0,0.15)', blur: 10, offsetX: 0, offsetY: 4 });
         
         const btnCircle = new fabric.Circle({ 
             radius: btnRadius, 
@@ -262,9 +260,9 @@ const CoverEngine = {
         });
         this.canvas.add(btnCircle);
 
-        // 3. Black Plus Icon inside
-        const plusSize = btnRadius * 0.8; // Length of lines
-        const plusWidth = btnRadius * 0.12; // Thickness
+        // Plus Icon
+        const plusSize = btnRadius * 0.6; 
+        const plusWidth = 2 * (state.ppi / 30); // Thin elegant plus
         
         const vLine = new fabric.Rect({ width: plusWidth, height: plusSize, fill: '#333333', originX: 'center', originY: 'center', left: x, top: y, selectable: false, evented: false });
         const hLine = new fabric.Rect({ width: plusSize, height: plusWidth, fill: '#333333', originX: 'center', originY: 'center', left: x, top: y, selectable: false, evented: false });
