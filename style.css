@@ -11,7 +11,7 @@
 
 /* --- LAYOUT --- */
 body { font-family: 'Tenor Sans', sans-serif; background-color: var(--bg-canvas); height: 100vh; display: flex; color: #333; overflow: hidden; }
-#workspace { flex: 1; display: flex; justify-content: center; align-items: center; position: relative; background-color: var(--bg-canvas); background-image: linear-gradient(#ccc 1px, transparent 1px), linear-gradient(90deg, #ccc 1px, transparent 1px); background-size: 50px 50px; overflow: hidden; }
+#workspace { flex: 1; display: flex; justify-content: center; align-items: center; position: relative; background-color: var(--bg-canvas); background-image: linear-gradient(#ccc 1px, transparent 1px), linear-gradient(90deg, #ccc 1px, transparent 1px); background-size: 50px 50px; overflow: hidden; cursor: zoom-in; }
 
 /* FIX: Canvas Background Issues */
 .canvas-container { box-shadow: 0 40px 100px rgba(0,0,0,0.4); border: none; background: #fff; margin: auto; transition: opacity 0.3s; }
