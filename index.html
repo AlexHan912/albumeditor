@@ -49,8 +49,27 @@
                 <div class="text-row" id="row1">
                     <input type="text" id="inputLine1" value="THE VISUAL DIARY" placeholder="Название" enterkeyhint="done">
                     <div class="tool-btn" onclick="toggleCase(1)" id="btnTt1">Tt</div>
-                    <div class="tool-btn" onclick="showRow(2)">+</div>
+                    <div class="tool-btn" onclick="addSmartRow()" title="Добавить строку">+</div>
                 </div>
+
+                <div class="text-row hidden" id="row2">
+                    <input type="text" id="inputLine2" placeholder="Доп. строка" enterkeyhint="done">
+                    <div class="tool-btn" onclick="toggleCase(2)" id="btnTt2">Tt</div>
+                    <div class="tool-btn red" onclick="hideRow(2)">×</div>
+                </div>
+
+                <div class="text-row hidden" id="row3">
+                    <input type="text" id="inputLine3" placeholder="Доп. строка" enterkeyhint="done">
+                    <div class="tool-btn" onclick="toggleCase(3)" id="btnTt3">Tt</div>
+                    <div class="tool-btn red" onclick="hideRow(3)">×</div>
+                </div>
+
+                <label style="margin-top:10px;">Символ и Дата</label>
+                <div class="input-row-icon">
+                    <div id="globalSymbolBtn" class="icon-trigger-btn pulse-attention" onclick="openGallery('symbols', 'global')"></div>
+                    <input type="text" id="dateLine" value="" placeholder="Год" style="margin-bottom:0;" enterkeyhint="done">
+                </div>
+            </div>
                 <div class="text-row hidden" id="row2">
                     <input type="text" id="inputLine2" placeholder="Доп. строка" enterkeyhint="done">
                     <div class="tool-btn" onclick="toggleCase(2)" id="btnTt2">Tt</div>
@@ -241,3 +260,4 @@
     <script src="app.js"></script>
 </body>
 </html>
+
