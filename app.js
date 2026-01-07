@@ -1,4 +1,4 @@
-/* app.js - UI Controller & State Management V84 */
+/* app.js - UI Controller & State Management V91 (Secure Telegram) */
 
 let state = {
     bookSize: 30, layout: 'text_icon', ppi: 10, slotSize: { w: 6, h: 6 }, maskType: 'rect',
@@ -274,7 +274,7 @@ function initMobilePreview() {
     document.getElementById('btnZoomIn').onclick = (e) => { e.stopPropagation(); panzoomInstance.zoomIn(); };
     document.getElementById('btnZoomOut').onclick = (e) => { e.stopPropagation(); panzoomInstance.zoomOut(); };
     
-    // FIX: Force reset zoom and pan to center
+    // FIX V87: Force reset zoom and pan to center
     document.getElementById('btnZoomFit').onclick = (e) => { 
         e.stopPropagation(); 
         panzoomInstance.reset(); 
@@ -346,7 +346,7 @@ function updateCropperUI() {
     if (state.layout === 'magazine') controls.style.display = 'none'; else controls.style.display = 'flex'; 
 }
 
-// --- GLOBAL UI HELPERS (V84 Updated) ---
+// --- GLOBAL UI HELPERS ---
 
 window.toggleCase = (i) => { 
     state.text.lines[i-1].upper = !state.text.lines[i-1].upper; 
@@ -354,7 +354,7 @@ window.toggleCase = (i) => {
     refresh(); 
 };
 
-// NEW: Smart Add Logic (Sequential)
+// Smart Add Logic
 window.addSmartRow = () => {
     const row2 = document.getElementById('row2');
     const row3 = document.getElementById('row3');
@@ -401,3 +401,53 @@ window.updateScaleFromSlider = (v) => { state.text.scale = CONFIG.scales[v-1]; r
 window.setScale = (s) => { const idx = CONFIG.scales.indexOf(s); if(idx > -1) { document.getElementById('textScale').value = idx+1; window.updateScaleFromSlider(idx+1); } };
 window.changeCollection = (name) => { const grid = document.getElementById('pairsGrid'); const custom = document.getElementById('customPickers'); grid.innerHTML = ''; if(name === 'Custom') { grid.classList.add('hidden'); custom.classList.remove('hidden'); return; } grid.classList.remove('hidden'); custom.classList.add('hidden'); if(typeof DESIGNER_PALETTES !== 'undefined' && DESIGNER_PALETTES[name]) { DESIGNER_PALETTES[name].forEach(pair => { const btn = document.createElement('div'); btn.className = 'pair-btn'; btn.style.backgroundColor = pair.bg; if(pair.bg.toUpperCase() === '#FFFFFF') btn.style.border = '1px solid #ccc'; const h = document.createElement('div'); h.className = 'pair-heart'; h.innerText = '❤'; h.style.color = pair.text; btn.appendChild(h); btn.onclick = () => { state.coverColor = pair.bg; state.text.color = pair.text; document.querySelectorAll('.pair-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); updateSymbolUI(); if(state.qr.enabled) { document.getElementById('qrBtn').style.color = pair.text; document.getElementById('qrBtn').style.borderColor = pair.text; } refresh(); }; grid.appendChild(btn); }); if(DESIGNER_PALETTES[name].length > 0) grid.firstChild.click(); } };
 window.triggerAssetLoader = () => { if(state.layout === 'graphic') openGallery('graphics', 'main'); else document.getElementById('imageLoader').click(); };
+
+/* --- SECURE TELEGRAM SENDING (V91) --- */
+// Этот код требует наличие API-маршрута api/send.js на сервере Vercel
+// И настроенных переменных окружения (TG_BOT_TOKEN, TG_CHAT_ID) в панели Vercel
+
+window.sendToTelegram = function() {
+    const btn = document.getElementById('sendTgBtn');
+    const originalText = btn.innerText;
+    
+    btn.innerText = "ОТПРАВКА...";
+    btn.style.opacity = "0.7";
+    btn.disabled = true;
+
+    // 1. Берем картинку с холста
+    const dataUrl = CoverEngine.canvas.toDataURL({ format: 'png', multiplier: 2.5 });
+
+    // 2. Готовим текст
+    const title = state.text.lines[0].text || "Без названия";
+    const date = state.text.date || "Без даты";
+    const caption = `🎨 Новый заказ!\n\n📖 Книга: ${title}\n📅 Год: ${date}\n📐 Размер: ${state.bookSize}x${state.bookSize}`;
+
+    // 3. Отправляем на НАШ СЕРВЕР (Vercel API)
+    fetch('/api/send', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            imageBase64: dataUrl,
+            caption: caption
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert("✅ Заказ успешно отправлен! Мы свяжемся с вами.");
+        } else {
+            alert("Ошибка отправки: " + (data.error || "Неизвестная ошибка"));
+        }
+    })
+    .catch(error => {
+        console.error('Network Error:', error);
+        alert("Ошибка сети.");
+    })
+    .finally(() => {
+        btn.innerText = originalText;
+        btn.style.opacity = "1";
+        btn.disabled = false;
+    });
+};
