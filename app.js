@@ -1,4 +1,4 @@
-/* app.js - UI Controller & State Management V66 */
+/* app.js - UI Controller & State Management */
 
 let state = {
     bookSize: 30, layout: 'text_icon', ppi: 10, slotSize: { w: 6, h: 6 }, maskType: 'rect',
@@ -30,11 +30,9 @@ window.onload = () => {
     }, 500);
 };
 
-// FIX V66: Игнорируем ресайз (поворот), если открыта клавиатура
+// FIX: Ignore resize if keyboard is open
 window.addEventListener('resize', () => {
-    // Если активный элемент - поле ввода, значит это не поворот экрана, а открытие клавиатуры
     if (document.activeElement.tagName === 'INPUT') return;
-
     setTimeout(() => {
         refresh();
         checkOrientation();
@@ -64,7 +62,6 @@ function finishInit() {
     refresh();
 }
 
-// --- MOBILE PREVIEW LOGIC ---
 function initMobilePreview() {
     const modal = document.getElementById('mobilePreview');
     const container = document.getElementById('panzoomContainer');
@@ -86,21 +83,17 @@ function initMobilePreview() {
 }
 
 function checkOrientation() {
-    // FIX V66: Если пользователь печатает (клавиатура открыта), НЕ запускаем превью
     if (document.activeElement.tagName === 'INPUT' || document.body.classList.contains('keyboard-open')) {
         return;
     }
-
     const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 900;
     
     if (isMobileDevice) {
         if (window.innerWidth > window.innerHeight) {
-            // Landscape -> Open
             if (document.getElementById('mobilePreview').classList.contains('hidden')) {
                 openMobilePreview();
             }
         } else {
-            // Portrait -> Close
             closeMobilePreview();
         }
     }
@@ -129,7 +122,6 @@ window.closeMobilePreview = () => {
     document.getElementById('mobilePreview').classList.add('hidden');
 };
 
-// --- IMAGE PROCESSOR ---
 function processAndResizeImage(file, maxSize, outputType, callback) {
     if (file.type === "image/heic" || file.name.toLowerCase().endsWith(".heic")) {
         if(window.heic2any) {
@@ -288,7 +280,6 @@ function initListeners() {
                     if (document.activeElement.tagName !== 'INPUT') {
                         document.body.classList.remove('keyboard-open');
                         refresh();
-                        // После закрытия клавиатуры проверим ориентацию (вдруг юзер крутил телефон пока печатал)
                         checkOrientation();
                     }
                 }, 100);
@@ -330,9 +321,16 @@ function initListeners() {
                     document.getElementById('cropperModal').classList.remove('hidden');
                     updateCropperUI();
                     
-                    if(state.layout === 'photo_text') { state.slotSize = { w: 6, h: 6 }; }
-                    if (state.layout === 'magazine') { CropperTool.start(resizedUrl, 1, 1, 'rect'); } 
-                    else { CropperTool.start(resizedUrl, state.slotSize.w, state.slotSize.h, state.maskType); }
+                    // FIX: RESET SLOT SIZE TO PREVENT SHRINKING
+                    if(state.layout === 'photo_text') {
+                        state.slotSize = { w: 6, h: 6 };
+                    }
+
+                    if (state.layout === 'magazine') {
+                        CropperTool.start(resizedUrl, 1, 1, 'rect'); 
+                    } else {
+                        CropperTool.start(resizedUrl, state.slotSize.w, state.slotSize.h, state.maskType);
+                    }
                 }
             });
         }
