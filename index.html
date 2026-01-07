@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MALEVICH | Configurator V73</title>
+    <title>MALEVICH | Configurator V74</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
@@ -26,11 +26,18 @@
 
     <div id="workspace">
         <canvas id="c"></canvas>
+        
         <div id="photoTrigger" class="hidden" onclick="triggerAssetLoader()"></div>
-        <div id="fullscreenBtn" onclick="openMobilePreview()" title="На весь экран">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>
-            </svg>
+        
+        <div id="canvasActions">
+            <button id="btnActionGallery" class="action-pill hidden" onclick="openGallery('graphics', 'main')">Выбрать из галереи</button>
+            <button id="btnActionUpload" class="action-pill hidden" onclick="document.getElementById('imageLoader').click()">Загрузить фото</button>
+            
+            <div id="fullscreenBtn" onclick="openMobilePreview()" title="На весь экран">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>
+                </svg>
+            </div>
         </div>
     </div>
 
@@ -59,7 +66,7 @@
                 <label style="margin-top:10px;">Символ и Дата</label>
                 <div class="input-row-icon">
                     <div id="globalSymbolBtn" class="icon-trigger-btn pulse-attention" onclick="openGallery('symbols', 'global')"></div>
-                    <input type="text" id="dateLine" value="2025" placeholder="2025 / Подпись" style="margin-bottom:0;" enterkeyhint="done">
+                    <input type="text" id="dateLine" value="" placeholder="Год" style="margin-bottom:0;" enterkeyhint="done">
                 </div>
             </div>
             <input type="file" id="imageLoader" hidden accept="image/*, .heic">
@@ -168,10 +175,11 @@
     </div>
 
     <div id="mobilePreview" class="hidden">
-        <div id="panzoomContainer"><img id="mobilePreviewImg" src="" alt="Preview"></div>
+        <div id="panzoomContainer">
+            <img id="mobilePreviewImg" src="" alt="Preview">
+        </div>
         <button id="closePreviewBtn">Вернуться в редактор</button>
-        <div class="preview-hint">Свайп для зума</div>
-    </div>
+        </div>
 
     <div id="cropperModal" class="modal-overlay hidden">
         <div class="modal-content">
