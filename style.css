@@ -202,3 +202,21 @@ button.secondary { background: transparent; border: 1px solid #555; color: #ccc;
 @media screen and (orientation: landscape) and (max-height: 900px) {
     #fullscreenBtn { display: none; }
 }
+
+/* --- MOBILE KEYBOARD MODE (V65) --- */
+@media (max-width: 900px) {
+    /* Класс, который добавляется JS при фокусе на input */
+    #workspace.hidden-on-keyboard {
+        height: 0 !important; /* Полностью скрываем холст */
+        min-height: 0 !important;
+        flex: 0 !important;
+        border-bottom: none;
+        overflow: hidden;
+    }
+    
+    /* Увеличиваем панель на весь экран, чтобы было удобно печатать */
+    #controls.expanded-on-keyboard {
+        height: 100vh !important;
+        padding-top: 40px; /* Отступ сверху */
+    }
+}
