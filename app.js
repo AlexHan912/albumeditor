@@ -1,4 +1,4 @@
-/* app.js - UI Controller & State Management V63 */
+/* app.js - UI Controller & State Management V66 */
 
 let state = {
     bookSize: 30, layout: 'text_icon', ppi: 10, slotSize: { w: 6, h: 6 }, maskType: 'rect',
@@ -30,7 +30,11 @@ window.onload = () => {
     }, 500);
 };
 
+// FIX V66: Игнорируем ресайз (поворот), если открыта клавиатура
 window.addEventListener('resize', () => {
+    // Если активный элемент - поле ввода, значит это не поворот экрана, а открытие клавиатуры
+    if (document.activeElement.tagName === 'INPUT') return;
+
     setTimeout(() => {
         refresh();
         checkOrientation();
@@ -82,14 +86,21 @@ function initMobilePreview() {
 }
 
 function checkOrientation() {
+    // FIX V66: Если пользователь печатает (клавиатура открыта), НЕ запускаем превью
+    if (document.activeElement.tagName === 'INPUT' || document.body.classList.contains('keyboard-open')) {
+        return;
+    }
+
     const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 900;
     
     if (isMobileDevice) {
         if (window.innerWidth > window.innerHeight) {
+            // Landscape -> Open
             if (document.getElementById('mobilePreview').classList.contains('hidden')) {
                 openMobilePreview();
             }
         } else {
+            // Portrait -> Close
             closeMobilePreview();
         }
     }
@@ -118,7 +129,7 @@ window.closeMobilePreview = () => {
     document.getElementById('mobilePreview').classList.add('hidden');
 };
 
-// --- IMAGE PROCESSOR (HEIC FIX) ---
+// --- IMAGE PROCESSOR ---
 function processAndResizeImage(file, maxSize, outputType, callback) {
     if (file.type === "image/heic" || file.name.toLowerCase().endsWith(".heic")) {
         if(window.heic2any) {
@@ -250,15 +261,9 @@ function initColors() {
 }
 
 function initListeners() {
-    // Список всех текстовых полей, при нажатии на которые нужно скрывать обложку
-    const inputs = ['inputLine1', 'inputLine2', 'inputLine3', 'dateLine', 'copyrightInput', 'qrLinkInput'];
-    
-    inputs.forEach(id => {
+    ['inputLine1','inputLine2','inputLine3','dateLine','copyrightInput'].forEach(id => {
         const el = document.getElementById(id);
-        if (!el) return;
-
-        // 1. Стандартная обработка ввода (обновление модели)
-        el.oninput = () => {
+        if(el) el.oninput = () => {
             userModifiedText = true;
             if(id === 'inputLine1') state.text.lines[0].text = el.value;
             if(id === 'inputLine2') state.text.lines[1].text = el.value;
@@ -268,33 +273,29 @@ function initListeners() {
             refresh();
         };
 
-        // 2. FOCUS: Клавиатура открывается -> Скрываем обложку (только моб)
+        // Keyboard Open (Mobile)
         el.addEventListener('focus', () => {
             if (window.innerWidth < 900) {
                 document.body.classList.add('keyboard-open');
-                // Прокручиваем к полю ввода, чтобы его было видно
-                setTimeout(() => {
-                    el.scrollIntoView({ behavior: "smooth", block: "center" });
-                }, 300); 
+                setTimeout(() => { el.scrollIntoView({ behavior: "smooth", block: "center" }); }, 300); 
             }
         });
 
-        // 3. BLUR: Клавиатура закрывается -> Возвращаем обложку
+        // Keyboard Close (Mobile)
         el.addEventListener('blur', () => {
             if (window.innerWidth < 900) {
-                // Небольшая задержка, чтобы проверить, не перешли ли мы в другое поле
                 setTimeout(() => {
-                    // Если активный элемент больше не инпут - возвращаем обложку
                     if (document.activeElement.tagName !== 'INPUT') {
                         document.body.classList.remove('keyboard-open');
-                        refresh(); // Перерисовываем на всякий случай
+                        refresh();
+                        // После закрытия клавиатуры проверим ориентацию (вдруг юзер крутил телефон пока печатал)
+                        checkOrientation();
                     }
                 }, 100);
             }
         });
     });
     
-    // Остальные слушатели (шрифты, сохранение, загрузка...)
     document.getElementById('fontSelector').addEventListener('change', (e) => { state.text.font = e.target.value; refresh(); });
     document.getElementById('saveBtn').onclick = () => CoverEngine.download(state);
 
@@ -329,15 +330,9 @@ function initListeners() {
                     document.getElementById('cropperModal').classList.remove('hidden');
                     updateCropperUI();
                     
-                    if(state.layout === 'photo_text') {
-                        state.slotSize = { w: 6, h: 6 };
-                    }
-
-                    if (state.layout === 'magazine') {
-                        CropperTool.start(resizedUrl, 1, 1, 'rect'); 
-                    } else {
-                        CropperTool.start(resizedUrl, state.slotSize.w, state.slotSize.h, state.maskType);
-                    }
+                    if(state.layout === 'photo_text') { state.slotSize = { w: 6, h: 6 }; }
+                    if (state.layout === 'magazine') { CropperTool.start(resizedUrl, 1, 1, 'rect'); } 
+                    else { CropperTool.start(resizedUrl, state.slotSize.w, state.slotSize.h, state.maskType); }
                 }
             });
         }
@@ -362,41 +357,3 @@ function initListeners() {
 
     document.getElementById('cancelCropBtn').onclick = () => document.getElementById('cropperModal').classList.add('hidden');
 }
-
-function loadGal(type, cat, target) {
-    const grid = document.getElementById('galleryGrid'); grid.innerHTML = '';
-    let files = (type === 'symbols' ? ASSETS_DB.symbols[cat] : ASSETS_DB.graphics[cat]) || [];
-    files.forEach(f => {
-        const item = document.createElement('div'); item.className = 'gallery-item';
-        const img = document.createElement('img');
-        const folder = (type === 'symbols') ? 'symbols' : 'graphics';
-        const previewName = f.replace('.png', '_icon.png');
-        const previewUrl = `assets/${folder}/${previewName}`;
-        const printUrl = `assets/${folder}/${f}`;
-        img.src = previewUrl;
-        img.onerror = () => { item.classList.add('broken-file'); item.title = "Ошибка: Нет файла иконки"; };
-        const checkPrint = new Image();
-        checkPrint.src = printUrl;
-        checkPrint.onerror = () => { item.classList.add('broken-file'); item.title = "Ошибка: Нет файла для печати"; };
-        item.appendChild(img);
-        item.onclick = () => {
-            if (item.classList.contains('broken-file')) { alert("Файл отсутствует."); return; }
-            if(type === 'graphics' && !userModifiedText) {
-                state.text.lines[0].text = ""; state.text.lines[1].text = "";
-                document.getElementById('inputLine1').value = ""; document.getElementById('inputLine2').value = "";
-            }
-            CoverEngine.loadSimpleImage(printUrl, (final) => {
-                final = final || previewUrl;
-                document.getElementById('galleryModal').classList.add('hidden');
-                if(target === 'global') { state.images.icon = final; updateSymbolUI(); refresh(); }
-                else if(type === 'graphics') { state.images.main = { src: final, natural: true }; refresh(); }
-            });
-        };
-        grid.appendChild(item);
-    });
-}
-window.closeGallery = () => document.getElementById('galleryModal').classList.add('hidden');
-window.handleGalleryUpload = () => {}; 
-window.openQRModal = () => document.getElementById('qrModal').classList.remove('hidden');
-window.applyQR = () => { state.qr.enabled = true; state.qr.url = document.getElementById('qrLinkInput').value; document.getElementById('qrModal').classList.add('hidden'); refresh(); };
-window.removeQR = () => { state.qr.enabled = false; document.getElementById('qrModal').classList.add('hidden'); refresh(); };
