@@ -1,4 +1,4 @@
-/* cover-engine.js - Logic for Rendering & Cropping V82 */
+/* cover-engine.js - Logic for Rendering & Cropping V83 */
 
 const CONFIG = {
     dpi: 300, 
@@ -7,7 +7,6 @@ const CONFIG = {
     renderScale: 3.0,
     globalOpacity: 1.0, 
     typo: { baseTitle: 1.2, baseDetails: 0.5, baseCopy: 0.35 },
-    // ШКАЛА МАСШТАБА: 50% - 150%
     scales: [0.5, 0.75, 1.0, 1.25, 1.5]
 };
 
@@ -17,7 +16,6 @@ const CoverEngine = {
     init: function(canvasId) {
         this.canvas = new fabric.Canvas(canvasId, { backgroundColor: '#fff', selection: false, enableRetinaScaling: false });
         
-        // 1. Клики по интерактивным объектам
         this.canvas.on('mouse:down', (e) => {
             if(e.target) {
                 if(e.target.isMain || e.target.isPlaceholder) {
@@ -29,9 +27,8 @@ const CoverEngine = {
             }
         });
 
-        // 2. Детектор Тапа для Мобильного Превью (только если клик по пустому месту)
         this.canvas.on('mouse:up', (e) => {
-            // FIX V82: Use 1024px
+            // FIX: Mobile check
             const isMobile = window.innerWidth < 1024;
             const hitInteractive = e.target && (e.target.isMain || e.target.isPlaceholder || e.target.isIcon);
             
@@ -52,7 +49,6 @@ const CoverEngine = {
 
     updateDimensions: function(container, state) {
         if(!container || container.clientWidth === 0) return;
-        // FIX V82: Use 1024px
         const isMobile = window.innerWidth < 1024;
         const margin = isMobile ? 10 : 20; 
         
@@ -63,7 +59,9 @@ const CoverEngine = {
         let basePPI;
         if (isMobile) {
             const safeW = container.clientWidth - (margin * 2);
-            const safeH = container.clientHeight - (margin * 2);
+            // FIX V83: Reserve 80px height for bottom buttons on mobile
+            const safeH = container.clientHeight - (margin * 2) - 80; 
+            
             basePPI = Math.min(safeW / curW, safeH / curH);
         } else {
             const MAX_REF_SIZE = 30; 
@@ -133,11 +131,10 @@ const CoverEngine = {
             let yPos = c.bottomBase; 
             if(state.spine.symbol && state.images.icon) yPos -= (1.8 * state.ppi);
             
-            // FIX: Фиксированный размер шрифта (не зависит от зума)
             const fontSize = CONFIG.typo.baseDetails * state.ppi; 
             
-            // FIX V75-76: Lift text slightly, remove width constraints
-            const textYPos = yPos - (0.5 * state.ppi); 
+            // FIX V83: Lift text significantly (1.5 ppi) to prevent clipping
+            const textYPos = yPos - (1.5 * state.ppi); 
             
             const textObj = new fabric.Text(spineStr, { 
                 fontFamily: 'Tenor Sans', 
@@ -150,7 +147,7 @@ const CoverEngine = {
                 top: textYPos, 
                 angle: -90, 
                 selectable: false,
-                letterSpacing: 100 // Разрядка
+                letterSpacing: 100 
             });
             this.canvas.add(textObj);
         }
@@ -158,20 +155,10 @@ const CoverEngine = {
 
     _renderBackCover: function(c, state) {
         if(state.text.copyright) {
-            // FIX: Фиксированный размер шрифта
             const fontSize = CONFIG.typo.baseCopy * state.ppi;
-            
             this.canvas.add(new fabric.Text(state.text.copyright, { 
-                left: c.backCenter, 
-                top: c.bottomBase, 
-                fontSize: fontSize, 
-                fontFamily: 'Tenor Sans', 
-                fill: state.text.color, 
-                opacity: CONFIG.globalOpacity * 0.7, 
-                originX: 'center', 
-                originY: 'bottom', 
-                selectable: false, 
-                letterSpacing: 80 
+                left: c.backCenter, top: c.bottomBase, fontSize: fontSize, fontFamily: 'Tenor Sans', fill: state.text.color, 
+                opacity: CONFIG.globalOpacity * 0.7, originX: 'center', originY: 'bottom', selectable: false, letterSpacing: 80 
             }));
         }
         if(state.qr.enabled && state.qr.url) {
@@ -181,63 +168,40 @@ const CoverEngine = {
     },
 
     _renderFrontCover: function(c, state) {
-        const layout = state.layout; 
-        const x = c.frontCenter; 
-        const y = c.centerY; 
-        const gap = c.gap;
-
+        const layout = state.layout; const x = c.frontCenter; const y = c.centerY; 
         if (layout === 'magazine') {
-            const coverW = state.bookSize * state.ppi; 
-            const coverH = c.h; 
+            const coverW = state.bookSize * state.ppi; const coverH = c.h; 
             if(state.images.main) this._placeClippedImage(state.images.main, x, y, coverW, coverH, 'rect', false, state);
             else this._renderImageSlot(x, y, state, { w: coverW, h: coverH });
             this._renderTextBlock(x, 2.0 * state.ppi, false, true, state);
         } 
-        else if (layout === 'icon') {
-            this._renderIcon(x, y, null, state);
-        }
+        else if (layout === 'icon') { this._renderIcon(x, y, null, state); }
         else if (layout === 'text_icon') {
-            const dynGap = gap * state.text.scale; 
-            const tObj = this._createTextBlockObj(true, state);
-            const iconSize = (2.0 / 1.6) * state.ppi * state.text.scale;
-            const visualGap = dynGap * 1.5; 
-            const totalH = tObj.height + visualGap + iconSize;
-            const startY = y - (totalH / 2); 
-            tObj.set({ left: x, top: startY + tObj.height/2 }); 
-            this.canvas.add(tObj);
+            const gap = c.gap; const dynGap = gap * state.text.scale; const tObj = this._createTextBlockObj(true, state);
+            const iconSize = (2.0 / 1.6) * state.ppi * state.text.scale; const visualGap = dynGap * 1.5; 
+            const totalH = tObj.height + visualGap + iconSize; const startY = y - (totalH / 2); 
+            tObj.set({ left: x, top: startY + tObj.height/2 }); this.canvas.add(tObj);
             this._renderIcon(x, startY + tObj.height + visualGap + iconSize/2, iconSize, state);
         } 
         else if (layout === 'graphic' || layout === 'photo_text') {
             let imgY = c.centerY; 
-            
             if(layout === 'graphic') {
                 const style = getComputedStyle(document.documentElement);
                 const offsetCm = parseFloat(style.getPropertyValue('--graphic-offset-y-cm')) || 2;
                 imgY = c.centerY - (offsetCm * state.ppi);
                 if(state.images.main) this._renderNaturalImage(x, imgY, state);
                 else this._renderImageSlot(x, imgY, state);
-            } 
-            else {
-                // PHOTO + TEXT
+            } else {
                 const zoom = state.text.scale || 1.0;
-                const w = state.slotSize.w * state.ppi * zoom;
-                const h = state.slotSize.h * state.ppi * zoom;
+                const w = state.slotSize.w * state.ppi * zoom; const h = state.slotSize.h * state.ppi * zoom;
                 imgY = c.centerY - (2.0 * state.ppi); 
-                
-                if(state.images.main) {
-                    this._placeClippedImage(state.images.main, x, imgY, w, h, state.maskType, false, state);
-                } else {
-                    this._renderImageSlot(x, imgY, state, {w: w, h: h});
-                }
+                if(state.images.main) this._placeClippedImage(state.images.main, x, imgY, w, h, state.maskType, false, state);
+                else this._renderImageSlot(x, imgY, state, {w: w, h: h});
                 const textY = imgY + (h / 2) + (1.5 * state.ppi);
                 this._renderTextBlock(x, textY, true, false, state, 'top'); 
             }
         }
-        else if (layout === 'text') { 
-            const tObj = this._createTextBlockObj(false, state); 
-            tObj.set({ left: x, top: c.centerY }); 
-            this.canvas.add(tObj); 
-        } 
+        else if (layout === 'text') { const tObj = this._createTextBlockObj(false, state); tObj.set({ left: x, top: c.centerY }); this.canvas.add(tObj); } 
     },
 
     _createTextBlockObj: function(compact, state) {
@@ -246,38 +210,13 @@ const CoverEngine = {
         const hasText = rawLines.some(t => t.length > 0);
         let renderTxt = hasText ? processedLines.filter(Boolean).join("\n") : "THE VISUAL DIARY\n\n\n";
         let opacity = hasText ? CONFIG.globalOpacity : 0.3;
-        const baseSize = compact ? 0.8 : CONFIG.typo.baseTitle; 
-        const finalSize = baseSize * state.ppi * state.text.scale;
-        
-        const tObj = new fabric.Text(renderTxt, { 
-            fontFamily: state.text.font, // Main title uses selected font
-            fontSize: finalSize, 
-            textAlign: 'center', 
-            lineHeight: 1.3, 
-            fill: state.text.color, 
-            opacity: opacity, 
-            selectable: false, 
-            originX: 'center', 
-            originY: 'center',
-            hoverCursor: 'default'
-        });
+        const baseSize = compact ? 0.8 : CONFIG.typo.baseTitle; const finalSize = baseSize * state.ppi * state.text.scale;
+        const tObj = new fabric.Text(renderTxt, { fontFamily: state.text.font, fontSize: finalSize, textAlign: 'center', lineHeight: 1.3, fill: state.text.color, opacity: opacity, selectable: false, originX: 'center', originY: 'center', hoverCursor: 'default' });
         const group = new fabric.Group([tObj], { originX: 'center', originY: 'center', hoverCursor: 'default' });
-        
         if(state.text.date) { 
-            const dateStr = state.text.date; 
-            const dateOp = CONFIG.globalOpacity; 
-            const dateSize = CONFIG.typo.baseDetails * state.ppi * state.text.scale;
+            const dateStr = state.text.date; const dateOp = CONFIG.globalOpacity; const dateSize = CONFIG.typo.baseDetails * state.ppi * state.text.scale;
             const gap = (compact ? 1.0 : 2.0) * state.ppi;
-            const dObj = new fabric.Text(dateStr, { 
-                fontFamily: state.text.font, 
-                fontSize: dateSize, 
-                fill: state.text.color, 
-                opacity: dateOp, 
-                originX: 'center', 
-                originY: 'top', 
-                top: (tObj.height / 2) + gap,
-                hoverCursor: 'default'
-            });
+            const dObj = new fabric.Text(dateStr, { fontFamily: state.text.font, fontSize: dateSize, fill: state.text.color, opacity: dateOp, originX: 'center', originY: 'top', top: (tObj.height / 2) + gap, hoverCursor: 'default' });
             group.addWithUpdate(dObj);
         }
         return group;
@@ -308,7 +247,6 @@ const CoverEngine = {
         this._placeImage(iconUrl, x, y, forcedSize || (2.0/1.6)*state.ppi*state.text.scale, { color: state.text.color, opacity: isGhost ? 0.3 : CONFIG.globalOpacity, isIcon: true, hoverCursor: 'pointer' });
     },
 
-    /* V78: NEW STYLE FOR PLACEHOLDER BUTTON (+ Circle with Shadow) */
     _renderImageSlot: function(x, y, state, customSize = null) {
         let w, h;
         if (customSize) { w = customSize.w; h = customSize.h; } 
@@ -320,32 +258,20 @@ const CoverEngine = {
         else shape = new fabric.Rect({ width: w, height: h, ...commonOpts });
         this.canvas.add(shape);
 
-        // White Circle Button (matches HTML button style)
+        // V78: White Button Style
         const btnRadius = 25 * (state.ppi / 30); 
         const btnShadow = new fabric.Shadow({ color: 'rgba(0,0,0,0.15)', blur: 10, offsetX: 0, offsetY: 4 });
         
         const btnCircle = new fabric.Circle({ 
-            radius: btnRadius, 
-            fill: '#ffffff', 
-            shadow: btnShadow,
-            originX: 'center', 
-            originY: 'center', 
-            left: x, 
-            top: y, 
-            selectable: false, 
-            evented: false 
+            radius: btnRadius, fill: '#ffffff', shadow: btnShadow,
+            originX: 'center', originY: 'center', left: x, top: y, selectable: false, evented: false 
         });
         this.canvas.add(btnCircle);
 
-        // Plus Icon
-        const plusSize = btnRadius * 0.6; 
-        const plusWidth = 2 * (state.ppi / 30); 
-        
+        const plusSize = btnRadius * 0.6; const plusWidth = 2 * (state.ppi / 30); 
         const vLine = new fabric.Rect({ width: plusWidth, height: plusSize, fill: '#333333', originX: 'center', originY: 'center', left: x, top: y, selectable: false, evented: false });
         const hLine = new fabric.Rect({ width: plusSize, height: plusWidth, fill: '#333333', originX: 'center', originY: 'center', left: x, top: y, selectable: false, evented: false });
-        
-        this.canvas.add(vLine);
-        this.canvas.add(hLine);
+        this.canvas.add(vLine); this.canvas.add(hLine);
     },
     
     _renderNaturalImage: function(x, y, state) {
