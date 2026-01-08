@@ -1,4 +1,4 @@
-/* app.js - COMPLETE FIXED VERSION */
+/* app.js - FIXED RENDER LOGIC V95 */
 
 // Глобальные переменные
 let state = {
@@ -16,13 +16,12 @@ let userModifiedText = false;
 let panzoomInstance = null;
 
 // =========================================================
-// 1. ГЛАВНЫЙ ЗАПУСК (window.onload)
+// 1. ГЛАВНЫЙ ЗАПУСК
 // =========================================================
 window.onload = function() {
     console.log("MALEVICH Configurator Starting...");
 
-    // АВАРИЙНОЕ УДАЛЕНИЕ ЗАСТАВКИ (через 1 сек)
-    // Это гарантирует, что черный экран исчезнет в любом случае
+    // 1. Аварийное удаление заставки (чтобы не зависало)
     setTimeout(() => {
         const loader = document.getElementById('app-loader');
         if (loader) {
@@ -31,26 +30,25 @@ window.onload = function() {
         }
     }, 1000);
 
-    // Проверка движка
+    // 2. Проверка движка (Исправленная логика)
     if (typeof CoverEngine === 'undefined') {
-        console.error("CRITICAL: CoverEngine not loaded. Check cover-engine.js");
-        alert("Ошибка: Файл cover-engine.js не загружен.");
+        alert("Critical Error: CoverEngine not loaded.");
         return;
     }
 
-    // Инициализация Canvas
-    CoverEngine.init('c');
+    // 3. Инициализация Canvas
+    try {
+        CoverEngine.init('c');
+    } catch(e) { console.error("Canvas init error:", e); }
 
-    // Читаем параметры из URL
+    // 4. Параметры из ссылки (Год, Имя)
     const urlParams = new URLSearchParams(window.location.search);
     const currentYear = new Date().getFullYear().toString();
     state.text.date = currentYear;
 
-    // Заполняем год в UI
     const dateInput = document.getElementById('dateLine');
     if (dateInput) dateInput.value = currentYear;
 
-    // Если есть имя в ссылке ?name=...
     const nameFromUrl = urlParams.get('name');
     if (nameFromUrl) {
         state.text.lines[0].text = nameFromUrl.toUpperCase();
@@ -58,22 +56,21 @@ window.onload = function() {
         if (inp) inp.value = nameFromUrl.toUpperCase();
     }
 
-    // Загрузка ресурсов
+    // 5. Загрузка ресурсов и первый рендер
     loadDefaultAssets();
     initColors();
     initListeners();
     initMobilePreview();
 
-    // Первый рендер
     setTimeout(() => {
-        refresh();
+        refresh(); // Главный вызов отрисовки
         checkOrientation();
         updateActionButtons();
     }, 500);
 };
 
 // =========================================================
-// 2. ФУНКЦИИ ЛОГИКИ
+// 2. ЛОГИКА ОТРИСОВКИ (ИСПРАВЛЕНО)
 // =========================================================
 
 window.addEventListener('resize', () => {
@@ -85,8 +82,12 @@ window.addEventListener('resize', () => {
 });
 
 function refresh() {
-    if (window.CoverEngine) {
-        CoverEngine.updateDimensions(document.getElementById('workspace'), state);
+    // ВАЖНОЕ ИСПРАВЛЕНИЕ: Проверяем тип, а не window property
+    if (typeof CoverEngine !== 'undefined') {
+        const workspace = document.getElementById('workspace');
+        if(workspace) {
+            CoverEngine.updateDimensions(workspace, state);
+        }
     }
 }
 
@@ -94,22 +95,26 @@ function loadDefaultAssets() {
     const defaultPath = 'assets/symbols/love_heart.png';
     const defaultPreview = 'assets/symbols/love_heart_icon.png';
 
-    CoverEngine.loadSimpleImage(defaultPath, (url) => {
-        const final = url || defaultPreview;
-        if (final) {
-            CoverEngine.loadSimpleImage(final, (valid) => {
-                if (valid) state.images.icon = valid;
+    // Пытаемся загрузить сердце. Если 404 — просто рисуем без него.
+    if(typeof CoverEngine !== 'undefined') {
+        CoverEngine.loadSimpleImage(defaultPath, (url) => {
+            const final = url || defaultPreview;
+            if (final) {
+                CoverEngine.loadSimpleImage(final, (valid) => {
+                    if (valid) state.images.icon = valid;
+                    finishInit();
+                });
+            } else {
                 finishInit();
-            });
-        } else {
-            finishInit();
-        }
-    });
+            }
+        });
+    } else {
+        finishInit();
+    }
 }
 
 function finishInit() {
     updateSymbolUI();
-    // Активируем кнопку по умолчанию
     const defCard = document.querySelector('.layout-card[title="Текст+Символ"]') || document.querySelector('.layout-card');
     if (defCard) setLayout('text_icon', defCard);
     refresh();
@@ -122,7 +127,6 @@ window.sendToTelegram = function() {
     const btn = document.getElementById('sendTgBtn');
     const originalText = btn.innerText;
     
-    // Параметры
     const urlParams = new URLSearchParams(window.location.search);
     const orderData = {
         orderId: urlParams.get('order_id') || 'Без номера',
@@ -134,11 +138,12 @@ window.sendToTelegram = function() {
     btn.disabled = true;
     btn.style.opacity = "0.7";
 
-    // Рендер
+    if(!CoverEngine.canvas) { alert("Ошибка холста"); return; }
+
+    // Рендер картинки
     const dataUrl = CoverEngine.canvas.toDataURL({ format: 'jpeg', quality: 0.9, multiplier: 2.5 });
     const base64Clean = dataUrl.replace(/^data:image\/\w+;base64,/, "");
 
-    // API Запрос
     fetch('/api/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -166,7 +171,7 @@ window.sendToTelegram = function() {
 };
 
 // =========================================================
-// 4. ИНТЕРФЕЙС (Цвета, Галереи, Кроппер)
+// 4. ИНТЕРФЕЙС
 // =========================================================
 
 function initColors() {
@@ -184,7 +189,6 @@ function initColors() {
         }, 100);
     }
     
-    // Кастомные пикеры
     const bgPicker = document.getElementById('customCoverPicker');
     const textPicker = document.getElementById('customTextPicker');
     if (bgPicker) bgPicker.oninput = (e) => { state.coverColor = e.target.value; refresh(); };
@@ -195,7 +199,6 @@ window.changeCollection = function(name) {
     const grid = document.getElementById('pairsGrid');
     const custom = document.getElementById('customPickers');
     if (!grid) return;
-    
     grid.innerHTML = '';
     
     if (name === 'Custom') {
@@ -212,7 +215,6 @@ window.changeCollection = function(name) {
         const btn = document.createElement('div');
         btn.className = 'pair-btn';
         btn.style.backgroundColor = pair.bg;
-        // Рамка для белого
         if (pair.bg.toLowerCase() === '#ffffff') btn.style.border = '1px solid #ccc';
         
         const h = document.createElement('div');
@@ -297,7 +299,7 @@ function loadGal(type, cat, target) {
         
         item.appendChild(img);
         item.onclick = () => {
-            if (window.CoverEngine) {
+            if (typeof CoverEngine !== 'undefined') {
                 CoverEngine.loadSimpleImage(printUrl, (final) => {
                     final = final || previewUrl;
                     document.getElementById('galleryModal').classList.add('hidden');
@@ -345,7 +347,6 @@ window.removeQR = () => {
 };
 
 function initListeners() {
-    // Ввод текста
     ['inputLine1', 'inputLine2', 'inputLine3', 'dateLine', 'copyrightInput'].forEach(id => {
         const el = document.getElementById(id);
         if (el) {
@@ -361,15 +362,12 @@ function initListeners() {
         }
     });
 
-    // Шрифты
     const fontSel = document.getElementById('fontSelector');
     if (fontSel) fontSel.addEventListener('change', (e) => { state.text.font = e.target.value; refresh(); });
 
-    // Скачивание
     const saveBtn = document.getElementById('saveBtn');
-    if (saveBtn) saveBtn.onclick = () => { if (window.CoverEngine) CoverEngine.download(state); };
+    if (saveBtn) saveBtn.onclick = () => { if (typeof CoverEngine !== 'undefined') CoverEngine.download(state); };
 
-    // Загрузка файлов
     const iconLoader = document.getElementById('iconLoader');
     if (iconLoader) iconLoader.onchange = (e) => {
         if (e.target.files[0]) processAndResizeImage(e.target.files[0], 500, 'image/png', (url) => {
@@ -400,7 +398,6 @@ function initListeners() {
         e.target.value = '';
     };
 
-    // Кроппер
     window.setCropMask = (w, h) => {
         if (w === 'circle') { state.slotSize = { w: 6, h: 6 }; state.maskType = 'circle'; }
         else { state.slotSize = { w: w, h: h }; state.maskType = 'rect'; }
@@ -423,7 +420,6 @@ function initListeners() {
     if (cancelCrop) cancelCrop.onclick = () => document.getElementById('cropperModal').classList.add('hidden');
 }
 
-// Хелперы обработки изображений
 function processAndResizeImage(file, maxSize, outputType, callback) {
     if (file.type === "image/heic" || file.name.toLowerCase().endsWith(".heic")) {
         if (window.heic2any) {
@@ -472,7 +468,7 @@ function updateCropperUI() {
 }
 
 // =========================================================
-// 5. ГЛОБАЛЬНЫЕ UI ХЕЛПЕРЫ (Вызываются из HTML)
+// 5. ГЛОБАЛЬНЫЕ UI ХЕЛПЕРЫ
 // =========================================================
 
 window.toggleCase = (i) => {
@@ -581,7 +577,7 @@ function checkOrientation() {
 window.openMobilePreview = () => {
     const modal = document.getElementById('mobilePreview');
     const img = document.getElementById('mobilePreviewImg');
-    if (window.CoverEngine) {
+    if (typeof CoverEngine !== 'undefined') {
         const mult = window.innerWidth < 1024 ? 1.5 : 2.5;
         const dataUrl = CoverEngine.canvas.toDataURL({ format: 'png', multiplier: mult });
         img.src = dataUrl;
