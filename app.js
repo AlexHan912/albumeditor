@@ -1,524 +1,488 @@
-/* app.js - FINAL STABLE VERSION (With Telegram Params) */
+/* app.js - FIXED & MERGED VERSION (Engine + Telegram Params) */
 
-// ==========================================
-// 1. ИНИЦИАЛИЗАЦИЯ
-// ==========================================
-const canvas = new fabric.Canvas('c', {
-    preserveObjectStacking: true,
-    selection: false
-});
-
-// Глобальное состояние
-let currentFont = 'Tenor Sans';
-let currentPalette = null;
-let activeLayout = 'text_icon'; 
-let colorBg = '#F3F3F3';
-let colorText = '#1A1A1A';
-
-// Ссылки на элементы UI
-const els = {
-    input1: document.getElementById('inputLine1'),
-    input2: document.getElementById('inputLine2'),
-    input3: document.getElementById('inputLine3'),
-    dateLine: document.getElementById('dateLine'),
-    copyright: document.getElementById('copyrightInput'),
-    row2: document.getElementById('row2'),
-    row3: document.getElementById('row3'),
-    fontSelector: document.getElementById('fontSelector'),
-    sendBtn: document.getElementById('sendTgBtn')
+// Глобальное состояние (как в старой версии, чтобы CoverEngine понимал)
+let state = {
+    bookSize: 30, layout: 'text_icon', ppi: 10, slotSize: { w: 6, h: 6 }, maskType: 'rect',
+    text: { 
+        lines: [ { text: "THE VISUAL DIARY", upper: true }, { text: "", upper: false }, { text: "", upper: false } ], 
+        date: "", copyright: "", font: "Tenor Sans", color: "#1a1a1a", scale: 1.0 
+    },
+    coverColor: "#FFFFFF", images: { icon: null, main: null }, 
+    spine: { symbol: true, title: true, date: true },
+    qr: { enabled: false, url: "" }
 };
 
-// Запуск при загрузке
-window.addEventListener('load', () => {
-    resizeCanvas();
-    
-    // 1. Убираем черный экран загрузки
-    setTimeout(() => {
-        const loader = document.getElementById('app-loader');
-        if (loader) {
-            loader.style.opacity = '0';
-            setTimeout(() => { loader.style.display = 'none'; }, 500);
-        }
-    }, 500);
+let userModifiedText = false;
+let panzoomInstance = null; 
 
-    // 2. Инициализируем палитру (с защитой от ошибок)
-    const startPalette = "Wedding Trends";
-    const paletteSelector = document.getElementById('paletteSelector');
-    if(paletteSelector) {
-        paletteSelector.value = startPalette;
-        changeCollection(startPalette);
+// ==========================================
+// 1. ИНИЦИАЛИЗАЦИЯ И URL ПАРАМЕТРЫ
+// ==========================================
+window.onload = () => {
+    // Инициализируем движок
+    if(window.CoverEngine) {
+        CoverEngine.init('c');
+    } else {
+        console.error("CoverEngine not loaded!");
+        return;
     }
 
-    // 3. Заполняем поля, если есть параметры в URL (опционально)
-    const params = new URLSearchParams(window.location.search);
-    if(params.get('name')) els.input1.value = params.get('name').toUpperCase();
-    if(params.get('year')) els.dateLine.value = params.get('year');
-
-    // 4. Первый рендер
-    renderCanvas();
-});
-
-window.addEventListener('resize', resizeCanvas);
-
-function resizeCanvas() {
-    const workspace = document.getElementById('workspace');
-    if(!workspace) return;
-    const ratio = canvas.getHeight() / canvas.getWidth();
-    let w = workspace.clientWidth;
-    if (w > 600) w = 600; 
-    const h = w * ratio;
-    canvas.setDimensions({ width: w, height: h });
-    canvas.setZoom(w / 1000); 
-    canvas.requestRenderAll();
-}
-
-// ==========================================
-// 2. ТЕЛЕГРАМ: ОТПРАВКА С ПАРАМЕТРАМИ ИЗ URL
-// ==========================================
-
-async function sendToTelegram() {
-    const btn = els.sendBtn;
-    const originalText = btn.innerText;
-
-    // 1. Читаем данные из адресной строки (ссылки)
-    // Ссылка вида: domain.com/?order_id=1055&name=Ivan&phone=+7999...
+    // 1. Обработка параметров из ссылки (order_id, name, etc.)
     const urlParams = new URLSearchParams(window.location.search);
+    // Если нужно предзаполнить имя на обложке из ссылки:
+    // const nameFromUrl = urlParams.get('name');
+    // if(nameFromUrl) {
+    //     state.text.lines[0].text = nameFromUrl.toUpperCase();
+    //     document.getElementById('inputLine1').value = nameFromUrl.toUpperCase();
+    // }
+
+    // 2. Авто-год
+    const currentYear = new Date().getFullYear().toString();
+    state.text.date = currentYear;
+    const dateInput = document.getElementById('dateLine');
+    if(dateInput) dateInput.value = currentYear;
+
+    // 3. Загрузка ассетов и цветов
+    loadDefaultAssets();
+    initColors();
+    initListeners();
+    initMobilePreview(); 
     
-    const orderData = {
-        orderId: urlParams.get('order_id') || 'Без номера',
-        clientName: urlParams.get('name') || 'Не указано',
-        clientPhone: urlParams.get('phone') || 'Не указан'
-    };
+    // Синхронизация кнопок UI
+    const input1 = document.getElementById('inputLine1');
+    if (input1 && input1.value === "") input1.value = "THE VISUAL DIARY";
+    if(state.text.lines[0].upper) document.getElementById('btnTt1').classList.add('active');
+    
+    // Первый рендер
+    setTimeout(() => {
+        refresh();
+        checkOrientation();
+        updateActionButtons();
+    }, 500);
+};
 
-    try {
-        btn.innerText = '⏳ Генерация...';
-        btn.disabled = true;
-        btn.style.opacity = '0.7';
+window.addEventListener('resize', () => {
+    if (document.activeElement.tagName === 'INPUT') return;
+    setTimeout(() => {
+        refresh();
+        checkOrientation();
+    }, 100);
+});
 
-        // 2. Генерируем картинку
-        const dataURL = canvas.toDataURL({
-            format: 'jpeg',
-            quality: 0.9,
-            multiplier: 2 // Высокое качество
-        });
-        
-        const base64Data = dataURL.replace(/^data:image\/\w+;base64,/, "");
+function refresh() {
+    CoverEngine.updateDimensions(document.getElementById('workspace'), state);
+}
 
-        btn.innerText = '🚀 Отправка...';
-
-        // 3. Отправляем на сервер Vercel
-        const response = await fetch('/api/send', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                imageBase64: base64Data,
-                orderId: orderData.orderId,
-                clientName: orderData.clientName,
-                clientPhone: orderData.clientPhone
-            })
-        });
-
-        const result = await response.json();
-
-        if (response.ok) {
-            alert(`✅ Заказ #${orderData.orderId} успешно отправлен!`);
-        } else {
-            console.error('Server response:', result);
-            alert('❌ Ошибка сервера: ' + (result.error || 'Неизвестная ошибка'));
+function loadDefaultAssets() {
+    // Убираем черный экран
+    setTimeout(() => { 
+        const loader = document.getElementById('app-loader');
+        if(loader) {
+            loader.style.opacity = '0'; 
+            setTimeout(() => loader.style.display='none', 800); 
         }
+    }, 1500);
 
-    } catch (err) {
-        console.error('Network Error:', err);
-        alert('❌ Ошибка сети. Проверьте интернет.');
-    } finally {
-        btn.innerText = originalText;
-        btn.disabled = false;
-        btn.style.opacity = '1';
-    }
+    // Загрузка дефолтного сердца
+    const defaultPath = 'assets/symbols/love_heart.png';
+    const defaultPreview = 'assets/symbols/love_heart_icon.png';
+    
+    CoverEngine.loadSimpleImage(defaultPath, (url) => {
+        const final = url || defaultPreview;
+        if(final) {
+            CoverEngine.loadSimpleImage(final, (valid) => { if(valid) state.images.icon = valid; finishInit(); });
+        } else { finishInit(); }
+    });
+}
+
+function finishInit() {
+    updateSymbolUI();
+    const defCard = document.querySelector('.layout-card[title="Текст+Символ"]') || document.querySelector('.layout-card');
+    if(defCard) setLayout('text_icon', defCard); 
+    refresh();
 }
 
 // ==========================================
-// 3. ЦВЕТА И ПАЛИТРЫ (ИСПРАВЛЕНО)
+// 2. ЦВЕТА И ГАЛЕРЕИ (ИСПРАВЛЕНО)
 // ==========================================
+function initColors() {
+    const collectionName = 'Kinfolk - Cinema';
+    const selector = document.getElementById('paletteSelector');
+    if(selector) selector.value = collectionName;
 
-window.changeCollection = function(collectionName) {
-    const grid = document.getElementById('pairsGrid');
-    const customPickers = document.getElementById('customPickers');
-    if(!grid) return;
-
-    grid.innerHTML = '';
-    
-    // Режим своих цветов
-    if (collectionName === 'Custom') {
-        customPickers.classList.remove('hidden');
-        setupCustomPickers();
-        return;
+    // Используем window.DESIGNER_PALETTES
+    if(window.DESIGNER_PALETTES && window.DESIGNER_PALETTES[collectionName]) {
+        changeCollection(collectionName);
+        // Случайный цвет при старте
+        const palette = window.DESIGNER_PALETTES[collectionName];
+        const randomIdx = Math.floor(Math.random() * palette.length);
+        // Небольшая задержка, чтобы DOM обновился
+        setTimeout(() => {
+            const btns = document.querySelectorAll('#pairsGrid .pair-btn');
+            if (btns[randomIdx]) btns[randomIdx].click();
+        }, 100);
     }
     
-    customPickers.classList.add('hidden');
-    
-    // Получаем данные. Поддержка разных версий assets.js
-    // Ищем в window.PALETTES или window.DESIGNER_PALETTES или используем заглушку
-    let paletteData = [];
-    if (window.PALETTES && window.PALETTES[collectionName]) {
-        paletteData = window.PALETTES[collectionName];
-    } else if (window.DESIGNER_PALETTES && window.DESIGNER_PALETTES[collectionName]) {
-        paletteData = window.DESIGNER_PALETTES[collectionName];
-    } else {
-        // Заглушка, если assets.js не загрузился
-        console.warn('Assets not loaded, using fallback colors');
-        paletteData = [
-            {bg:'#fff', text:'#000'}, 
-            {bg:'#f3f3f3', text:'#1a1a1a'},
-            {bg:'#000', text:'#fff'}
-        ];
-    }
-
-    paletteData.forEach(pair => {
-        const div = document.createElement('div');
-        div.className = 'color-pair';
-        div.style.backgroundColor = pair.bg;
-        // Если фон белый, добавляем рамку
-        if(pair.bg.toLowerCase() === '#ffffff' || pair.bg.toLowerCase() === '#fff') {
-            div.style.border = '1px solid #ddd';
-        }
-        
-        const dot = document.createElement('div');
-        dot.style.width = '10px'; 
-        dot.style.height = '10px';
-        dot.style.borderRadius = '50%';
-        dot.style.backgroundColor = pair.text;
-        dot.style.margin = 'auto';
-        dot.style.marginTop = '12px'; // Центрирование
-        
-        div.appendChild(dot);
-        
-        div.onclick = () => {
-            document.querySelectorAll('.color-pair').forEach(p => p.classList.remove('active'));
-            div.classList.add('active');
-            colorBg = pair.bg;
-            colorText = pair.text;
-            canvas.backgroundColor = colorBg;
-            renderCanvas();
-        };
-        grid.appendChild(div);
-    });
-    
-    // Кликаем первый цвет по умолчанию
-    if(grid.firstChild) grid.firstChild.click();
-};
-
-function setupCustomPickers() {
-    const bgP = document.getElementById('customCoverPicker');
-    const txP = document.getElementById('customTextPicker');
-    
-    const apply = () => {
-        colorBg = bgP.value;
-        colorText = txP.value;
-        canvas.backgroundColor = colorBg;
-        renderCanvas();
-    };
-    bgP.oninput = apply;
-    txP.oninput = apply;
+    const bgPicker = document.getElementById('customCoverPicker');
+    const textPicker = document.getElementById('customTextPicker');
+    if(bgPicker) bgPicker.oninput = (e) => { state.coverColor = e.target.value; refresh(); };
+    if(textPicker) textPicker.oninput = (e) => { state.text.color = e.target.value; updateSymbolUI(); refresh(); };
 }
 
-// ==========================================
-// 4. ГАЛЕРЕЯ (ИСПРАВЛЕНО)
-// ==========================================
-
-window.openGallery = function(type, target) {
-    const modal = document.getElementById('galleryModal');
-    const grid = document.getElementById('galleryGrid');
-    const tabs = document.getElementById('galleryTabs');
-    const title = document.getElementById('galleryTitle');
+window.changeCollection = (name) => { 
+    const grid = document.getElementById('pairsGrid'); 
+    const custom = document.getElementById('customPickers'); 
+    grid.innerHTML = ''; 
     
-    modal.classList.remove('hidden');
-    window.galleryTarget = target;
-    grid.innerHTML = '';
-    tabs.innerHTML = '';
-
-    // Определяем источник данных (поддержка разных assets.js)
-    let sourceDB = {};
-    const ASSETS = window.ASSETS_DB || window.ASSETS || {};
-
-    if (type === 'symbols') {
-        title.innerText = "Символы";
-        sourceDB = ASSETS.symbols || {};
-    } else {
-        title.innerText = "Графика";
-        sourceDB = ASSETS.graphics || {};
-    }
-
-    // Если база пустая, показываем сообщение
-    if (Object.keys(sourceDB).length === 0) {
-        grid.innerHTML = '<div style="padding:20px; text-align:center; color:#888">Галерея загружается или пуста...</div>';
-        // Попытка показать хотя бы заглушки, если assets.js отвалился
-        return;
-    }
-
-    // Создаем табы
-    Object.keys(sourceDB).forEach((cat, index) => {
-        const tab = document.createElement('div');
-        tab.className = 'gallery-tab';
-        if (index === 0) tab.classList.add('active');
-        tab.innerText = cat;
+    if(name === 'Custom') { 
+        grid.classList.add('hidden'); 
+        custom.classList.remove('hidden'); 
+        return; 
+    } 
+    grid.classList.remove('hidden'); 
+    custom.classList.add('hidden'); 
+    
+    const palette = (window.DESIGNER_PALETTES && window.DESIGNER_PALETTES[name]) || [];
+    
+    palette.forEach(pair => { 
+        const btn = document.createElement('div'); 
+        btn.className = 'pair-btn'; 
+        btn.style.backgroundColor = pair.bg; 
+        if(pair.bg.toUpperCase() === '#FFFFFF' || pair.bg.toLowerCase() === '#ffffff') btn.style.border = '1px solid #ccc'; 
         
-        tab.onclick = () => {
-            document.querySelectorAll('.gallery-tab').forEach(t => t.classList.remove('active'));
-            tab.classList.add('active');
-            renderGalleryImages(sourceDB[cat], type);
-        };
-        tabs.appendChild(tab);
-    });
-
-    // Рендерим первую категорию
-    const firstCat = Object.keys(sourceDB)[0];
-    if (firstCat) renderGalleryImages(sourceDB[firstCat], type);
+        const h = document.createElement('div'); 
+        h.className = 'pair-heart'; 
+        h.innerText = '❤'; 
+        h.style.color = pair.text; 
+        btn.appendChild(h); 
+        
+        btn.onclick = () => { 
+            state.coverColor = pair.bg; 
+            state.text.color = pair.text; 
+            document.querySelectorAll('.pair-btn').forEach(b => b.classList.remove('active')); 
+            btn.classList.add('active'); 
+            updateSymbolUI(); 
+            if(state.qr.enabled) { 
+                const qrBtn = document.getElementById('qrBtn');
+                if(qrBtn) { qrBtn.style.color = pair.text; qrBtn.style.borderColor = pair.text; }
+            } 
+            refresh(); 
+        }; 
+        grid.appendChild(btn); 
+    }); 
+    
+    if(palette.length > 0 && grid.firstChild) grid.firstChild.click(); 
 };
 
-function renderGalleryImages(files, type) {
-    const grid = document.getElementById('galleryGrid');
-    grid.innerHTML = '';
+// --- ГАЛЕРЕЯ ---
+window.openGallery = (type, target) => {
+    document.getElementById('globalSymbolBtn').classList.remove('pulse-attention');
+    document.getElementById('galleryModal').classList.remove('hidden');
+    const upBtn = document.getElementById('galUploadBtn');
+    const galTitle = document.getElementById('galleryTitle');
     
-    const folder = type === 'symbols' ? 'symbols' : 'graphics';
+    // Используем window.ASSETS_DB
+    const DB = window.ASSETS_DB || {};
+    let dbSection;
+
+    if(type === 'symbols') {
+        dbSection = DB.symbols; 
+        galTitle.innerText = "Галерея символов";
+        upBtn.innerText = "Загрузить свой символ"; 
+        upBtn.onclick = () => document.getElementById('iconLoader').click();
+    } else {
+        dbSection = DB.graphics; 
+        galTitle.innerText = "Галерея графики";
+        upBtn.innerText = "Загрузить свою графику"; 
+        upBtn.onclick = () => document.getElementById('imageLoader').click();
+    }
+
+    const tabs = document.getElementById('galleryTabs'); tabs.innerHTML = '';
+    if(!dbSection) return;
+
+    Object.keys(dbSection).forEach((cat, i) => {
+        const t = document.createElement('div'); t.className = `gallery-tab ${i===0?'active':''}`; t.innerText = cat;
+        t.onclick = () => { document.querySelectorAll('.gallery-tab').forEach(x=>x.classList.remove('active')); t.classList.add('active'); loadGal(type, cat, target); };
+        tabs.appendChild(t);
+    });
+    if(Object.keys(dbSection).length) loadGal(type, Object.keys(dbSection)[0], target);
+};
+
+function loadGal(type, cat, target) {
+    const grid = document.getElementById('galleryGrid'); grid.innerHTML = '';
+    const DB = window.ASSETS_DB || {};
+    let files = (type === 'symbols' ? DB.symbols[cat] : DB.graphics[cat]) || [];
     
-    files.forEach(fileName => {
-        const item = document.createElement('div');
-        item.className = 'gallery-item';
-        
+    const folder = (type === 'symbols') ? 'symbols' : 'graphics';
+    
+    files.forEach(f => {
+        const item = document.createElement('div'); item.className = 'gallery-item';
         const img = document.createElement('img');
-        // Предполагаем, что превью имеет суффикс _icon.png, иначе грузим оригинал
-        // Если у вас в assets.js полные пути, используйте их
-        const path = `assets/${folder}/${fileName}`;
-        img.src = path;
+        
+        // Предполагаем, что превью имеет суффикс _icon, если нет - грузим оригинал
+        const previewName = f.includes('_icon') ? f : f.replace('.png', '_icon.png');
+        // Проверка на заглушку
+        const previewUrl = `assets/${folder}/${previewName}`;
+        const printUrl = `assets/${folder}/${f}`;
+        
+        img.src = previewUrl;
+        // Если иконки нет, пробуем загрузить сам файл
+        img.onerror = () => { img.src = printUrl; };
         
         item.appendChild(img);
-        
         item.onclick = () => {
-            document.getElementById('galleryModal').classList.add('hidden');
-            
-            // Загружаем картинку
-            loadBlobFromUrl(path, (imgObj) => {
-                 if (window.galleryTarget === 'global') {
-                     window.selectedSymbolObj = imgObj;
-                 } else {
-                     window.uploadedImageObj = imgObj; // Для графики
-                 }
-                 renderCanvas();
+            CoverEngine.loadSimpleImage(printUrl, (final) => {
+                final = final || previewUrl;
+                document.getElementById('galleryModal').classList.add('hidden');
+                if(target === 'global') { state.images.icon = final; updateSymbolUI(); refresh(); }
+                else if(type === 'graphics') { state.images.main = { src: final, natural: true }; refresh(); updateActionButtons(); }
             });
         };
         grid.appendChild(item);
     });
 }
 
-window.closeGallery = function() {
-    document.getElementById('galleryModal').classList.add('hidden');
-};
-
-// Загрузчик из URL в Image Object
-function loadBlobFromUrl(url, callback) {
-    const img = new Image();
-    img.crossOrigin = "Anonymous";
-    img.src = url;
-    img.onload = () => callback(img);
-    img.onerror = () => alert("Не удалось загрузить изображение");
-}
-
-
 // ==========================================
-// 5. ТЕКСТ, ЛЕЙАУТЫ И РЕНДЕР
+// 3. ОТПРАВКА В ТЕЛЕГРАМ (НОВАЯ ЛОГИКА)
 // ==========================================
 
-// Слушатели ввода
-els.input1.addEventListener('input', renderCanvas);
-els.input2.addEventListener('input', renderCanvas);
-els.input3.addEventListener('input', renderCanvas);
-els.dateLine.addEventListener('input', renderCanvas);
-if(els.copyright) els.copyright.addEventListener('input', renderCanvas);
-
-// Кнопка Tt
-window.toggleCase = function(rowNum) {
-    const input = document.getElementById(`inputLine${rowNum}`);
-    if(!input) return;
-    if (input.value === input.value.toUpperCase()) {
-        input.value = input.value.toLowerCase();
-    } else {
-        input.value = input.value.toUpperCase();
-    }
-    renderCanvas();
-};
-
-window.addSmartRow = function() {
-    if (els.row2.classList.contains('hidden')) els.row2.classList.remove('hidden');
-    else if (els.row3.classList.contains('hidden')) els.row3.classList.remove('hidden');
-};
-
-window.hideRow = function(rowNum) {
-    document.getElementById(`row${rowNum}`).classList.add('hidden');
-    document.getElementById(`inputLine${rowNum}`).value = '';
-    renderCanvas();
-};
-
-// Шрифты
-els.fontSelector.addEventListener('change', (e) => {
-    currentFont = e.target.value;
-    renderCanvas();
-});
-
-// Лейауты
-window.setLayout = function(layoutName, el) {
-    activeLayout = layoutName;
-    document.querySelectorAll('.layout-card').forEach(c => c.classList.remove('active'));
-    el.classList.add('active');
+window.sendToTelegram = function() {
+    const btn = document.getElementById('sendTgBtn');
+    const originalText = btn.innerText;
     
-    // Показываем/скрываем кнопки загрузки
-    const btnUp = document.getElementById('btnActionUpload');
-    const btnGal = document.getElementById('btnActionGallery');
-    
-    if(btnUp) btnUp.classList.add('hidden');
-    if(btnGal) btnGal.classList.add('hidden');
-
-    if (layoutName === 'graphic') {
-        if(btnGal) btnGal.classList.remove('hidden');
-    } else if (layoutName === 'photo_text' || layoutName === 'magazine') {
-        if(btnUp) btnUp.classList.remove('hidden');
-    }
-
-    renderCanvas();
-};
-
-
-// === MAIN RENDER LOOP ===
-function renderCanvas() {
-    // Собираем стейт
-    const state = {
-        text1: els.input1.value,
-        text2: !els.row2.classList.contains('hidden') ? els.input2.value : '',
-        text3: !els.row3.classList.contains('hidden') ? els.input3.value : '',
-        date: els.dateLine.value,
-        copyright: els.copyright ? els.copyright.value : '',
-        
-        font: currentFont,
-        layout: activeLayout,
-        colors: { bg: colorBg, text: colorText },
-        scale: window.textScaleMultiplier || 1,
-        
-        spine: window.spineState || { symbol: true, title: true, date: true },
-        qrLink: window.qrDataLink || null,
-        
-        userImage: window.uploadedImageObj || null,
-        symbolImage: window.selectedSymbolObj || null
+    // 1. Читаем параметры из URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const orderData = {
+        orderId: urlParams.get('order_id') || 'Без номера',
+        clientName: urlParams.get('name') || 'Не указано',
+        clientPhone: urlParams.get('phone') || 'Не указан'
     };
 
-    canvas.clear();
-    canvas.backgroundColor = state.colors.bg;
+    btn.innerText = "ОТПРАВКА...";
+    btn.style.opacity = "0.7";
+    btn.disabled = true;
 
-    // Вызываем отрисовщик (из cover-engine.js)
-    if (window.drawCoverLayout) {
-        window.drawCoverLayout(canvas, state);
-    }
-}
+    // 2. Берем картинку (CoverEngine.canvas)
+    // multiplier: 2.5 для высокого качества
+    const dataUrl = CoverEngine.canvas.toDataURL({ format: 'jpeg', quality: 0.9, multiplier: 2.5 });
+    // Убираем префикс base64
+    const base64Clean = dataUrl.replace(/^data:image\/\w+;base64,/, "");
 
-// ==========================================
-// 6. ЗАГРУЗКА СВОИХ ФОТО И CROPPER
-// ==========================================
-
-const imgLoader = document.getElementById('imageLoader');
-if(imgLoader) {
-    imgLoader.addEventListener('change', function(e) {
-        const file = e.target.files[0];
-        if(!file) return;
-        
-        const reader = new FileReader();
-        reader.onload = function(f) {
-            const imgObj = new Image();
-            imgObj.src = f.target.result;
-            imgObj.onload = function() {
-                openCropper(imgObj);
-            }
-        };
-        reader.readAsDataURL(file);
+    // 3. Отправляем на НАШ СЕРВЕР (api/send.js)
+    fetch('/api/send', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            imageBase64: base64Clean,
+            orderId: orderData.orderId,
+            clientName: orderData.clientName,
+            clientPhone: orderData.clientPhone
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(`✅ Заказ #${orderData.orderId} успешно отправлен!`);
+        } else {
+            console.error(data);
+            alert("Ошибка отправки: " + (data.error || "Неизвестная ошибка"));
+        }
+    })
+    .catch(error => {
+        console.error('Network Error:', error);
+        alert("Ошибка сети. Проверьте соединение.");
+    })
+    .finally(() => {
+        btn.innerText = originalText;
+        btn.style.opacity = "1";
+        btn.disabled = false;
     });
+};
+
+// ==========================================
+// 4. ОСТАЛЬНАЯ ЛОГИКА UI (CROPPER, TEXT, ETC)
+// ==========================================
+
+window.updateActionButtons = () => {
+    const btnGallery = document.getElementById('btnActionGallery');
+    const btnUpload = document.getElementById('btnActionUpload');
+    btnGallery.classList.add('hidden');
+    btnUpload.classList.add('hidden');
+    if (state.layout === 'graphic') btnGallery.classList.remove('hidden');
+    else if (state.layout === 'photo_text' || state.layout === 'magazine') btnUpload.classList.remove('hidden');
+};
+
+window.closeGallery = () => document.getElementById('galleryModal').classList.add('hidden');
+window.handleGalleryUpload = () => {}; 
+window.openQRModal = () => document.getElementById('qrModal').classList.remove('hidden');
+window.applyQR = () => { state.qr.enabled = true; state.qr.url = document.getElementById('qrLinkInput').value; document.getElementById('qrModal').classList.add('hidden'); refresh(); };
+window.removeQR = () => { state.qr.enabled = false; document.getElementById('qrModal').classList.add('hidden'); refresh(); };
+
+function initListeners() {
+    ['inputLine1','inputLine2','inputLine3','dateLine','copyrightInput'].forEach(id => {
+        const el = document.getElementById(id);
+        if(el) el.oninput = () => {
+            userModifiedText = true;
+            if(id === 'inputLine1') state.text.lines[0].text = el.value;
+            if(id === 'inputLine2') state.text.lines[1].text = el.value;
+            if(id === 'inputLine3') state.text.lines[2].text = el.value;
+            if(id === 'dateLine') state.text.date = el.value;
+            if(id === 'copyrightInput') state.text.copyright = el.value;
+            refresh();
+        };
+        el.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); el.blur(); } });
+    });
+    
+    document.getElementById('fontSelector').addEventListener('change', (e) => { state.text.font = e.target.value; refresh(); });
+    document.getElementById('saveBtn').onclick = () => CoverEngine.download(state);
+
+    document.getElementById('iconLoader').onchange = (e) => { 
+        if(e.target.files[0]) {
+            processAndResizeImage(e.target.files[0], 500, 'image/png', (resizedUrl) => {
+                state.images.icon = resizedUrl; updateSymbolUI(); refresh(); document.getElementById('galleryModal').classList.add('hidden'); 
+            });
+        }
+    };
+    
+    document.getElementById('imageLoader').onchange = (e) => {
+        if(e.target.files[0]) {
+            let limit = 2500; let type = 'image/jpeg';
+            if (state.layout === 'graphic') { limit = 1417; type = 'image/png'; }
+            processAndResizeImage(e.target.files[0], limit, type, (resizedUrl) => {
+                document.getElementById('galleryModal').classList.add('hidden'); 
+                if(state.layout === 'graphic') {
+                    state.images.main = { src: resizedUrl, natural: true };
+                    refresh();
+                    updateActionButtons();
+                } else {
+                    document.getElementById('cropperModal').classList.remove('hidden');
+                    updateCropperUI();
+                    if(state.layout === 'photo_text') { state.slotSize = { w: 6, h: 6 }; }
+                    if (state.layout === 'magazine') { CropperTool.start(resizedUrl, 1, 1, 'rect'); } 
+                    else { CropperTool.start(resizedUrl, state.slotSize.w, state.slotSize.h, state.maskType); }
+                }
+            });
+        }
+        e.target.value = '';
+    };
+
+    window.setCropMask = (w, h) => {
+        if(w === 'circle') { state.slotSize = { w: 6, h: 6 }; state.maskType = 'circle'; } 
+        else { state.slotSize = { w: w, h: h }; state.maskType = 'rect'; }
+        CropperTool.maskType = state.maskType;
+        CropperTool.drawOverlay(state.slotSize.w, state.slotSize.h);
+    };
+    
+    document.getElementById('applyCropBtn').onclick = () => {
+        state.images.main = CropperTool.apply(); refresh(); document.getElementById('cropperModal').classList.add('hidden'); updateActionButtons();
+    };
+    const rotBtn = document.getElementById('rotateBtn');
+    if(rotBtn) { rotBtn.onclick = () => CropperTool.rotate(); }
+    document.getElementById('cancelCropBtn').onclick = () => document.getElementById('cropperModal').classList.add('hidden');
 }
 
-// CROPPER LOGIC (Упрощенная)
-let cropperImage = null;
-function openCropper(img) {
-    const modal = document.getElementById('cropperModal');
-    if(modal) modal.classList.remove('hidden');
-    cropperImage = img;
-    // Отрисовка превью кропа...
-    const cCanvas = document.getElementById('cropCanvas');
-    if(cCanvas) {
-        const ctx = cCanvas.getContext('2d');
-        cCanvas.width = 300; cCanvas.height = 300;
-        ctx.drawImage(img, 0,0, 300, 300 * (img.height/img.width));
+// --- UTILS ---
+function processAndResizeImage(file, maxSize, outputType, callback) {
+    if (file.type === "image/heic" || file.name.toLowerCase().endsWith(".heic")) {
+        if(window.heic2any) {
+            heic2any({ blob: file, toType: "image/jpeg", quality: 0.8 }).then((res) => {
+                const blob = Array.isArray(res) ? res[0] : res;
+                const newFile = new File([blob], file.name.replace(/\.heic$/i, ".jpg"), { type: "image/jpeg" });
+                processAndResizeImage(newFile, maxSize, outputType, callback);
+            }).catch((e) => { alert("HEIC Error"); });
+            return;
+        }
+    }
+    const reader = new FileReader();
+    reader.onload = (event) => {
+        const img = new Image();
+        img.onload = () => {
+            let width = img.width; let height = img.height;
+            if (width > height) { if (width > maxSize) { height *= maxSize / width; width = maxSize; } } 
+            else { if (height > maxSize) { width *= maxSize / height; height = maxSize; } }
+            const canvas = document.createElement('canvas'); canvas.width = width; canvas.height = height;
+            const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, width, height);
+            callback(canvas.toDataURL(outputType, 0.9));
+        };
+        img.src = event.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+
+function updateSymbolUI() {
+    const btn = document.getElementById('globalSymbolBtn');
+    if(state.images.icon) { btn.style.backgroundImage = `url(${state.images.icon})`; btn.classList.add('active'); btn.style.borderColor = state.text.color; } 
+    else { btn.style.backgroundImage = 'none'; btn.classList.remove('active'); btn.style.borderColor = '#444'; }
+}
+
+function updateCropperUI() {
+    const controls = document.querySelector('.crop-controls');
+    if (state.layout === 'magazine') controls.style.display = 'none'; else controls.style.display = 'flex'; 
+}
+
+// --- GLOBAL UI HELPERS ---
+window.toggleCase = (i) => { 
+    state.text.lines[i-1].upper = !state.text.lines[i-1].upper; 
+    document.getElementById(`btnTt${i}`).classList.toggle('active'); 
+    refresh(); 
+};
+window.addSmartRow = () => {
+    const row2 = document.getElementById('row2'); const row3 = document.getElementById('row3');
+    if (row2.classList.contains('hidden')) { row2.classList.remove('hidden'); } else if (row3.classList.contains('hidden')) { row3.classList.remove('hidden'); }
+};
+window.hideRow = (i) => { 
+    document.getElementById(`row${i}`).classList.add('hidden'); 
+    const input = document.getElementById(`inputLine${i}`); if(input) input.value = ''; 
+    state.text.lines[i-1].text = ''; refresh(); 
+};
+window.toggleSpinePart = (part) => { 
+    state.spine[part] = !state.spine[part]; 
+    const btnId = 'btnSpine' + part.charAt(0).toUpperCase() + part.slice(1);
+    document.getElementById(btnId).classList.toggle('active', state.spine[part]); refresh(); 
+};
+window.setLayout = (l, btn) => { 
+    const isSame = state.layout===l; state.layout=l; 
+    document.querySelectorAll('.layout-card').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); 
+    if(!isSame) state.images.main=null; 
+    if(l==='magazine') state.maskType='rect'; else if(l==='graphic') { state.maskType='rect'; state.slotSize={w:12,h:12}; } else { state.maskType='rect'; state.slotSize={w:6,h:6}; } 
+    refresh(); updateActionButtons(); 
+};
+window.handleCanvasClick = (objType) => { if (objType === 'mainImage' || objType === 'placeholder') { if (state.layout === 'graphic') openGallery('graphics', 'main'); else if (state.layout === 'photo_text' || state.layout === 'magazine') document.getElementById('imageLoader').click(); } };
+window.setBookSize = (s, btn) => { state.bookSize = s; document.querySelectorAll('.format-card').forEach(b => b.classList.remove('active')); btn.classList.add('active'); if (state.layout === 'magazine') state.slotSize = { w: s, h: s }; refresh(); };
+window.updateScaleFromSlider = (v) => { state.text.scale = CONFIG.scales[v-1]; refresh(); };
+window.setScale = (s) => { const idx = CONFIG.scales.indexOf(s); if(idx > -1) { document.getElementById('textScale').value = idx+1; window.updateScaleFromSlider(idx+1); } };
+window.triggerAssetLoader = () => { if(state.layout === 'graphic') openGallery('graphics', 'main'); else document.getElementById('imageLoader').click(); };
+
+// --- MOBILE PREVIEW ---
+function initMobilePreview() {
+    const container = document.getElementById('panzoomContainer');
+    const closeBtn = document.getElementById('closePreviewBtn');
+    if(window.Panzoom && container) {
+        panzoomInstance = Panzoom(container, { maxScale: 4, minScale: 0.8, contain: null, canvas: true });
+        container.parentElement.addEventListener('wheel', panzoomInstance.zoomWithWheel);
+    }
+    if (closeBtn) closeBtn.onclick = (e) => { e.stopPropagation(); closeMobilePreview(); };
+    document.getElementById('btnZoomIn').onclick = (e) => { e.stopPropagation(); panzoomInstance.zoomIn(); };
+    document.getElementById('btnZoomOut').onclick = (e) => { e.stopPropagation(); panzoomInstance.zoomOut(); };
+    document.getElementById('btnZoomFit').onclick = (e) => { e.stopPropagation(); panzoomInstance.reset(); };
+}
+function checkOrientation() {
+    if (document.activeElement.tagName === 'INPUT' || document.body.classList.contains('keyboard-open')) return;
+    const isMobileDevice = window.innerWidth < 1024;
+    if (isMobileDevice) {
+        if (window.innerWidth > window.innerHeight) { if (document.getElementById('mobilePreview').classList.contains('hidden')) openMobilePreview(); } 
+        else { closeMobilePreview(); }
     }
 }
-
-document.getElementById('applyCropBtn').addEventListener('click', () => {
-    window.uploadedImageObj = cropperImage; // Сохраняем
-    document.getElementById('cropperModal').classList.add('hidden');
-    renderCanvas();
-});
-
-document.getElementById('cancelCropBtn').addEventListener('click', () => {
-    document.getElementById('cropperModal').classList.add('hidden');
-});
-
-// Кнопка скачать (на всякий случай)
-document.getElementById('saveBtn').addEventListener('click', () => {
-    const link = document.createElement('a');
-    link.download = 'MALEVICH_design.jpg';
-    link.href = canvas.toDataURL({ format: 'jpeg', quality: 0.9, multiplier: 3 });
-    link.click();
-});
-
-// ==========================================
-// 7. ДОПОЛНИТЕЛЬНЫЕ УТИЛИТЫ
-// ==========================================
-
-// Слайдер масштаба текста
-window.textScaleMultiplier = 1;
-window.updateScaleFromSlider = function(val) {
-    window.textScaleMultiplier = 0.6 + (val - 1) * 0.2;
-    renderCanvas();
-};
-window.setScale = function(val) {
-    const slider = document.getElementById('textScale');
-    if(slider) slider.value = val < 1 ? 1 : 5;
-    window.textScaleMultiplier = val === 0.5 ? 0.7 : 1.3;
-    renderCanvas();
-};
-
-// QR
-window.applyQR = function() {
-    window.qrDataLink = document.getElementById('qrLinkInput').value;
-    document.getElementById('qrModal').classList.add('hidden');
-    renderCanvas();
-};
-window.removeQR = function() {
-    window.qrDataLink = null;
-    document.getElementById('qrModal').classList.add('hidden');
-    renderCanvas();
-};
-
-// Spine
-window.spineState = { symbol: true, title: true, date: true };
-window.toggleSpinePart = function(part) {
-    window.spineState[part] = !window.spineState[part];
-    document.getElementById(
-        part === 'symbol' ? 'btnSpineSymbol' : 
-        part === 'title' ? 'btnSpineTitle' : 'btnSpineDate'
-    ).classList.toggle('active');
-    renderCanvas();
-};
-
-window.triggerAssetLoader = () => { 
-    document.getElementById('imageLoader').click(); 
-};
-
 window.openMobilePreview = () => {
-    document.getElementById('mobilePreview').classList.remove('hidden');
-    document.getElementById('mobilePreviewImg').src = canvas.toDataURL({multiplier:2});
+    const modal = document.getElementById('mobilePreview');
+    const img = document.getElementById('mobilePreviewImg');
+    const mult = window.innerWidth < 1024 ? 1.5 : 2.5;
+    const dataUrl = CoverEngine.canvas.toDataURL({ format: 'png', multiplier: mult });
+    img.src = dataUrl;
+    modal.classList.remove('hidden');
+    if(panzoomInstance) { setTimeout(() => { panzoomInstance.reset(); }, 50); }
 };
+window.closeMobilePreview = () => { document.getElementById('mobilePreview').classList.add('hidden'); };
