@@ -123,10 +123,12 @@ function finishInit() {
 // =========================================================
 // 3. ТЕЛЕГРАМ (ОТПРАВКА)
 // =========================================================
+
 window.sendToTelegram = function() {
     const btn = document.getElementById('sendTgBtn');
     const originalText = btn.innerText;
     
+    // Параметры
     const urlParams = new URLSearchParams(window.location.search);
     const orderData = {
         orderId: urlParams.get('order_id') || 'Без номера',
@@ -134,40 +136,68 @@ window.sendToTelegram = function() {
         clientPhone: urlParams.get('phone') || 'Не указан'
     };
 
-    btn.innerText = "ОТПРАВКА...";
+    btn.innerText = "ГЕНЕРАЦИЯ HI-RES...";
     btn.disabled = true;
     btn.style.opacity = "0.7";
 
-    if(!CoverEngine.canvas) { alert("Ошибка холста"); return; }
+    // Асинхронно, чтобы UI обновился перед зависанием на рендер
+    setTimeout(() => {
+        try {
+            if(!window.CoverEngine || !CoverEngine.canvas) throw new Error("Canvas Error");
 
-    // Рендер картинки
-    const dataUrl = CoverEngine.canvas.toDataURL({ format: 'jpeg', quality: 0.9, multiplier: 2.5 });
-    const base64Clean = dataUrl.replace(/^data:image\/\w+;base64,/, "");
+            // --- РАСЧЕТ 300 DPI ---
+            // 300 DPI = 118.11 пикселей на см
+            const targetPPI = 300 / 2.54; 
+            // state.ppi - это текущий масштаб экрана (пикселей в см)
+            // Делим целевой PPI на текущий, чтобы получить множитель
+            const exportMultiplier = targetPPI / state.ppi;
 
-    fetch('/api/send', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            imageBase64: base64Clean,
-            orderId: orderData.orderId,
-            clientName: orderData.clientName,
-            clientPhone: orderData.clientPhone
-        })
-    })
-    .then(res => res.json())
-    .then(data => {
-        if (data.success) alert(`✅ Заказ #${orderData.orderId} отправлен!`);
-        else alert("Ошибка отправки: " + (data.error || "Error"));
-    })
-    .catch(err => {
-        console.error(err);
-        alert("Ошибка сети.");
-    })
-    .finally(() => {
-        btn.innerText = originalText;
-        btn.disabled = false;
-        btn.style.opacity = "1";
-    });
+            console.log(`Exporting at 300 DPI. Multiplier: ${exportMultiplier.toFixed(2)}`);
+
+            // Рендер (Может занять 1-2 секунды)
+            const dataUrl = CoverEngine.canvas.toDataURL({ 
+                format: 'jpeg', 
+                quality: 1.0,       // Максимальное качество
+                multiplier: exportMultiplier 
+            });
+            
+            const base64Clean = dataUrl.replace(/^data:image\/\w+;base64,/, "");
+
+            btn.innerText = "ОТПРАВКА...";
+
+            // Отправка
+            fetch('/api/send', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    imageBase64: base64Clean,
+                    orderId: orderData.orderId,
+                    clientName: orderData.clientName,
+                    clientPhone: orderData.clientPhone
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) alert(`✅ Файл для печати (300 DPI) отправлен!`);
+                else alert("Ошибка отправки: " + (data.error || "Error"));
+            })
+            .catch(err => {
+                console.error(err);
+                alert("Ошибка сети.");
+            })
+            .finally(() => {
+                btn.innerText = originalText;
+                btn.disabled = false;
+                btn.style.opacity = "1";
+            });
+
+        } catch(e) {
+            console.error(e);
+            alert("Ошибка генерации: " + e.message);
+            btn.innerText = originalText;
+            btn.disabled = false;
+        }
+    }, 100);
 };
 
 // =========================================================
