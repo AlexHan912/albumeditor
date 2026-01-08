@@ -1,6 +1,6 @@
-/* app.js - FIXED & MERGED VERSION (Engine + Telegram Params) */
+/* app.js - RESTORED COMPATIBILITY + TELEGRAM PARAMS */
 
-// Глобальное состояние (как в старой версии, чтобы CoverEngine понимал)
+// 1. Глобальное состояние (как требует cover-engine.js)
 let state = {
     bookSize: 30, layout: 'text_icon', ppi: 10, slotSize: { w: 6, h: 6 }, maskType: 'rect',
     text: { 
@@ -15,45 +15,44 @@ let state = {
 let userModifiedText = false;
 let panzoomInstance = null; 
 
-// ==========================================
-// 1. ИНИЦИАЛИЗАЦИЯ И URL ПАРАМЕТРЫ
-// ==========================================
+// 2. Инициализация при загрузке
 window.onload = () => {
     // Инициализируем движок
     if(window.CoverEngine) {
         CoverEngine.init('c');
     } else {
-        console.error("CoverEngine not loaded!");
-        return;
+        console.error("Critical: CoverEngine not found!");
+        return; // Остановиться, если движка нет
     }
 
-    // 1. Обработка параметров из ссылки (order_id, name, etc.)
+    // --- Читаем параметры из ссылки ---
     const urlParams = new URLSearchParams(window.location.search);
-    // Если нужно предзаполнить имя на обложке из ссылки:
-    // const nameFromUrl = urlParams.get('name');
-    // if(nameFromUrl) {
-    //     state.text.lines[0].text = nameFromUrl.toUpperCase();
-    //     document.getElementById('inputLine1').value = nameFromUrl.toUpperCase();
-    // }
-
-    // 2. Авто-год
+    
+    // Авто-год
     const currentYear = new Date().getFullYear().toString();
     state.text.date = currentYear;
     const dateInput = document.getElementById('dateLine');
     if(dateInput) dateInput.value = currentYear;
 
-    // 3. Загрузка ассетов и цветов
+    // Если в ссылке есть имя, можно сразу подставить (опционально)
+    // const nameFromUrl = urlParams.get('name');
+    // if(nameFromUrl) {
+    //    state.text.lines[0].text = nameFromUrl;
+    //    document.getElementById('inputLine1').value = nameFromUrl;
+    // }
+
+    // Загружаем контент
     loadDefaultAssets();
     initColors();
     initListeners();
     initMobilePreview(); 
     
-    // Синхронизация кнопок UI
+    // Синхронизация UI
     const input1 = document.getElementById('inputLine1');
     if (input1 && input1.value === "") input1.value = "THE VISUAL DIARY";
     if(state.text.lines[0].upper) document.getElementById('btnTt1').classList.add('active');
     
-    // Первый рендер
+    // Отрисовка
     setTimeout(() => {
         refresh();
         checkOrientation();
@@ -73,15 +72,16 @@ function refresh() {
     CoverEngine.updateDimensions(document.getElementById('workspace'), state);
 }
 
+// 3. Загрузка ассетов и УДАЛЕНИЕ ЗАСТАВКИ
 function loadDefaultAssets() {
-    // Убираем черный экран
+    // !!! ВОТ ЗДЕСЬ УБИРАЕМ ЗАГЛУШКУ !!!
     setTimeout(() => { 
         const loader = document.getElementById('app-loader');
         if(loader) {
             loader.style.opacity = '0'; 
             setTimeout(() => loader.style.display='none', 800); 
         }
-    }, 1500);
+    }, 1000); // 1 секунда задержки
 
     // Загрузка дефолтного сердца
     const defaultPath = 'assets/symbols/love_heart.png';
@@ -103,8 +103,68 @@ function finishInit() {
 }
 
 // ==========================================
-// 2. ЦВЕТА И ГАЛЕРЕИ (ИСПРАВЛЕНО)
+// 4. ЛОГИКА ТЕЛЕГРАМА (НОВАЯ)
 // ==========================================
+
+window.sendToTelegram = function() {
+    const btn = document.getElementById('sendTgBtn');
+    const originalText = btn.innerText;
+    
+    // Читаем параметры из URL (order_id, name, phone)
+    const urlParams = new URLSearchParams(window.location.search);
+    const orderData = {
+        orderId: urlParams.get('order_id') || 'Без номера',
+        clientName: urlParams.get('name') || 'Не указано',
+        clientPhone: urlParams.get('phone') || 'Не указан'
+    };
+
+    btn.innerText = "ОТПРАВКА...";
+    btn.style.opacity = "0.7";
+    btn.disabled = true;
+
+    // Генерируем картинку через CoverEngine
+    // multiplier: 2.5 дает хорошее качество
+    const dataUrl = CoverEngine.canvas.toDataURL({ format: 'jpeg', quality: 0.9, multiplier: 2.5 });
+    
+    // Убираем префикс base64
+    const base64Clean = dataUrl.replace(/^data:image\/\w+;base64,/, "");
+
+    // Отправляем на API
+    fetch('/api/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            imageBase64: base64Clean,
+            orderId: orderData.orderId,
+            clientName: orderData.clientName,
+            clientPhone: orderData.clientPhone
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(`✅ Заказ #${orderData.orderId} успешно отправлен!`);
+        } else {
+            console.error(data);
+            alert("Ошибка отправки: " + (data.error || "Неизвестная ошибка"));
+        }
+    })
+    .catch(error => {
+        console.error('Network Error:', error);
+        alert("Ошибка сети. Проверьте соединение.");
+    })
+    .finally(() => {
+        btn.innerText = originalText;
+        btn.style.opacity = "1";
+        btn.disabled = false;
+    });
+};
+
+
+// ==========================================
+// 5. ОСТАЛЬНАЯ ЛОГИКА (ЦВЕТА, ГАЛЕРЕИ)
+// ==========================================
+
 function initColors() {
     const collectionName = 'Kinfolk - Cinema';
     const selector = document.getElementById('paletteSelector');
@@ -113,10 +173,9 @@ function initColors() {
     // Используем window.DESIGNER_PALETTES
     if(window.DESIGNER_PALETTES && window.DESIGNER_PALETTES[collectionName]) {
         changeCollection(collectionName);
-        // Случайный цвет при старте
+        // Случайный цвет
         const palette = window.DESIGNER_PALETTES[collectionName];
         const randomIdx = Math.floor(Math.random() * palette.length);
-        // Небольшая задержка, чтобы DOM обновился
         setTimeout(() => {
             const btns = document.querySelectorAll('#pairsGrid .pair-btn');
             if (btns[randomIdx]) btns[randomIdx].click();
@@ -148,7 +207,7 @@ window.changeCollection = (name) => {
         const btn = document.createElement('div'); 
         btn.className = 'pair-btn'; 
         btn.style.backgroundColor = pair.bg; 
-        if(pair.bg.toUpperCase() === '#FFFFFF' || pair.bg.toLowerCase() === '#ffffff') btn.style.border = '1px solid #ccc'; 
+        if(pair.bg.toLowerCase() === '#ffffff') btn.style.border = '1px solid #ccc'; 
         
         const h = document.createElement('div'); 
         h.className = 'pair-heart'; 
@@ -174,7 +233,7 @@ window.changeCollection = (name) => {
     if(palette.length > 0 && grid.firstChild) grid.firstChild.click(); 
 };
 
-// --- ГАЛЕРЕЯ ---
+// --- ГАЛЕРЕЯ (ИСПРАВЛЕНО) ---
 window.openGallery = (type, target) => {
     document.getElementById('globalSymbolBtn').classList.remove('pulse-attention');
     document.getElementById('galleryModal').classList.remove('hidden');
@@ -219,14 +278,12 @@ function loadGal(type, cat, target) {
         const item = document.createElement('div'); item.className = 'gallery-item';
         const img = document.createElement('img');
         
-        // Предполагаем, что превью имеет суффикс _icon, если нет - грузим оригинал
+        // Превью
         const previewName = f.includes('_icon') ? f : f.replace('.png', '_icon.png');
-        // Проверка на заглушку
         const previewUrl = `assets/${folder}/${previewName}`;
         const printUrl = `assets/${folder}/${f}`;
         
         img.src = previewUrl;
-        // Если иконки нет, пробуем загрузить сам файл
         img.onerror = () => { img.src = printUrl; };
         
         item.appendChild(img);
@@ -242,68 +299,7 @@ function loadGal(type, cat, target) {
     });
 }
 
-// ==========================================
-// 3. ОТПРАВКА В ТЕЛЕГРАМ (НОВАЯ ЛОГИКА)
-// ==========================================
-
-window.sendToTelegram = function() {
-    const btn = document.getElementById('sendTgBtn');
-    const originalText = btn.innerText;
-    
-    // 1. Читаем параметры из URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const orderData = {
-        orderId: urlParams.get('order_id') || 'Без номера',
-        clientName: urlParams.get('name') || 'Не указано',
-        clientPhone: urlParams.get('phone') || 'Не указан'
-    };
-
-    btn.innerText = "ОТПРАВКА...";
-    btn.style.opacity = "0.7";
-    btn.disabled = true;
-
-    // 2. Берем картинку (CoverEngine.canvas)
-    // multiplier: 2.5 для высокого качества
-    const dataUrl = CoverEngine.canvas.toDataURL({ format: 'jpeg', quality: 0.9, multiplier: 2.5 });
-    // Убираем префикс base64
-    const base64Clean = dataUrl.replace(/^data:image\/\w+;base64,/, "");
-
-    // 3. Отправляем на НАШ СЕРВЕР (api/send.js)
-    fetch('/api/send', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            imageBase64: base64Clean,
-            orderId: orderData.orderId,
-            clientName: orderData.clientName,
-            clientPhone: orderData.clientPhone
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            alert(`✅ Заказ #${orderData.orderId} успешно отправлен!`);
-        } else {
-            console.error(data);
-            alert("Ошибка отправки: " + (data.error || "Неизвестная ошибка"));
-        }
-    })
-    .catch(error => {
-        console.error('Network Error:', error);
-        alert("Ошибка сети. Проверьте соединение.");
-    })
-    .finally(() => {
-        btn.innerText = originalText;
-        btn.style.opacity = "1";
-        btn.disabled = false;
-    });
-};
-
-// ==========================================
-// 4. ОСТАЛЬНАЯ ЛОГИКА UI (CROPPER, TEXT, ETC)
-// ==========================================
+// --- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ---
 
 window.updateActionButtons = () => {
     const btnGallery = document.getElementById('btnActionGallery');
@@ -383,7 +379,6 @@ function initListeners() {
     document.getElementById('cancelCropBtn').onclick = () => document.getElementById('cropperModal').classList.add('hidden');
 }
 
-// --- UTILS ---
 function processAndResizeImage(file, maxSize, outputType, callback) {
     if (file.type === "image/heic" || file.name.toLowerCase().endsWith(".heic")) {
         if(window.heic2any) {
@@ -422,7 +417,6 @@ function updateCropperUI() {
     if (state.layout === 'magazine') controls.style.display = 'none'; else controls.style.display = 'flex'; 
 }
 
-// --- GLOBAL UI HELPERS ---
 window.toggleCase = (i) => { 
     state.text.lines[i-1].upper = !state.text.lines[i-1].upper; 
     document.getElementById(`btnTt${i}`).classList.toggle('active'); 
@@ -455,7 +449,6 @@ window.updateScaleFromSlider = (v) => { state.text.scale = CONFIG.scales[v-1]; r
 window.setScale = (s) => { const idx = CONFIG.scales.indexOf(s); if(idx > -1) { document.getElementById('textScale').value = idx+1; window.updateScaleFromSlider(idx+1); } };
 window.triggerAssetLoader = () => { if(state.layout === 'graphic') openGallery('graphics', 'main'); else document.getElementById('imageLoader').click(); };
 
-// --- MOBILE PREVIEW ---
 function initMobilePreview() {
     const container = document.getElementById('panzoomContainer');
     const closeBtn = document.getElementById('closePreviewBtn');
