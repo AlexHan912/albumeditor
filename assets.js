@@ -1,25 +1,21 @@
-// assets.js - База данных V54 (Flat Structure )
+// assets.js - База данных (Fixed for Global Access)
 
-const ASSETS_DB = {
-    // 1. СИМВОЛЫ (Папка: assets/symbols)
-    // Файлы: имя_файла.png (печать) + имя_файла_icon.png (превью)
+window.ASSETS_DB = {
+    // 1. СИМВОЛЫ
     symbols: {
         "Love symbols": ["love_heart.png"],
         "Games symbols": ["games_ghost.png"],
-        "Test symbols": ["test_2x2.png"] // Пример
+        "Test symbols": ["test_2x2.png"]
     },
 
-    // 2. ГРАФИКА (Папка: assets/graphics)
-    // Файлы: имя_файла.png (печать) + имя_файла_icon.png (превью)
+    // 2. ГРАФИКА
     graphics: {
         "Test graphics": ["test_29x29.png", "test_12x12.png", "test_2x2.png"],
-        "Love graphics": ["love_heart.png"] // Пример
+        "Love graphics": ["love_heart.png"]
     }
 };
 
-// 3. ДИЗАЙНЕРСКИЕ ПАЛИТРЫ (Тренды) - Без изменений
-const DESIGNER_PALETTES = {
-    
+window.DESIGNER_PALETTES = {
     'Kinfolk - Cinema': [
         { bg: '#556B2F', text: '#F5F5DC' }, { bg: '#8B4513', text: '#FAEBD7' },
         { bg: '#2F4F4F', text: '#FFFAFA' }, { bg: '#708090', text: '#E6E6FA' },
@@ -57,14 +53,3 @@ const DESIGNER_PALETTES = {
         { bg: '#FF0000', text: '#00FFFF' }, { bg: '#FFFFFF', text: '#FF0000' }
     ]
 };
-
-
-
-
-
-
-
-
-
-
-
