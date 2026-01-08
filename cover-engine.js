@@ -1,4 +1,4 @@
-/* cover-engine.js - Logic for Rendering & Cropping V78 */
+/* cover-engine.js - Logic for Rendering & Cropping V78  */
 
 const CONFIG = {
     dpi: 300, 
