@@ -1,4 +1,4 @@
-// assets.js - База данных V54 (Flat Structure)
+// assets.js - База данных V54 (Flat Structure )
 
 const ASSETS_DB = {
     // 1. СИМВОЛЫ (Папка: assets/symbols)
@@ -57,6 +57,7 @@ const DESIGNER_PALETTES = {
         { bg: '#FF0000', text: '#00FFFF' }, { bg: '#FFFFFF', text: '#FF0000' }
     ]
 };
+
 
 
 
