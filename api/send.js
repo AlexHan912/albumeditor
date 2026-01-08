@@ -3,49 +3,38 @@ import fetch from 'node-fetch';
 import FormData from 'form-data';
 
 export default async function handler(req, res) {
-    // Разрешаем только POST запросы
-    if (req.method !== 'POST') {
-        return res.status(405).json({ error: 'Method not allowed' });
-    }
+    if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
     try {
-        // 1. Получаем картинку И данные клиента из запроса
         const { imageBase64, orderId, clientName, clientPhone } = req.body;
 
-        if (!imageBase64) {
-            return res.status(400).json({ error: 'No image provided' });
-        }
+        if (!imageBase64) return res.status(400).json({ error: 'No image provided' });
 
         const BOT_TOKEN = process.env.TG_BOT_TOKEN;
         const CHAT_ID = process.env.TG_CHAT_ID;
 
-        if (!BOT_TOKEN || !CHAT_ID) {
-            return res.status(500).json({ error: 'Server misconfiguration (tokens missing)' });
-        }
-
-        // 2. Формируем красивый текст сообщения
-        // \n - это перенос строки
+        // Текст сообщения
         const captionText = `
-📦 <b>НОВЫЙ ЗАКАЗ #${orderId}</b>
+📦 <b>ЗАКАЗ #${orderId} (PRINT FILE)</b>
 
 👤 <b>Имя:</b> ${clientName}
 📱 <b>Телефон:</b> ${clientPhone}
-
-🎨 <i>Дизайн прикреплен к сообщению.</i>
+📐 <b>Качество:</b> 300 DPI (JPEG MAX)
         `.trim();
 
-        // 3. Подготавливаем данные для Телеграма
+        // Подготовка файла
         const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
         const imageBuffer = Buffer.from(base64Data, 'base64');
 
         const formData = new FormData();
         formData.append('chat_id', CHAT_ID);
-        formData.append('photo', imageBuffer, 'design.jpg');
+        // ВАЖНО: поле называется 'document', а не 'photo'
+        formData.append('document', imageBuffer, `order_${orderId}_print.jpg`);
         formData.append('caption', captionText);
-        formData.append('parse_mode', 'HTML'); // Чтобы работало жирное выделение
+        formData.append('parse_mode', 'HTML');
 
-        // 4. Отправляем в Telegram
-        const telegramResponse = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
+        // ВАЖНО: Используем метод sendDocument
+        const telegramResponse = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendDocument`, {
             method: 'POST',
             body: formData
         });
