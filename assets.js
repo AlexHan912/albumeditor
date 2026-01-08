@@ -1,4 +1,4 @@
-// assets.js - База данных (Fixed for Global Access)
+// assets.js - GLOBAL DATABASE FIX
 
 window.ASSETS_DB = {
     // 1. СИМВОЛЫ
