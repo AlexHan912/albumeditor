@@ -27,6 +27,7 @@ const els = {
     sendBtn: document.getElementById('sendTgBtn') // Кнопка Телеграм
 };
 
+// Инициализация при загрузке
 window.addEventListener('load', () => {
     resizeCanvas();
     // Устанавливаем палитру по умолчанию
@@ -36,7 +37,7 @@ window.addEventListener('load', () => {
     // Рендер начального состояния
     renderCanvas();
 
-    // !!! ВАЖНО: Убираем загрузочный экран !!!
+    // !!! ВАЖНО: Убираем загрузочный экран (ЭТОГО НЕ БЫЛО) !!!
     setTimeout(() => {
         const loader = document.getElementById('app-loader');
         if (loader) {
@@ -47,7 +48,6 @@ window.addEventListener('load', () => {
         }
     }, 500);
 });
-
 
 window.addEventListener('resize', resizeCanvas);
 
