@@ -124,8 +124,6 @@ function finishInit() {
 // 3. ТЕЛЕГРАМ (ОТПРАВКА)
 // =========================================================
 
-/* Вставьте это в app.js вместо старой функции sendToTelegram */
-
 window.sendToTelegram = function() {
     const btn = document.getElementById('sendTgBtn');
     const originalText = btn.innerText;
@@ -142,10 +140,10 @@ window.sendToTelegram = function() {
     btn.disabled = true;
     btn.style.opacity = "0.7";
 
-    // Асинхронно, чтобы UI обновился
+    // Асинхронно, чтобы UI обновился перед тяжелой задаче
     setTimeout(() => {
         try {
-            // ИСПРАВЛЕНИЕ: Проверяем тип, а не window.CoverEngine
+            // ИСПРАВЛЕНИЕ: Проверяем тип переменной, а не свойство window
             if (typeof CoverEngine === 'undefined' || !CoverEngine.canvas) {
                 throw new Error("Canvas Error: Engine not loaded");
             }
