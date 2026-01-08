@@ -1,6 +1,6 @@
-/* app.js - RESTORED COMPATIBILITY + TELEGRAM PARAMS */
+/* app.js - FAILSAFE VERSION (Loader will always hide) */
 
-// 1. Глобальное состояние (как требует cover-engine.js)
+// 1. Глобальное состояние
 let state = {
     bookSize: 30, layout: 'text_icon', ppi: 10, slotSize: { w: 6, h: 6 }, maskType: 'rect',
     text: { 
@@ -13,51 +13,75 @@ let state = {
 };
 
 let userModifiedText = false;
-let panzoomInstance = null; 
 
-// 2. Инициализация при загрузке
-window.onload = () => {
-    // Инициализируем движок
-    if(window.CoverEngine) {
-        CoverEngine.init('c');
-    } else {
-        console.error("Critical: CoverEngine not found!");
-        return; // Остановиться, если движка нет
+// ==========================================
+// ГАРАНТИРОВАННОЕ УДАЛЕНИЕ ЗАСТАВКИ
+// ==========================================
+// Этот код сработает, даже если всё остальное сломается
+setTimeout(() => {
+    const loader = document.getElementById('app-loader');
+    if (loader) {
+        loader.style.opacity = '0';
+        setTimeout(() => { loader.style.display = 'none'; }, 500);
     }
+}, 1500);
 
-    // --- Читаем параметры из ссылки ---
-    const urlParams = new URLSearchParams(window.location.search);
-    
-    // Авто-год
-    const currentYear = new Date().getFullYear().toString();
-    state.text.date = currentYear;
-    const dateInput = document.getElementById('dateLine');
-    if(dateInput) dateInput.value = currentYear;
+// ==========================================
+// ОСНОВНОЙ ЗАПУСК
+// ==========================================
+window.onload = () => {
+    console.log("App starting...");
 
-    // Если в ссылке есть имя, можно сразу подставить (опционально)
-    // const nameFromUrl = urlParams.get('name');
-    // if(nameFromUrl) {
-    //    state.text.lines[0].text = nameFromUrl;
-    //    document.getElementById('inputLine1').value = nameFromUrl;
-    // }
+    try {
+        // Проверка движка
+        if(window.CoverEngine) {
+            CoverEngine.init('c');
+        } else {
+            console.error("CoverEngine not loaded!");
+            alert("Ошибка: CoverEngine не найден. Проверьте файлы.");
+        }
 
-    // Загружаем контент
-    loadDefaultAssets();
-    initColors();
-    initListeners();
-    initMobilePreview(); 
-    
-    // Синхронизация UI
-    const input1 = document.getElementById('inputLine1');
-    if (input1 && input1.value === "") input1.value = "THE VISUAL DIARY";
-    if(state.text.lines[0].upper) document.getElementById('btnTt1').classList.add('active');
-    
-    // Отрисовка
-    setTimeout(() => {
-        refresh();
-        checkOrientation();
-        updateActionButtons();
-    }, 500);
+        // Чтение параметров из ссылки
+        const urlParams = new URLSearchParams(window.location.search);
+        
+        // Авто-год
+        const currentYear = new Date().getFullYear().toString();
+        state.text.date = currentYear;
+        const dateInput = document.getElementById('dateLine');
+        if(dateInput) dateInput.value = currentYear;
+
+        // Если передано имя в ссылке — заполняем
+        const nameFromUrl = urlParams.get('name');
+        if(nameFromUrl) {
+           // Декодируем и ставим в верхний регистр
+           state.text.lines[0].text = nameFromUrl.toUpperCase();
+           const inp = document.getElementById('inputLine1');
+           if(inp) inp.value = nameFromUrl.toUpperCase();
+        }
+
+        // Загрузка ресурсов
+        loadDefaultAssets();
+        initColors();
+        initListeners();
+        initMobilePreview(); 
+        
+        // Синхронизация UI
+        const input1 = document.getElementById('inputLine1');
+        if (input1 && input1.value === "") input1.value = "THE VISUAL DIARY";
+        if(state.text.lines[0].upper) document.getElementById('btnTt1').classList.add('active');
+
+        // Отрисовка
+        setTimeout(() => {
+            refresh();
+            checkOrientation();
+            updateActionButtons();
+        }, 500);
+
+    } catch (e) {
+        console.error("Critical Error:", e);
+        // Если случилась критическая ошибка, покажем её
+        // alert("Ошибка запуска: " + e.message);
+    }
 };
 
 window.addEventListener('resize', () => {
@@ -69,30 +93,24 @@ window.addEventListener('resize', () => {
 });
 
 function refresh() {
-    CoverEngine.updateDimensions(document.getElementById('workspace'), state);
+    if(window.CoverEngine) {
+        CoverEngine.updateDimensions(document.getElementById('workspace'), state);
+    }
 }
 
-// 3. Загрузка ассетов и УДАЛЕНИЕ ЗАСТАВКИ
 function loadDefaultAssets() {
-    // !!! ВОТ ЗДЕСЬ УБИРАЕМ ЗАГЛУШКУ !!!
-    setTimeout(() => { 
-        const loader = document.getElementById('app-loader');
-        if(loader) {
-            loader.style.opacity = '0'; 
-            setTimeout(() => loader.style.display='none', 800); 
-        }
-    }, 1000); // 1 секунда задержки
-
     // Загрузка дефолтного сердца
     const defaultPath = 'assets/symbols/love_heart.png';
     const defaultPreview = 'assets/symbols/love_heart_icon.png';
     
-    CoverEngine.loadSimpleImage(defaultPath, (url) => {
-        const final = url || defaultPreview;
-        if(final) {
-            CoverEngine.loadSimpleImage(final, (valid) => { if(valid) state.images.icon = valid; finishInit(); });
-        } else { finishInit(); }
-    });
+    if(window.CoverEngine) {
+        CoverEngine.loadSimpleImage(defaultPath, (url) => {
+            const final = url || defaultPreview;
+            if(final) {
+                CoverEngine.loadSimpleImage(final, (valid) => { if(valid) state.images.icon = valid; finishInit(); });
+            } else { finishInit(); }
+        });
+    } else { finishInit(); }
 }
 
 function finishInit() {
@@ -103,14 +121,13 @@ function finishInit() {
 }
 
 // ==========================================
-// 4. ЛОГИКА ТЕЛЕГРАМА (НОВАЯ)
+// ЛОГИКА ТЕЛЕГРАМА
 // ==========================================
-
 window.sendToTelegram = function() {
     const btn = document.getElementById('sendTgBtn');
     const originalText = btn.innerText;
     
-    // Читаем параметры из URL (order_id, name, phone)
+    // Читаем параметры
     const urlParams = new URLSearchParams(window.location.search);
     const orderData = {
         orderId: urlParams.get('order_id') || 'Без номера',
@@ -122,14 +139,18 @@ window.sendToTelegram = function() {
     btn.style.opacity = "0.7";
     btn.disabled = true;
 
-    // Генерируем картинку через CoverEngine
-    // multiplier: 2.5 дает хорошее качество
+    if(!window.CoverEngine || !CoverEngine.canvas) {
+        alert("Ошибка: Холст не инициализирован");
+        btn.innerText = originalText;
+        btn.disabled = false;
+        return;
+    }
+
+    // Рендер картинки
     const dataUrl = CoverEngine.canvas.toDataURL({ format: 'jpeg', quality: 0.9, multiplier: 2.5 });
-    
-    // Убираем префикс base64
     const base64Clean = dataUrl.replace(/^data:image\/\w+;base64,/, "");
 
-    // Отправляем на API
+    // Отправка
     fetch('/api/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -145,12 +166,10 @@ window.sendToTelegram = function() {
         if (data.success) {
             alert(`✅ Заказ #${orderData.orderId} успешно отправлен!`);
         } else {
-            console.error(data);
             alert("Ошибка отправки: " + (data.error || "Неизвестная ошибка"));
         }
     })
     .catch(error => {
-        console.error('Network Error:', error);
         alert("Ошибка сети. Проверьте соединение.");
     })
     .finally(() => {
@@ -160,9 +179,8 @@ window.sendToTelegram = function() {
     });
 };
 
-
 // ==========================================
-// 5. ОСТАЛЬНАЯ ЛОГИКА (ЦВЕТА, ГАЛЕРЕИ)
+// ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ (Цвета, Галереи и т.д.)
 // ==========================================
 
 function initColors() {
@@ -170,10 +188,8 @@ function initColors() {
     const selector = document.getElementById('paletteSelector');
     if(selector) selector.value = collectionName;
 
-    // Используем window.DESIGNER_PALETTES
     if(window.DESIGNER_PALETTES && window.DESIGNER_PALETTES[collectionName]) {
         changeCollection(collectionName);
-        // Случайный цвет
         const palette = window.DESIGNER_PALETTES[collectionName];
         const randomIdx = Math.floor(Math.random() * palette.length);
         setTimeout(() => {
@@ -233,14 +249,12 @@ window.changeCollection = (name) => {
     if(palette.length > 0 && grid.firstChild) grid.firstChild.click(); 
 };
 
-// --- ГАЛЕРЕЯ (ИСПРАВЛЕНО) ---
 window.openGallery = (type, target) => {
     document.getElementById('globalSymbolBtn').classList.remove('pulse-attention');
     document.getElementById('galleryModal').classList.remove('hidden');
     const upBtn = document.getElementById('galUploadBtn');
     const galTitle = document.getElementById('galleryTitle');
     
-    // Используем window.ASSETS_DB
     const DB = window.ASSETS_DB || {};
     let dbSection;
 
@@ -271,39 +285,35 @@ function loadGal(type, cat, target) {
     const grid = document.getElementById('galleryGrid'); grid.innerHTML = '';
     const DB = window.ASSETS_DB || {};
     let files = (type === 'symbols' ? DB.symbols[cat] : DB.graphics[cat]) || [];
-    
     const folder = (type === 'symbols') ? 'symbols' : 'graphics';
     
     files.forEach(f => {
         const item = document.createElement('div'); item.className = 'gallery-item';
         const img = document.createElement('img');
-        
-        // Превью
         const previewName = f.includes('_icon') ? f : f.replace('.png', '_icon.png');
         const previewUrl = `assets/${folder}/${previewName}`;
         const printUrl = `assets/${folder}/${f}`;
-        
         img.src = previewUrl;
         img.onerror = () => { img.src = printUrl; };
-        
         item.appendChild(img);
         item.onclick = () => {
-            CoverEngine.loadSimpleImage(printUrl, (final) => {
-                final = final || previewUrl;
-                document.getElementById('galleryModal').classList.add('hidden');
-                if(target === 'global') { state.images.icon = final; updateSymbolUI(); refresh(); }
-                else if(type === 'graphics') { state.images.main = { src: final, natural: true }; refresh(); updateActionButtons(); }
-            });
+            if(window.CoverEngine) {
+                CoverEngine.loadSimpleImage(printUrl, (final) => {
+                    final = final || previewUrl;
+                    document.getElementById('galleryModal').classList.add('hidden');
+                    if(target === 'global') { state.images.icon = final; updateSymbolUI(); refresh(); }
+                    else if(type === 'graphics') { state.images.main = { src: final, natural: true }; refresh(); updateActionButtons(); }
+                });
+            }
         };
         grid.appendChild(item);
     });
 }
 
-// --- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ---
-
 window.updateActionButtons = () => {
     const btnGallery = document.getElementById('btnActionGallery');
     const btnUpload = document.getElementById('btnActionUpload');
+    if(!btnGallery || !btnUpload) return;
     btnGallery.classList.add('hidden');
     btnUpload.classList.add('hidden');
     if (state.layout === 'graphic') btnGallery.classList.remove('hidden');
@@ -319,22 +329,28 @@ window.removeQR = () => { state.qr.enabled = false; document.getElementById('qrM
 function initListeners() {
     ['inputLine1','inputLine2','inputLine3','dateLine','copyrightInput'].forEach(id => {
         const el = document.getElementById(id);
-        if(el) el.oninput = () => {
-            userModifiedText = true;
-            if(id === 'inputLine1') state.text.lines[0].text = el.value;
-            if(id === 'inputLine2') state.text.lines[1].text = el.value;
-            if(id === 'inputLine3') state.text.lines[2].text = el.value;
-            if(id === 'dateLine') state.text.date = el.value;
-            if(id === 'copyrightInput') state.text.copyright = el.value;
-            refresh();
-        };
-        el.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); el.blur(); } });
+        if(el) {
+            el.oninput = () => {
+                userModifiedText = true;
+                if(id === 'inputLine1') state.text.lines[0].text = el.value;
+                if(id === 'inputLine2') state.text.lines[1].text = el.value;
+                if(id === 'inputLine3') state.text.lines[2].text = el.value;
+                if(id === 'dateLine') state.text.date = el.value;
+                if(id === 'copyrightInput') state.text.copyright = el.value;
+                refresh();
+            };
+            el.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); el.blur(); } });
+        }
     });
     
-    document.getElementById('fontSelector').addEventListener('change', (e) => { state.text.font = e.target.value; refresh(); });
-    document.getElementById('saveBtn').onclick = () => CoverEngine.download(state);
+    const fontSel = document.getElementById('fontSelector');
+    if(fontSel) fontSel.addEventListener('change', (e) => { state.text.font = e.target.value; refresh(); });
+    
+    const saveBtn = document.getElementById('saveBtn');
+    if(saveBtn) saveBtn.onclick = () => { if(window.CoverEngine) CoverEngine.download(state); };
 
-    document.getElementById('iconLoader').onchange = (e) => { 
+    const iconLoader = document.getElementById('iconLoader');
+    if(iconLoader) iconLoader.onchange = (e) => { 
         if(e.target.files[0]) {
             processAndResizeImage(e.target.files[0], 500, 'image/png', (resizedUrl) => {
                 state.images.icon = resizedUrl; updateSymbolUI(); refresh(); document.getElementById('galleryModal').classList.add('hidden'); 
@@ -342,7 +358,8 @@ function initListeners() {
         }
     };
     
-    document.getElementById('imageLoader').onchange = (e) => {
+    const imageLoader = document.getElementById('imageLoader');
+    if(imageLoader) imageLoader.onchange = (e) => {
         if(e.target.files[0]) {
             let limit = 2500; let type = 'image/jpeg';
             if (state.layout === 'graphic') { limit = 1417; type = 'image/png'; }
@@ -371,12 +388,14 @@ function initListeners() {
         CropperTool.drawOverlay(state.slotSize.w, state.slotSize.h);
     };
     
-    document.getElementById('applyCropBtn').onclick = () => {
+    const applyCrop = document.getElementById('applyCropBtn');
+    if(applyCrop) applyCrop.onclick = () => {
         state.images.main = CropperTool.apply(); refresh(); document.getElementById('cropperModal').classList.add('hidden'); updateActionButtons();
     };
     const rotBtn = document.getElementById('rotateBtn');
     if(rotBtn) { rotBtn.onclick = () => CropperTool.rotate(); }
-    document.getElementById('cancelCropBtn').onclick = () => document.getElementById('cropperModal').classList.add('hidden');
+    const cancelCrop = document.getElementById('cancelCropBtn');
+    if(cancelCrop) cancelCrop.onclick = () => document.getElementById('cropperModal').classList.add('hidden');
 }
 
 function processAndResizeImage(file, maxSize, outputType, callback) {
@@ -413,69 +432,3 @@ function updateSymbolUI() {
 }
 
 function updateCropperUI() {
-    const controls = document.querySelector('.crop-controls');
-    if (state.layout === 'magazine') controls.style.display = 'none'; else controls.style.display = 'flex'; 
-}
-
-window.toggleCase = (i) => { 
-    state.text.lines[i-1].upper = !state.text.lines[i-1].upper; 
-    document.getElementById(`btnTt${i}`).classList.toggle('active'); 
-    refresh(); 
-};
-window.addSmartRow = () => {
-    const row2 = document.getElementById('row2'); const row3 = document.getElementById('row3');
-    if (row2.classList.contains('hidden')) { row2.classList.remove('hidden'); } else if (row3.classList.contains('hidden')) { row3.classList.remove('hidden'); }
-};
-window.hideRow = (i) => { 
-    document.getElementById(`row${i}`).classList.add('hidden'); 
-    const input = document.getElementById(`inputLine${i}`); if(input) input.value = ''; 
-    state.text.lines[i-1].text = ''; refresh(); 
-};
-window.toggleSpinePart = (part) => { 
-    state.spine[part] = !state.spine[part]; 
-    const btnId = 'btnSpine' + part.charAt(0).toUpperCase() + part.slice(1);
-    document.getElementById(btnId).classList.toggle('active', state.spine[part]); refresh(); 
-};
-window.setLayout = (l, btn) => { 
-    const isSame = state.layout===l; state.layout=l; 
-    document.querySelectorAll('.layout-card').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); 
-    if(!isSame) state.images.main=null; 
-    if(l==='magazine') state.maskType='rect'; else if(l==='graphic') { state.maskType='rect'; state.slotSize={w:12,h:12}; } else { state.maskType='rect'; state.slotSize={w:6,h:6}; } 
-    refresh(); updateActionButtons(); 
-};
-window.handleCanvasClick = (objType) => { if (objType === 'mainImage' || objType === 'placeholder') { if (state.layout === 'graphic') openGallery('graphics', 'main'); else if (state.layout === 'photo_text' || state.layout === 'magazine') document.getElementById('imageLoader').click(); } };
-window.setBookSize = (s, btn) => { state.bookSize = s; document.querySelectorAll('.format-card').forEach(b => b.classList.remove('active')); btn.classList.add('active'); if (state.layout === 'magazine') state.slotSize = { w: s, h: s }; refresh(); };
-window.updateScaleFromSlider = (v) => { state.text.scale = CONFIG.scales[v-1]; refresh(); };
-window.setScale = (s) => { const idx = CONFIG.scales.indexOf(s); if(idx > -1) { document.getElementById('textScale').value = idx+1; window.updateScaleFromSlider(idx+1); } };
-window.triggerAssetLoader = () => { if(state.layout === 'graphic') openGallery('graphics', 'main'); else document.getElementById('imageLoader').click(); };
-
-function initMobilePreview() {
-    const container = document.getElementById('panzoomContainer');
-    const closeBtn = document.getElementById('closePreviewBtn');
-    if(window.Panzoom && container) {
-        panzoomInstance = Panzoom(container, { maxScale: 4, minScale: 0.8, contain: null, canvas: true });
-        container.parentElement.addEventListener('wheel', panzoomInstance.zoomWithWheel);
-    }
-    if (closeBtn) closeBtn.onclick = (e) => { e.stopPropagation(); closeMobilePreview(); };
-    document.getElementById('btnZoomIn').onclick = (e) => { e.stopPropagation(); panzoomInstance.zoomIn(); };
-    document.getElementById('btnZoomOut').onclick = (e) => { e.stopPropagation(); panzoomInstance.zoomOut(); };
-    document.getElementById('btnZoomFit').onclick = (e) => { e.stopPropagation(); panzoomInstance.reset(); };
-}
-function checkOrientation() {
-    if (document.activeElement.tagName === 'INPUT' || document.body.classList.contains('keyboard-open')) return;
-    const isMobileDevice = window.innerWidth < 1024;
-    if (isMobileDevice) {
-        if (window.innerWidth > window.innerHeight) { if (document.getElementById('mobilePreview').classList.contains('hidden')) openMobilePreview(); } 
-        else { closeMobilePreview(); }
-    }
-}
-window.openMobilePreview = () => {
-    const modal = document.getElementById('mobilePreview');
-    const img = document.getElementById('mobilePreviewImg');
-    const mult = window.innerWidth < 1024 ? 1.5 : 2.5;
-    const dataUrl = CoverEngine.canvas.toDataURL({ format: 'png', multiplier: mult });
-    img.src = dataUrl;
-    modal.classList.remove('hidden');
-    if(panzoomInstance) { setTimeout(() => { panzoomInstance.reset(); }, 50); }
-};
-window.closeMobilePreview = () => { document.getElementById('mobilePreview').classList.add('hidden'); };
