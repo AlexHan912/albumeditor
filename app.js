@@ -1,4 +1,4 @@
-/* app.js - UI Controller & State Management V91 (Secure Telegram) */
+/* app.js - UI Controller & State Management V91 (Secure Telegram ) */
 
 let state = {
     bookSize: 30, layout: 'text_icon', ppi: 10, slotSize: { w: 6, h: 6 }, maskType: 'rect',
