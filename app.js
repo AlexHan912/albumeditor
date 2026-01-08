@@ -124,6 +124,8 @@ function finishInit() {
 // 3. ТЕЛЕГРАМ (ОТПРАВКА)
 // =========================================================
 
+/* Вставьте это в app.js вместо старой функции sendToTelegram */
+
 window.sendToTelegram = function() {
     const btn = document.getElementById('sendTgBtn');
     const originalText = btn.innerText;
@@ -140,24 +142,27 @@ window.sendToTelegram = function() {
     btn.disabled = true;
     btn.style.opacity = "0.7";
 
-    // Асинхронно, чтобы UI обновился перед зависанием на рендер
+    // Асинхронно, чтобы UI обновился
     setTimeout(() => {
         try {
-            if(!window.CoverEngine || !CoverEngine.canvas) throw new Error("Canvas Error");
+            // ИСПРАВЛЕНИЕ: Проверяем тип, а не window.CoverEngine
+            if (typeof CoverEngine === 'undefined' || !CoverEngine.canvas) {
+                throw new Error("Canvas Error: Engine not loaded");
+            }
 
             // --- РАСЧЕТ 300 DPI ---
-            // 300 DPI = 118.11 пикселей на см
+            // Цель: 300 пикселей на дюйм (118.11 px/cm)
             const targetPPI = 300 / 2.54; 
-            // state.ppi - это текущий масштаб экрана (пикселей в см)
-            // Делим целевой PPI на текущий, чтобы получить множитель
+            
+            // state.ppi - текущий масштаб экрана. Считаем множитель.
             const exportMultiplier = targetPPI / state.ppi;
 
-            console.log(`Exporting at 300 DPI. Multiplier: ${exportMultiplier.toFixed(2)}`);
+            console.log(`Generating 300 DPI. Multiplier: ${exportMultiplier.toFixed(2)}`);
 
-            // Рендер (Может занять 1-2 секунды)
+            // Рендер (Максимальное качество JPEG)
             const dataUrl = CoverEngine.canvas.toDataURL({ 
                 format: 'jpeg', 
-                quality: 1.0,       // Максимальное качество
+                quality: 1.0,       
                 multiplier: exportMultiplier 
             });
             
@@ -165,7 +170,7 @@ window.sendToTelegram = function() {
 
             btn.innerText = "ОТПРАВКА...";
 
-            // Отправка
+            // Отправка на сервер
             fetch('/api/send', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
